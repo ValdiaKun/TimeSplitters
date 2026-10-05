@@ -105,7 +105,7 @@ int tsfp_vif_scan(const uint8_t *data, size_t size, TsFpVifSummary *out) {
             uint32_t words = unpack_words_per_vector(cmd);
             if (!bytes || !words) return -5;
             uint32_t vectors = num ? num : 256;
-            uint32_t consumed = ((vectors * words * 4u) + 15u) & ~15u;
+            uint32_t consumed = vectors * words * 4u;
             if (consumed > size - pos) return -6;
             out->unpack_count++;
             out->unpack_qwords += (consumed / 16u);
