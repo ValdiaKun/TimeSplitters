@@ -16,7 +16,7 @@ int main(void) {
     /* vi1 = 2; vi2 = 3; vi3 = vi1 + vi2 */
     w=lower(0x08,0,0,1)|2; memcpy(micro+0,&w,4); w=0; memcpy(micro+4,&w,4);
     w=lower(0x08,0,0,2)|3; memcpy(micro+8,&w,4); w=0; memcpy(micro+12,&w,4);
-    w=lower(0x40,3,1,2); memcpy(micro+16,&w,4); w=0; memcpy(micro+20,&w,4);
+    w=lower(0x30,3,1,2); memcpy(micro+16,&w,4); w=0; memcpy(micro+20,&w,4);
     /* vf1 = (1,2,3,4), vf2 = (5,6,7,8), vf3 = vf1 + vf2 */
     float a[4]={1,2,3,4}, b[4]={5,6,7,8};
     memcpy(mem+32,a,16); memcpy(mem+48,b,16);
