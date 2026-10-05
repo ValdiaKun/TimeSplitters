@@ -23,7 +23,7 @@ int tsfp_vif_probe(const uint8_t *data, size_t size, TsFpVifSummary *out) {
     out->strow = decode(rd32(data + 12));
 
     if (out->stcycl.command != 0x01) return -2;
-    if (out->unpack.command != 0x6c) return -3;
+    if (out->unpack.command != 0x6c) return -3; /* V4-32 */
     if (out->unpack.num == 0) return -4;
     if (out->strow.command != 0x30) return -5;
 
