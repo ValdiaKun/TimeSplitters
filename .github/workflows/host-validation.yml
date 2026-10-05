@@ -29,6 +29,10 @@ jobs:
         run: |
           gcc -std=c11 -Wall -Wextra -Isrc tests/test_fp_geometry.c src/fp_geometry.c -o /tmp/test_fp_geometry
           /tmp/test_fp_geometry
+      - name: Compile and test native Future Perfect VIF decoder
+        run: |
+          gcc -std=c11 -Wall -Wextra -Isrc tests/test_fp_vif.c src/fp_vif.c -o /tmp/test_fp_vif
+          /tmp/test_fp_vif
       - name: Compile and test native TS3 model parser
         run: |
           gcc -std=c11 -Wall -Wextra -Isrc tests/test_ts3_model.c src/ts3_model.c -lm -o /tmp/test_ts3_model
