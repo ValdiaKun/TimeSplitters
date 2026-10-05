@@ -59,11 +59,12 @@ static void draw(int result,const TsP5ckInfo *info,const TsP5ckEntry *entry,cons
     if(resource->metadata_offset) { float w=(float)(resource->metadata_offset>64?800:(resource->metadata_offset*800u)/64u); vita2d_draw_rectangle(80,430,w,30,0xFF40C0C0); }
     if(model->mesh_count) { float w=(float)(model->mesh_count>100?800:(model->mesh_count*800u)/100u); vita2d_draw_rectangle(80,390,w,20,0xFFC040A0); }
     if(model->material_count) { float w=(float)(model->material_count>100?800:(model->material_count*800u)/100u); vita2d_draw_rectangle(80,420,w,20,0xFF40C080); }
-    if(vif->payload_bytes) { float w=(float)(vif->payload_bytes>64?800:(vif->payload_bytes*800u)/64u); vita2d_draw_rectangle(80,470,w,12,0xFF80C060); }\n    if(xgkick_pc!=UINT32_MAX) vita2d_draw_rectangle(80,500,800,10,0xFFC08040);
+    if(vif->payload_bytes) { float w=(float)(vif->payload_bytes>64?800:(vif->payload_bytes*800u)/64u); vita2d_draw_rectangle(80,470,w,12,0xFF80C060); }
+    if(xgkick_pc!=UINT32_MAX) vita2d_draw_rectangle(80,500,800,10,0xFFC08040);
     if(geometry->submesh_count) { float w=(float)(geometry->submesh_count>256?800:(geometry->submesh_count*800u)/256u); vita2d_draw_rectangle(80,450,w,18,0xFF60A0E0); }
 }
 int main(void) {
-    SceCtrlData pad; TsP5ckInfo info; TsP5ckEntry entry; TsFpResourceSummary resource; TsFpModelHeader model; TsFpGeometrySummary geometry; TsFpVifSummary vif; int result; uint32_t xgkick_pc;
+    SceCtrlData pad; TsP5ckInfo info; TsP5ckEntry entry; TsFpResourceSummary resource; TsFpModelHeader model; TsFpGeometrySummary geometry; TsFpVifSummary vif; int result; uint32_t xgkick_pc; uint32_t xgkick_pc;
     memset(&pad,0,sizeof(pad)); memset(&info,0,sizeof(info)); memset(&entry,0,sizeof(entry)); memset(&resource,0,sizeof(resource)); memset(&model,0,sizeof(model)); memset(&geometry,0,sizeof(geometry)); memset(&vif,0,sizeof(vif));
     result=load_probe(&info,&entry,&resource,&model,&geometry,&vif); xgkick_pc=probe_boot_vu(); vita2d_init();
     for(;;) { sceCtrlPeekBufferPositive(0,&pad,1); if(pad.buttons&SCE_CTRL_START) break; vita2d_start_drawing(); draw(result,&info,&entry,&resource,&model,&geometry,&vif,xgkick_pc); vita2d_end_drawing(); vita2d_swap_buffers(); sceDisplayWaitVblankStart(); }
