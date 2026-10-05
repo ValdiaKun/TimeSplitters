@@ -35,7 +35,7 @@ int main(void) {
         /* I-bit loads VI21; lower instruction in the same LIW is ignored. */
         x=0x12345678u; memcpy(m+0,&x,4); x=0x80000000u; memcpy(m+4,&x,4);
         x=lower(0x08,2,21,0)|5u; memcpy(m+8,&x,4); x=0; memcpy(m+12,&x,4);
-        x=0x40000000u; memcpy(m+16,&x,4); x=0; memcpy(m+20,&x,4);
+        x=0; memcpy(m+16,&x,4); x=0x40000000u; memcpy(m+20,&x,4);
         TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
         assert(tsfp_vu_execute(m,sizeof(m),0,&t,8)==0);
         assert(t.vi[21]==0x12345678u && t.vi[2]==0x1234567du);
