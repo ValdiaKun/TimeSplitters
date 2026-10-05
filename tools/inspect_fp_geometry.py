@@ -13,12 +13,12 @@ def inspect(data, model_offset):
     material_offset=u32(data,model_offset)
     info_offset=u32(data,model_offset+4)
     aux_offset=u32(data,model_offset+8)
-    meshes=u32(data,model_offset+0x10)
-    mats=u32(data,model_offset+0x14)
-    lods=u32(data,model_offset+0x18)
-    mesh_table=u32(data,model_offset+0x1c)
-    lod_table=u32(data,model_offset+0x20)
-    scale=struct.unpack_from("<f",data,model_offset+0x24)[0]
+    meshes=u32(data,info_offset)
+    mats=u32(data,info_offset+4)
+    lods=u32(data,info_offset+8)
+    mesh_table=u32(data,info_offset+24)
+    lod_table=u32(data,info_offset+28)
+    scale=struct.unpack_from("<f",data,info_offset+36)[0]
     if not (0 < meshes <= 4096 and mesh_table < len(data)):
         raise ValueError("invalid model metadata")
     subs=[]
