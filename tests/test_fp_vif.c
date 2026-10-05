@@ -28,5 +28,7 @@ int main(void) {
     assert(s.cycle_length == 4 && s.write_length == 4);
     assert(s.unpack_address == 0 && s.unpack_top_relative == 1);
     assert(s.vector[0] == 0x0000007f);
+    assert(tsfp_vif_scan(d, sizeof(words), &s) == 0);
+    assert(s.command_count >= 4 && s.unpack_count >= 1);
     return 0;
 }
