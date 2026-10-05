@@ -145,14 +145,14 @@ static void lower_exec(TsFpVuState *s,uint32_t lo,uint32_t next_pc){
     if(op==0x32u){if(id)s->vi[id]=s->vi[it]+(lo&0x7ffu);return;}
     if(op==0x34u){if(id)s->vi[id]=s->vi[it]&s->vi[is];return;}
     if(op==0x35u){if(id)s->vi[id]=s->vi[it]|s->vi[is];return;}
-    if(op==0x20u){s->pc=(uint32_t)((int32_t)next_pc+imm);return;}
-    if(op==0x21u){if(id)s->vi[id]=next_pc+1u;s->pc=(uint32_t)((int32_t)next_pc+imm);return;}
-    if(op==0x22u){s->pc=s->vi[is];return;}
-    if(op==0x23u){if(id)s->vi[id]=next_pc+1u;s->pc=s->vi[is];return;}
+    if(op==0x20u){s->branch_pending=1;s->branch_target=(uint32_t)((int32_t)next_pc+imm);return;}
+    if(op==0x21u){if(it)s->vi[it]=next_pc+1u;s->branch_pending=1;s->branch_target=(uint32_t)((int32_t)next_pc+imm);return;}
+    if(op==0x22u){s->branch_pending=1;s->branch_target=s->vi[is];return;}
+    if(op==0x23u){if(it)s->vi[it]=next_pc+1u;s->branch_pending=1;s->branch_target=s->vi[is];return;}
     if(op>=0x24u&&op<=0x2bu){
         int32_t a=(int32_t)s->vi[it],b=(int32_t)s->vi[is];int take=0;
         switch(op){case 0x24:take=a==b;break;case 0x25:take=a!=b;break;case 0x28:take=a<0;break;case 0x29:take=a>0;break;case 0x2a:take=a<=0;break;case 0x2b:take=a>=0;break;default:break;}
-        if(take)s->pc=(uint32_t)((int32_t)next_pc+imm);
+        if(take){s->branch_pending=1;s->branch_target=(uint32_t)((int32_t)next_pc+imm);}
         return;
     }
     if(op==0x6cu){
@@ -178,7 +178,11 @@ int tsfp_vu_execute(const uint8_t *micro,size_t size,uint32_t start,TsFpVuState 
     for(state->steps=0;state->steps<max_steps&&state->pc<size/8u;state->steps++){
         uint32_t pc=state->pc,lo=rd32(micro+pc*8u),up=rd32(micro+pc*8u+4u);
         state->pc=pc+1u;
-        lower_exec(state,lo,state->pc);upper_exec(state,up);
+        if(up&0x80000000u) state->vi[21]=lo; else lower_exec(state,lo,state->pc);
+        upper_exec(state,up);
+        if(state->branch_pending && pc+1u!=state->branch_target){
+            state->pc=state->branch_target; state->branch_pending=0;
+        }
         if(up&0x40000000u)return 0;
     }
     return state->steps>=max_steps?-2:0;
