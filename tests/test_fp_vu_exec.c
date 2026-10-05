@@ -148,7 +148,7 @@ int main(void) {
     {
         /* MR32 rotates source fields x<-y, y<-z, z<-w, w<-x for selected destinations. */
         uint8_t m[32]={0}; uint32_t x;
-        x=0x80000000u | (15u<<21) | (6u<<16) | (5u<<11) | 0x3fdu; memcpy(m,&x,4);
+        x=0x80000000u | (15u<<21) | (6u<<16) | (5u<<11) | 0x33du; memcpy(m,&x,4);
         x=0; memcpy(m+4,&x,4);
         x=0; memcpy(m+8,&x,4); x=0x40000000u; memcpy(m+12,&x,4);
         TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
