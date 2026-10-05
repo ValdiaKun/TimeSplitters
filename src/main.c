@@ -24,7 +24,6 @@
 static vita2d_color_vertex preview[PREVIEW_CAPACITY];
 static size_t preview_count=0;
 
-static uint32_t rd32(const uint8_t *p){return (uint32_t)p[0]|((uint32_t)p[1]<<8)|((uint32_t)p[2]<<16)|((uint32_t)p[3]<<24);}
 
 static int load_file(const char *path,uint8_t **out,size_t *size_out){
     FILE *fp=fopen(path,"rb"); long end; uint8_t *buf; size_t n;
@@ -90,8 +89,9 @@ static int build_model_preview(void){
     vu_mem=(uint8_t*)malloc(VU_MEMORY_SIZE); gif_mem=(uint8_t*)malloc(GIF_MEMORY_SIZE);
     if(!vu_mem||!gif_mem) goto done;
 
-    TsFpGifVertex triangles[PREVIEW_CAPACITY];
+    TsFpGifVertex *triangles=(TsFpGifVertex*)malloc(sizeof(*triangles)*PREVIEW_CAPACITY);
     size_t tri_count=0;
+    if(!triangles) goto done;
     for(size_t si=0;si<submesh_count && tri_count<PREVIEW_CAPACITY;si++){
         uint32_t off=submeshes[si].data_offset;
         size_t vif_size=(size_t)submeshes[si].vertex_count*16u;
@@ -137,7 +137,7 @@ static int build_model_preview(void){
     }
 
 done:
-    free(gif_mem); free(vu_mem); free(elf); free(model_data);
+    free(triangles); free(gif_mem); free(vu_mem); free(elf); free(model_data);
     return result;
 }
 
