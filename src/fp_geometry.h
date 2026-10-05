@@ -16,12 +16,13 @@ typedef struct {
     uint32_t invalid_count;
 } TsFpGeometrySummary;
 
-/* Parse the Future Perfect mesh-pointer table and its 8-byte submesh records.
- * The returned summary counts only structurally valid records; no game assets
- * are embedded in the executable.
- */
 int tsfp_geometry_probe(const uint8_t *data, size_t size,
                         uint32_t table_offset, uint32_t mesh_count,
                         TsFpGeometrySummary *out);
+
+/* Collect structurally valid submesh records in mesh-table order. */
+size_t tsfp_geometry_collect(const uint8_t *data, size_t size,
+                             uint32_t table_offset, uint32_t mesh_count,
+                             TsFpSubmesh *out, size_t capacity);
 
 #endif
