@@ -25,6 +25,7 @@ python tools/prepare_game_data.py "$ISO"
 echo
 echo "== Scanning all PAK resources =="
 python tools/analyze_all_paks.py game_data --out game_data/p5ck_analysis.json
+python tools/extract_fp_resources.py game_data/PAK/STORY/L_2_ST.PAK --out game_data/analysis/L2ST_fp_resources
 
 echo
 echo "== Looking for checksum/name maps =="
