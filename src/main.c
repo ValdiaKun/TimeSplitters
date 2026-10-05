@@ -78,7 +78,6 @@ typedef struct {
     size_t micro_size;
     TsFpVuState *vu;
     uint8_t *gif_memory;
-    size_t gif_size;
     TsFpGifVertex *triangles;
     size_t triangle_capacity;
     size_t *triangle_count;
@@ -86,7 +85,6 @@ typedef struct {
 
 static int render_mscal(uint16_t address,uint8_t *vu_memory,size_t vu_size,void *user){
     TsFpVifRenderContext *ctx=(TsFpVifRenderContext*)user;
-    TsFpGifVertex local[1024];
     TsFpGifSummary gif;
     size_t before;
     if(!ctx||!ctx->vu||!ctx->micro||address!=0x0683u)return -1;
@@ -145,7 +143,7 @@ static int build_model_preview(void){
         TsFpVifRenderContext ctx;
         tsfp_vu_state_init(&vs,vu_mem,VU_MEMORY_SIZE,gif_mem,GIF_MEMORY_SIZE);
         ctx.micro=elf+voff; ctx.micro_size=vlen; ctx.vu=&vs;
-        ctx.gif_memory=gif_mem; ctx.gif_size=GIF_MEMORY_SIZE;
+        ctx.gif_memory=gif_mem;
         ctx.triangles=triangles; ctx.triangle_capacity=PREVIEW_CAPACITY;
         ctx.triangle_count=&tri_count;
         TsFpVifMemorySummary vm;
