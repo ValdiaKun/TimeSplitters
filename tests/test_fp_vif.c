@@ -39,12 +39,23 @@ int main(void) {
     assert(s.payload_offset == 32 && s.payload_bytes == 16);
     assert(s.cycle_length == 4 && s.write_length == 4);
     assert(s.unpack_address == 0 && s.unpack_top_relative == 1);
+    {
+        uint8_t z[48] = {0};
+        uint32_t h[2] = { v(0x01,0,0x0000), v(0x6c,1,0x0000) };
+        memcpy(z,h,sizeof(h));
+        uint32_t rowcmd = v(0x30,0,0);
+        memcpy(z+8,&rowcmd,4);
+        memset(&s,0,sizeof(s));
+        assert(tsfp_vif_probe(z,sizeof(z),&s)==0);
+        assert(s.cycle_length==256 && s.write_length==256);
+    }
 
     memset(&s, 0, sizeof(s));
     assert(tsfp_vif_scan(d, sizeof(words), &s) == 0);
     assert(s.command_count >= 10);
     assert(s.unpack_count == 5);
     assert(s.mscal_count == 2);
+    assert(s.mscal_address == 0x683);
     assert(s.unpack_qwords == 1 + 2 + 2 + 2 + 1);
     assert(tsfp_vif_unpack_memory(d, sizeof(words), vu, sizeof(vu), &ms) == 0);
     assert(ms.unpack_commands == 5 && ms.mscal_address == 0x683);
