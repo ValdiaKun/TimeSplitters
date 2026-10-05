@@ -16,7 +16,7 @@ int main(void){
     memcpy(d+0x4e,&(uint16_t){7},2);
     memcpy(d+0x50,&(uint32_t){0x180},4);
     memcpy(d+0x54,&(uint16_t){3},2);
-    assert(tsfp_geometry_probe(d,sizeof(d),0x20,3,&s)==0);
+    assert(tsfp_geometry_probe(d,sizeof(d),0x20,3,0x58,&s)==0);
     assert(s.mesh_count==3 && s.submesh_count==3 && s.invalid_count==0);
     return 0;
 }
