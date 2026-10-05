@@ -28,7 +28,6 @@ static uint32_t scene_gif_vertices;
 static uint32_t scene_failures;
 static uint32_t scene_unsupported;
 static uint32_t scene_xgkicks;
-static uint32_t scene_mscal = 0x683u;
 static float scene_angle;
 
 static uint32_t rd32(const uint8_t *p) {
