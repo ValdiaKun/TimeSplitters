@@ -25,5 +25,8 @@ int main(void) {
     assert(s.strow.command == 0x30);
     assert(s.row[0] == 0x00000412 && s.row[3] == 0x00d0ffd2);
     assert(s.payload_offset == 32 && s.payload_bytes == 16);
+    assert(s.cycle_length == 4 && s.write_length == 4);
+    assert(s.unpack_address == 0 && s.unpack_top_relative == 1);
+    assert(s.vector[0] == 0x0000007f);
     return 0;
 }
