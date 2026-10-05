@@ -31,4 +31,5 @@ typedef struct {
 } TsFpVifSummary;
 
 int tsfp_vif_probe(const uint8_t *data, size_t size, TsFpVifSummary *out);
+int tsfp_vif_scan(const uint8_t *data, size_t size, TsFpVifSummary *out);
 #endif
