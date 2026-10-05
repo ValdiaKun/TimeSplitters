@@ -155,6 +155,26 @@ static void lower_exec(TsFpVuState *s,uint32_t lo,uint32_t next_pc){
         if(take){s->branch_pending=1;s->branch_target=(uint32_t)((int32_t)next_pc+imm);}
         return;
     }
+    if(op==0x10u){s->mac_flag=((s->vi[it]&0xffffu)==(s->vi[is]&0xffffu))?0xffffu:0;return;}
+    if(op==0x11u){s->mac_flag=lo&0xffffu;return;}
+    if(op==0x12u){s->mac_flag&=s->vi[it]&0xffffu;return;}
+    if(op==0x13u){s->mac_flag|=s->vi[it]&0xffffu;return;}
+    if(op==0x14u){s->status_flag=((s->vi[it]&0xffffu)==(s->vi[is]&0xffffu))?0xffffu:0;return;}
+    if(op==0x15u){s->status_flag=lo&0xffffu;return;}
+    if(op==0x16u){s->status_flag&=s->vi[it]&0xffffu;return;}
+    if(op==0x17u){s->status_flag|=s->vi[it]&0xffffu;return;}
+    if(op==0x18u){s->mac_flag=((s->vi[it]&0xffffu)==(s->vi[is]&0xffffu))?0xffffu:0;return;}
+    if(op==0x1au){s->mac_flag&=s->vi[it]&0xffffu;return;}
+    if(op==0x1bu){s->mac_flag|=s->vi[it]&0xffffu;return;}
+    if(op==0x1cu){if(it)s->vi[it]=s->clip_flag&0xfffu;return;}
+    if(op==0x7cu||op==0x7du||op==0x7eu||op==0x7fu){
+        unsigned ftf=(lo>>23)&3u,fsf=(lo>>21)&3u;
+        float ftv=f32(s->vf[ft][ftf]), fsv=f32(s->vf[fs][fsf]);
+        if(op==0x7cu) s->q=u32(fsv/ftv);
+        else if(op==0x7du) s->q=u32(sqrtf(fabsf(ftv)));
+        else if(op==0x7eu) s->q=u32(fsv/sqrtf(fabsf(ftv)));
+        return;
+    }
     if(op==0x6cu){
         size_t a=((size_t)s->vi[is]&0x3ffu)*16u;
         s->xgkick_pc=s->pc;
@@ -164,8 +184,8 @@ static void lower_exec(TsFpVuState *s,uint32_t lo,uint32_t next_pc){
         }
         return;
     }
-    if(op==0x68u){if(it)s->vi[it]=s->vi[21];return;}
-    if(op==0x69u){if(it)s->vi[it]=s->vi[21];return;}
+    if(op==0x68u){if(it)s->vi[it]=s->top;return;}
+    if(op==0x69u){if(it)s->vi[it]=s->itop;return;}
     s->unsupported++;
 }
 
