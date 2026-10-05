@@ -28,8 +28,14 @@ int main(void) {
         elf[32]=0x40; elf[46]=40; elf[48]=3; elf[50]=1;
         const char names[]="\0.shstrtab\0.vutext\0";
         memcpy(elf+0x20,names,sizeof(names));
-        elf[0x40+40+0]=1; elf[0x40+40+16]=0x20; elf[0x40+40+20]=sizeof(names);
-        elf[0x40+80+0]=11; elf[0x40+80+16]=0x100; elf[0x40+80+20]=16;
+        uint32_t sh1_name=1, sh1_off=0x20, sh1_len=(uint32_t)sizeof(names);
+        uint32_t sh2_name=11, sh2_off=0x100, sh2_len=16;
+        memcpy(elf+0x40+40+0,&sh1_name,4);
+        memcpy(elf+0x40+40+16,&sh1_off,4);
+        memcpy(elf+0x40+40+20,&sh1_len,4);
+        memcpy(elf+0x40+80+0,&sh2_name,4);
+        memcpy(elf+0x40+80+16,&sh2_off,4);
+        memcpy(elf+0x40+80+20,&sh2_len,4);
         size_t off=0,len=0;
         assert(tsfp_vu_find_vutext(elf,sizeof(elf),&off,&len)==0);
         assert(off==0x100 && len==16);
