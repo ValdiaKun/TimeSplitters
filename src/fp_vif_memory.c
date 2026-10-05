@@ -53,7 +53,7 @@ int tsfp_vif_unpack_memory(const uint8_t *data, size_t size,
     uint32_t addr=0, tops=0, base=0, offset=0;
     uint32_t row[4]={0,0,0,0}, col[4]={0,0,0,0};
     uint32_t mask=0;
-    uint8_t cl=1, wl=1, mode=0;
+    uint16_t cl=1, wl=1; uint8_t mode=0;
     uint32_t cycle_pos=0;
 
     if (!data || !vu_memory || !out || vu_size < 16) return -1;
@@ -121,8 +121,7 @@ int tsfp_vif_unpack_memory(const uint8_t *data, size_t size,
                     unsigned m=(mask>>(i*2u))&3u;
                     if(m==1u) q[i]=row[i];
                     else if(m==2u) {
-                        unsigned ci=write_cycle>4u?3u:write_cycle-1u;
-                        q[i]=col[ci];
+                        q[i]=col[i];
                     }
                     if(m!=3u) {
                         if(target+4u>vu_size)return -6;
