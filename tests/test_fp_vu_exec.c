@@ -56,7 +56,7 @@ int main(void) {
         uint8_t m[64]={0};
         uint32_t x;
         float num=6.0f, den=2.0f;
-        memcpy(m+0,&num,4); memcpy(m+4,&den,4);
+        (void)num; (void)den;
         x=0; memcpy(m+8,&x,4);
         /* DIV Q, vf1.x, vf2.x uses lower special opcode 0x7c. */
         x=lower(0x7c,14,1,2); memcpy(m+16,&x,4); x=0; memcpy(m+20,&x,4);
