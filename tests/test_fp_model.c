@@ -4,7 +4,7 @@
 #include <string.h>
 
 int main(void){
-    uint8_t d[160]={0};
+    uint8_t d[640]={0};
     TsFpModelHeader h;
     uint32_t count=41, mats=29, lods=1;
     float scale=0.94f;
