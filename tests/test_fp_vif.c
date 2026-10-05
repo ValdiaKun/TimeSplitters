@@ -68,10 +68,12 @@ int main(void) {
         memset(&ms,0,sizeof(ms));
         assert(tsfp_vif_unpack_memory(m,p,vu,sizeof(vu),&ms)==0);
         assert(ms.unpack_commands==1 && ms.qwords_written==1);
-        assert(*(uint32_t*)&vu[0] == 11u);
-        assert(*(uint32_t*)&vu[4] == 200u);
-        assert(*(uint32_t*)&vu[8] == 0u);
-        assert(*(uint32_t*)&vu[12] == 4u);
+        uint32_t got[4];
+        memcpy(got, vu, sizeof(got));
+        assert(got[0] == 11u);
+        assert(got[1] == 200u);
+        assert(got[2] == 0u);
+        assert(got[3] == 4u);
     }
     return 0;
 }
