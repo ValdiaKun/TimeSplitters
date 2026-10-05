@@ -22,7 +22,7 @@ static int load_probe(TsP5ckInfo *info, TsP5ckEntry *entry, TsFpResourceSummary 
         if(size==0 || size>64u*1024u*1024u) r=-12;
         else if(fseek(fp,(long)entry->offset,SEEK_SET)!=0) r=-13;
         else if(!(buf=(uint8_t*)malloc(size))) r=-14;
-        else { n=fread(buf,1,size,fp); if(n<size) r=-15; else { r=tsfp_resource_probe(buf,n,resource); if(r!=0) { r=tsfp_model_probe(buf,n,model); if(r==0) r=tsfp_geometry_probe(buf,n,model->mesh_table_offset,model->mesh_count,geometry); } } }
+        else { n=fread(buf,1,size,fp); if(n<size) r=-15; else { r=tsfp_resource_probe(buf,n,resource); if(r!=0) { r=tsfp_model_probe(buf,n,model); if(r==0) r=tsfp_geometry_probe(buf,n,model->mesh_table_offset,model->mesh_count,model->auxiliary_offset,geometry); } } }
     }
     free(buf); fclose(fp); return r;
 }
