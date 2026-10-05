@@ -84,9 +84,11 @@ int tsfp_vif_scan(const uint8_t *data, size_t size, TsFpVifSummary *out) {
             continue;
         }
         if ((cmd & 0xE0u) == 0x60u) {
-            uint32_t bytes = unpack_word_bytes(cmd);
-            uint32_t words = unpack_words_per_vector(cmd);
-            if (!bytes || !words) return -5;
+            uint32_t format = cmd & 0x0fu;
+            uint32_t bits = (format == 0x0fu) ? 20u :
+                (32u >> (format & 3u)) * (((format >> 2) & 3u) + 1u);
+            uint32_t words = (bits + 31u) / 32u;
+            if (!bits || !words) return -5;
             uint32_t vectors = num ? num : 256;
             uint32_t consumed = vectors * words * 4u;
             if (consumed > size - pos) return -6;
