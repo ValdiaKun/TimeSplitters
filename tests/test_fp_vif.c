@@ -10,13 +10,13 @@ static uint32_t v(uint8_t cmd, uint8_t num, uint16_t imm) {
 int main(void) {
     uint8_t d[64] = {0};
     TsFpVifSummary s;
-    uint32_t words[9] = {
+    uint32_t words[12] = {
         v(0x01, 0, 0x0404),
         v(0x6c, 1, 0x8000),
         0x0000802a,
         v(0x30, 0, 0x4000),
         0x00000412, 0, 0x6d2a8008, 0x00d0ffd2,
-        0x0000007f
+        0x0000007f, 0x00000001, 0x00000002, 0x00000003
     };
     memcpy(d, words, sizeof(words));
     assert(tsfp_vif_probe(d, sizeof(d), &s) == 0);
