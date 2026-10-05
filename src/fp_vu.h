@@ -9,6 +9,11 @@ typedef struct {
     uint32_t vi[32];
     uint32_t acc[4];
     uint32_t q;
+    uint32_t top;
+    uint32_t itop;
+    uint32_t mac_flag;
+    uint32_t status_flag;
+    uint32_t clip_flag;
     uint8_t *memory;
     size_t memory_size;
     uint8_t *gif;
