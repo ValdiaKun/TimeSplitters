@@ -58,7 +58,7 @@ int main(void) {
         memcpy(m+0,&num,4); memcpy(m+4,&den,4);
         x=0; memcpy(m+8,&x,4);
         /* DIV Q, vf1.x, vf2.x uses lower special opcode 0x7c. */
-        x=lower(0x7c,2,1,0); memcpy(m+16,&x,4); x=0; memcpy(m+20,&x,4);
+        x=lower(0x7c,14,1,2); memcpy(m+16,&x,4); x=0; memcpy(m+20,&x,4);
         x=0x40000000u; memcpy(m+24,&x,4); x=0; memcpy(m+28,&x,4);
         TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
         t.vf[1][0]=u32(6.0f); t.vf[2][0]=u32(2.0f);
