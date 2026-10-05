@@ -24,6 +24,6 @@ int main(void) {
     assert(s.unpack.command == 0x6c && s.unpack.num == 1);
     assert(s.strow.command == 0x30);
     assert(s.row[0] == 0x00000412 && s.row[3] == 0x00d0ffd2);
-    assert(s.payload_offset == 32 && s.payload_bytes == 4);
+    assert(s.payload_offset == 32 && s.payload_bytes == 16);
     return 0;
 }
