@@ -65,7 +65,18 @@ static void special_upper(TsFpVuState *s,uint32_t up){
     case 28:for(unsigned i=0;i<4;i++)if(mask&(1u<<i))s->acc[i]=u32(f32(s->vf[fs][i])*qf(s));return;
     case 29:for(unsigned i=0;i<4;i++)if(mask&(1u<<i))s->vf[ft][i]=s->vf[fs][i]&0x7fffffffu;return;
     case 30:for(unsigned i=0;i<4;i++)if(mask&(1u<<i))s->acc[i]=u32(f32(s->vf[fs][i])*if_(s));return;
-    case 31:return;
+    case 31:{
+        float w=f32(s->vf[ft][3]);
+        uint32_t clip=0;
+        for(unsigned i=0;i<3;i++){
+            float x=f32(s->vf[fs][i]);
+            if(x>w) clip|=1u<<i;
+            if(x<-w) clip|=1u<<(i+3u);
+        }
+        s->clip_flag=clip;
+        return;
+    }
+    case 43:return;
     case 32:for(unsigned i=0;i<4;i++)if(mask&(1u<<i))s->acc[i]=u32(f32(s->vf[fs][i])+qf(s));return;
     case 33:for(unsigned i=0;i<4;i++)if(mask&(1u<<i))s->acc[i]=u32(f32(s->acc[i])+f32(s->vf[fs][i])*qf(s));return;
     case 34:for(unsigned i=0;i<4;i++)if(mask&(1u<<i))s->acc[i]=u32(f32(s->vf[fs][i])+if_(s));return;
