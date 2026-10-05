@@ -2,7 +2,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include <math.h>
+#include <float.h>
 #include <psp2/kernel/processmgr.h>
 #include <psp2/ctrl.h>
 #include <psp2/display.h>
@@ -17,350 +17,201 @@
 
 #define DATA_PATH "ux0:data/TimeSplitters/PAK/CHR.PAK"
 #define BOOT_PATH "ux0:data/TimeSplitters/SLED_530.66"
-#define MAX_TRI_VERTICES 24000
-#define MAX_GIF_VERTICES 2048
+#define VU_MEMORY_SIZE (16u*1024u)
+#define GIF_MEMORY_SIZE (64u*1024u)
+#define PREVIEW_CAPACITY 8192u
 
-static TsFpGifVertex scene_vertices[MAX_TRI_VERTICES];
-static size_t scene_vertex_count;
-static uint32_t scene_submeshes;
-static uint32_t scene_input_vertices;
-static uint32_t scene_gif_vertices;
-static uint32_t scene_failures;
-static uint32_t scene_unsupported;
-static uint32_t scene_xgkicks;
-static float scene_angle;
+static vita2d_color_vertex preview[PREVIEW_CAPACITY];
+static size_t preview_count=0;
 
-static uint32_t rd32(const uint8_t *p) {
-    return (uint32_t)p[0] | ((uint32_t)p[1] << 8) |
-           ((uint32_t)p[2] << 16) | ((uint32_t)p[3] << 24);
+static uint32_t rd32(const uint8_t *p){return (uint32_t)p[0]|((uint32_t)p[1]<<8)|((uint32_t)p[2]<<16)|((uint32_t)p[3]<<24);}
+
+static int load_file(const char *path,uint8_t **out,size_t *size_out){
+    FILE *fp=fopen(path,"rb"); long end; uint8_t *buf; size_t n;
+    if(!fp)return -1;
+    if(fseek(fp,0,SEEK_END)!=0){fclose(fp);return -2;}
+    end=ftell(fp); if(end<=0 || end>32L*1024L*1024L){fclose(fp);return -3;}
+    if(fseek(fp,0,SEEK_SET)!=0){fclose(fp);return -4;}
+    buf=(uint8_t*)malloc((size_t)end); if(!buf){fclose(fp);return -5;}
+    n=fread(buf,1,(size_t)end,fp); fclose(fp);
+    if(n!=(size_t)end){free(buf);return -6;}
+    *out=buf; *size_out=n; return 0;
 }
 
-static size_t append_tri(TsFpGifVertex *dst, size_t count,
-                         const TsFpGifVertex *a, const TsFpGifVertex *b,
-                         const TsFpGifVertex *c) {
-    if (count + 3 > MAX_TRI_VERTICES) return count;
-    dst[count++] = *a;
-    dst[count++] = *b;
-    dst[count++] = *c;
-    return count;
+static int read_first_chr_entry(uint8_t **out,size_t *size_out){
+    FILE *fp=fopen(DATA_PATH,"rb"); TsP5ckInfo info; TsP5ckEntry entry; uint8_t *buf=NULL; size_t size,n;
+    if(!fp)return -1;
+    memset(&info,0,sizeof(info)); memset(&entry,0,sizeof(entry));
+    if(ts_p5ck_read_info(fp,&info)!=0 || info.entry_count==0 ||
+       ts_p5ck_read_entry(fp,&info,0,&entry)!=0){fclose(fp);return -2;}
+    size=entry.compressed_length?entry.compressed_length:entry.length;
+    if(!size || size>64u*1024u*1024u || fseek(fp,(long)entry.offset,SEEK_SET)!=0){fclose(fp);return -3;}
+    buf=(uint8_t*)malloc(size); if(!buf){fclose(fp);return -4;}
+    n=fread(buf,1,size,fp); fclose(fp);
+    if(n!=size){free(buf);return -5;}
+    *out=buf; *size_out=size; return 0;
 }
 
-static size_t append_gif_geometry(const TsFpGifVertex *v, size_t n,
-                                  uint32_t primitive, size_t count) {
-    uint32_t prim = primitive & 7u;
-    size_t i;
-
-    if (prim == 3u) {
-        for (i = 0; i + 2 < n; i += 3)
-            count = append_tri(scene_vertices, count, &v[i], &v[i + 1], &v[i + 2]);
-    } else if (prim == 4u) {
-        for (i = 2; i < n; ++i) {
-            const TsFpGifVertex *a = &v[i - 2];
-            const TsFpGifVertex *b = &v[i - 1];
-            const TsFpGifVertex *c = &v[i];
-            if ((i & 1u) != 0)
-                count = append_tri(scene_vertices, count, b, a, c);
-            else
-                count = append_tri(scene_vertices, count, a, b, c);
+static size_t append_triangles(TsFpGifVertex *dst,size_t cap,const TsFpGifVertex *src,size_t n,uint32_t prim){
+    size_t w=0;
+    if(prim==3u){
+        for(size_t i=0;i+2<n && w+3<=cap;i+=3){dst[w++]=src[i];dst[w++]=src[i+1];dst[w++]=src[i+2];}
+    } else if(prim==4u){
+        for(size_t i=2;i<n && w+3<=cap;i++){
+            if(i&1u){dst[w++]=src[i-1];dst[w++]=src[i-2];dst[w++]=src[i];}
+            else {dst[w++]=src[i-2];dst[w++]=src[i-1];dst[w++]=src[i];}
         }
-    } else if (prim == 5u) {
-        for (i = 2; i < n; ++i)
-            count = append_tri(scene_vertices, count, &v[0], &v[i - 1], &v[i]);
-    } else if (prim == 6u) {
-        for (i = 0; i + 1 < n; i += 2) {
-            TsFpGifVertex a = v[i], b = v[i + 1];
-            TsFpGifVertex c = a, d = b;
-            c.x = a.x; c.y = b.y;
-            d.x = b.x; d.y = a.y;
-            count = append_tri(scene_vertices, count, &a, &d, &c);
-            count = append_tri(scene_vertices, count, &c, &d, &b);
-        }
-    } else {
-        /* Points/lines are not useful for the model preview; preserve triangles. */
-        for (i = 0; i + 2 < n; i += 3)
-            count = append_tri(scene_vertices, count, &v[i], &v[i + 1], &v[i + 2]);
-    }
-    return count;
-}
-
-static int execute_submesh(const uint8_t *vif_data, size_t vif_size,
-                           const uint8_t *micro, size_t micro_size,
-                           uint8_t *vu_mem, size_t vu_size,
-                           uint8_t *gif_mem, size_t gif_size) {
-    TsFpVifSummary vif;
-    TsFpVifMemorySummary vm;
-    TsFpVuState vs;
-    TsFpGifSummary gif;
-    TsFpGifVertex verts[MAX_GIF_VERTICES];
-
-    if (tsfp_vif_scan(vif_data, vif_size, &vif) != 0 || !vif.mscal_count)
-        return -1;
-    if (tsfp_vif_unpack_memory(vif_data, vif_size, vu_mem, vu_size, &vm) != 0)
-        return -2;
-
-    memset(&gif, 0, sizeof(gif));
-    memset(verts, 0, sizeof(verts));
-    tsfp_vu_state_init(&vs, vu_mem, vu_size, gif_mem, gif_size);
-    if (tsfp_vu_execute(micro, micro_size, vm.mscal_address,
-                        &vs, 16384) != 0)
-        return -3;
-    scene_unsupported += vs.unsupported;
-    if (vs.xgkick_pc == UINT32_MAX || vs.gif_used == 0)
-        return -4;
-    scene_xgkicks++;
-
-    if (tsfp_gif_parse(gif_mem, vs.gif_used, &gif, verts, MAX_GIF_VERTICES) != 0)
-        return -5;
-    scene_gif_vertices += gif.vertices;
-    scene_vertex_count = append_gif_geometry(verts,
-                                              gif.vertices < MAX_GIF_VERTICES ?
-                                              gif.vertices : MAX_GIF_VERTICES,
-                                              gif.primitive, scene_vertex_count);
-    return 0;
-}
-
-static int load_scene(TsP5ckInfo *info, TsP5ckEntry *entry,
-                      TsFpResourceSummary *resource, TsFpModelHeader *model,
-                      TsFpGeometrySummary *geometry, TsFpVifSummary *vif_summary,
-                      TsFpGifSummary *gif_summary) {
-    FILE *fp = NULL;
-    FILE *elf_fp = NULL;
-    uint8_t *entry_data = NULL;
-    uint8_t *elf = NULL;
-    uint8_t *vu_mem = NULL;
-    uint8_t *gif_mem = NULL;
-    size_t entry_size, elf_size, off, len;
-    long end;
-    int result = -1;
-
-    fp = fopen(DATA_PATH, "rb");
-    if (!fp) return -10;
-
-    if (ts_p5ck_read_info(fp, info) != 0 ||
-        info->entry_count == 0 ||
-        ts_p5ck_read_entry(fp, info, 0, entry) != 0)
-        goto done;
-
-    entry_size = entry->compressed_length ? entry->compressed_length : entry->length;
-    if (!entry_size || entry_size > 64u * 1024u * 1024u)
-        goto done;
-    if (fseek(fp, (long)entry->offset, SEEK_SET) != 0)
-        goto done;
-
-    entry_data = (uint8_t *)malloc(entry_size);
-    if (!entry_data || fread(entry_data, 1, entry_size, fp) != entry_size)
-        goto done;
-
-    if (tsfp_resource_probe(entry_data, entry_size, resource) == 0)
-        goto done;
-    if (tsfp_model_probe(entry_data, entry_size, model) != 0)
-        goto done;
-    if (tsfp_geometry_probe(entry_data, entry_size, model->mesh_table_offset,
-                            model->mesh_count, geometry) != 0)
-        goto done;
-
-    elf_fp = fopen(BOOT_PATH, "rb");
-    if (!elf_fp || fseek(elf_fp, 0, SEEK_END) != 0)
-        goto done;
-    end = ftell(elf_fp);
-    if (end <= 0 || end > 32L * 1024L * 1024L)
-        goto done;
-    elf_size = (size_t)end;
-    if (fseek(elf_fp, 0, SEEK_SET) != 0)
-        goto done;
-    elf = (uint8_t *)malloc(elf_size);
-    if (!elf || fread(elf, 1, elf_size, elf_fp) != elf_size)
-        goto done;
-    if (tsfp_vu_find_vutext(elf, elf_size, &off, &len) != 0)
-        goto done;
-
-    vu_mem = (uint8_t *)malloc(16u * 1024u);
-    gif_mem = (uint8_t *)malloc(64u * 1024u);
-    if (!vu_mem || !gif_mem)
-        goto done;
-
-    scene_vertex_count = 0;
-    scene_submeshes = 0;
-    scene_input_vertices = 0;
-    scene_gif_vertices = 0;
-    scene_failures = 0;
-    scene_unsupported = 0;
-    scene_xgkicks = 0;
-    memset(vif_summary, 0, sizeof(*vif_summary));
-    memset(gif_summary, 0, sizeof(*gif_summary));
-
-    for (uint32_t mi = 0; mi < model->mesh_count; ++mi) {
-        uint32_t ptr = rd32(entry_data + model->mesh_table_offset + mi * 4u);
-        uint32_t next = (uint32_t)entry_size;
-
-        if (!ptr) continue;
-        if (ptr >= entry_size || (ptr & 3u)) {
-            scene_failures++;
-            continue;
-        }
-
-        for (uint32_t j = mi + 1; j < model->mesh_count; ++j) {
-            uint32_t candidate = rd32(entry_data + model->mesh_table_offset + j * 4u);
-            if (candidate > ptr && candidate < next)
-                next = candidate;
-        }
-        if (next == entry_size)
-            next = ptr + 8u;
-        if (next <= ptr || (next - ptr) % 8u) {
-            scene_failures++;
-            continue;
-        }
-
-        for (uint32_t q = ptr; q + 8u <= next; q += 8u) {
-            uint32_t data_offset = rd32(entry_data + q);
-            uint16_t vertex_count = (uint16_t)entry_data[q + 4] |
-                                    ((uint16_t)entry_data[q + 5] << 8);
-            size_t vif_size;
-
-            if (!vertex_count)
-                continue;
-            if (data_offset >= entry_size ||
-                vertex_count > (entry_size - data_offset) / 16u) {
-                scene_failures++;
-                continue;
-            }
-
-            vif_size = (size_t)vertex_count * 16u;
-            scene_input_vertices += vertex_count;
-            memset(vu_mem, 0, 16u * 1024u);
-            memset(gif_mem, 0, 64u * 1024u);
-
-            if (execute_submesh(entry_data + data_offset, vif_size,
-                                elf + off, len, vu_mem, 16u * 1024u,
-                                gif_mem, 64u * 1024u) == 0) {
-                scene_submeshes++;
-            } else {
-                scene_failures++;
-            }
+    } else if(prim==5u){
+        for(size_t i=2;i<n && w+3<=cap;i++){dst[w++]=src[0];dst[w++]=src[i-1];dst[w++]=src[i];}
+    } else if(prim==6u){
+        for(size_t i=0;i+1<n && w+6<=cap;i+=2){
+            TsFpGifVertex a=src[i],b=src[i+1],c=a,d=b;
+            c.y=b.y; d.x=a.x;
+            dst[w++]=a;dst[w++]=b;dst[w++]=c;dst[w++]=c;dst[w++]=b;dst[w++]=d;
         }
     }
+    return w;
+}
 
-    result = scene_submeshes ? 0 : -20;
+static int build_model_preview(void){
+    uint8_t *model_data=NULL,*elf=NULL,*vu_mem=NULL,*gif_mem=NULL;
+    size_t model_size=0,elf_size=0,submesh_count=0;
+    TsFpModelHeader model; TsFpSubmesh submeshes[256];
+    TsFpGifVertex local[1024];
+    float minx=FLT_MAX,miny=FLT_MAX,maxx=-FLT_MAX,maxy=-FLT_MAX;
+    int result=-1;
+
+    if(read_first_chr_entry(&model_data,&model_size)!=0) goto done;
+    if(tsfp_model_probe(model_data,model_size,&model)!=0) goto done;
+    submesh_count=tsfp_geometry_collect(model_data,model_size,model.mesh_table_offset,
+                                         model.mesh_count,submeshes,256);
+    if(!submesh_count) goto done;
+    if(load_file(BOOT_PATH,&elf,&elf_size)!=0) goto done;
+    vu_mem=(uint8_t*)malloc(VU_MEMORY_SIZE); gif_mem=(uint8_t*)malloc(GIF_MEMORY_SIZE);
+    if(!vu_mem||!gif_mem) goto done;
+
+    TsFpGifVertex triangles[PREVIEW_CAPACITY];
+    size_t tri_count=0;
+    for(size_t si=0;si<submesh_count && tri_count<PREVIEW_CAPACITY;si++){
+        uint32_t off=submeshes[si].data_offset;
+        size_t vif_size=(size_t)submeshes[si].vertex_count*16u;
+        if(off>model_size || vif_size>model_size-off) continue;
+
+        TsFpVifSummary vif;
+        if(tsfp_vif_scan(model_data+off,vif_size,&vif)!=0) continue;
+        TsFpVifMemorySummary vm;
+        if(tsfp_vif_unpack_memory(model_data+off,vif_size,vu_mem,VU_MEMORY_SIZE,&vm)!=0) continue;
+
+        size_t voff,vlen;
+        if(tsfp_vu_find_vutext(elf,elf_size,&voff,&vlen)!=0) continue;
+        TsFpVuState vs;
+        tsfp_vu_state_init(&vs,vu_mem,VU_MEMORY_SIZE,gif_mem,GIF_MEMORY_SIZE);
+        if(tsfp_vu_execute(elf+voff,vlen,0x683u,&vs,8192)!=0) continue;
+        TsFpGifSummary gif;
+        memset(local,0,sizeof(local));
+        if(tsfp_gif_parse(gif_mem,vs.gif_used,&gif,local,1024)!=0) continue;
+        size_t wrote=append_triangles(triangles+tri_count,PREVIEW_CAPACITY-tri_count,
+                                       local,gif.vertices,gif.primitive&7u);
+        tri_count+=wrote;
+    }
+
+    if(tri_count>=3){
+        for(size_t i=0;i<tri_count;i++){
+            if(triangles[i].x<minx)minx=triangles[i].x;
+            if(triangles[i].x>maxx)maxx=triangles[i].x;
+            if(triangles[i].y<miny)miny=triangles[i].y;
+            if(triangles[i].y>maxy)maxy=triangles[i].y;
+        }
+        float sx=(maxx-minx)>0.00001f?760.0f/(maxx-minx):1.0f;
+        float sy=(maxy-miny)>0.00001f?400.0f/(maxy-miny):1.0f;
+        float scale=sx<sy?sx:sy;
+        for(size_t i=0;i<tri_count;i++){
+            preview[i].x=100.0f+(triangles[i].x-minx)*scale;
+            preview[i].y=120.0f+(triangles[i].y-miny)*scale;
+            preview[i].z=0.5f;
+            preview[i].color=((unsigned)triangles[i].a<<24)|((unsigned)triangles[i].b<<16)|
+                             ((unsigned)triangles[i].g<<8)|triangles[i].r;
+        }
+        preview_count=tri_count;
+        result=(int)tri_count;
+    }
+
 done:
-    if (elf_fp) fclose(elf_fp);
-    if (fp) fclose(fp);
-    free(gif_mem);
-    free(vu_mem);
-    free(elf);
-    free(entry_data);
+    free(gif_mem); free(vu_mem); free(elf); free(model_data);
     return result;
 }
 
-static void rebuild_screen_vertices(vita2d_color_vertex *out, float angle) {
-    float minx = 1e30f, miny = 1e30f, maxx = -1e30f, maxy = -1e30f;
-    float sx, sy, scale, cx, cy;
-    const float ox = 480.0f, oy = 310.0f;
-
-    for (size_t i = 0; i < scene_vertex_count; ++i) {
-        if (scene_vertices[i].x < minx) minx = scene_vertices[i].x;
-        if (scene_vertices[i].x > maxx) maxx = scene_vertices[i].x;
-        if (scene_vertices[i].y < miny) miny = scene_vertices[i].y;
-        if (scene_vertices[i].y > maxy) maxy = scene_vertices[i].y;
-    }
-
-    if (scene_vertex_count == 0) return;
-    cx = (minx + maxx) * 0.5f;
-    cy = (miny + maxy) * 0.5f;
-    sx = (maxx - minx) > 0.0001f ? 780.0f / (maxx - minx) : 1.0f;
-    sy = (maxy - miny) > 0.0001f ? 400.0f / (maxy - miny) : 1.0f;
-    scale = sx < sy ? sx : sy;
-
-    for (size_t i = 0; i < scene_vertex_count; ++i) {
-        float x = (scene_vertices[i].x - cx) * scale;
-        float y = (scene_vertices[i].y - cy) * scale;
-        float rx = x * cosf(angle) - y * sinf(angle);
-        float ry = x * sinf(angle) + y * cosf(angle);
-        out[i].x = ox + rx;
-        out[i].y = oy + ry;
-        out[i].z = 0.5f;
-        out[i].color = ((unsigned)scene_vertices[i].a << 24) |
-                       ((unsigned)scene_vertices[i].b << 16) |
-                       ((unsigned)scene_vertices[i].g << 8) |
-                       scene_vertices[i].r;
-    }
-}
-
-static void draw_status(int result, const TsP5ckInfo *info,
-                        const TsP5ckEntry *entry, const TsFpModelHeader *model,
-                        const TsFpGeometrySummary *geometry) {
-    unsigned status = result == 0 ? 0xFF20C060 : 0xFFE03030;
-    float subw = scene_submeshes > 94 ? 800.0f :
-                 (float)scene_submeshes * 800.0f / 94.0f;
-    float vertw = scene_gif_vertices > 6000 ? 800.0f :
-                  (float)scene_gif_vertices * 800.0f / 6000.0f;
-
-    vita2d_draw_rectangle(30, 24, 900, 62, 0xFF151515);
-    vita2d_draw_rectangle(50, 40, 840, 16, status);
-    vita2d_draw_rectangle(50, 82, 840, 8, 0xFF303030);
-    vita2d_draw_rectangle(50, 82, subw, 8, 0xFF50C0FF);
-    vita2d_draw_rectangle(50, 96, 840, 8, 0xFF303030);
-    vita2d_draw_rectangle(50, 96, vertw, 8, 0xFFC050FF);
-
-    (void)info;
-    (void)entry;
-    (void)model;
-    (void)geometry;
-}
-
-int main(void) {
-    SceCtrlData pad;
-    TsP5ckInfo info;
-    TsP5ckEntry entry;
-    TsFpResourceSummary resource;
-    TsFpModelHeader model;
-    TsFpGeometrySummary geometry;
-    TsFpVifSummary vif_summary;
-    TsFpGifSummary gif_summary;
-    vita2d_color_vertex *screen = NULL;
-    int result;
-
-    memset(&pad, 0, sizeof(pad));
-    memset(&info, 0, sizeof(info));
-    memset(&entry, 0, sizeof(entry));
-    memset(&resource, 0, sizeof(resource));
-    memset(&model, 0, sizeof(model));
-    memset(&geometry, 0, sizeof(geometry));
-    memset(&vif_summary, 0, sizeof(vif_summary));
-    memset(&gif_summary, 0, sizeof(gif_summary));
-
-    result = load_scene(&info, &entry, &resource, &model, &geometry,
-                        &vif_summary, &gif_summary);
-
-    screen = (vita2d_color_vertex *)malloc(sizeof(vita2d_color_vertex) *
-                                            MAX_TRI_VERTICES);
-    if (!screen) result = -30;
-
-    vita2d_init();
-
-    for (;;) {
-        sceCtrlPeekBufferPositive(0, &pad, 1);
-        if (pad.buttons & SCE_CTRL_START) break;
-        if (pad.buttons & SCE_CTRL_LEFT) scene_angle -= 0.035f;
-        if (pad.buttons & SCE_CTRL_RIGHT) scene_angle += 0.035f;
-
-        vita2d_start_drawing();
-        vita2d_clear_screen();
-        vita2d_draw_rectangle(0, 0, 960, 544, 0xFF080A10);
-        draw_status(result, &info, &entry, &model, &geometry);
-
-        if (screen && scene_vertex_count) {
-            rebuild_screen_vertices(screen, scene_angle);
-            vita2d_draw_array(SCE_GXM_PRIMITIVE_TRIANGLES, screen,
-                              scene_vertex_count);
+static int load_probe(TsP5ckInfo *info,TsP5ckEntry *entry,TsFpResourceSummary *resource,
+                      TsFpModelHeader *model,TsFpGeometrySummary *geometry,TsFpVifSummary *vif){
+    FILE *fp=fopen(DATA_PATH,"rb"); uint8_t *buf=NULL; size_t n; int r=0;
+    if(!fp)return -10;
+    r=ts_p5ck_read_info(fp,info);
+    if(r==0 && info->entry_count==0)r=-11;
+    if(r==0)r=ts_p5ck_read_entry(fp,info,0,entry);
+    if(r==0){
+        uint32_t size=entry->compressed_length?entry->compressed_length:entry->length;
+        if(size==0 || size>64u*1024u*1024u)r=-12;
+        else if(fseek(fp,(long)entry->offset,SEEK_SET)!=0)r=-13;
+        else if(!(buf=(uint8_t*)malloc(size)))r=-14;
+        else if(fread(buf,1,size,fp)!=size)r=-15;
+        else{
+            r=tsfp_resource_probe(buf,size,resource);
+            if(r!=0)r=tsfp_model_probe(buf,size,model);
+            if(r==0)r=tsfp_geometry_probe(buf,size,model->mesh_table_offset,model->mesh_count,geometry);
+            if(r==0 && geometry->submesh_count){
+                TsFpSubmesh sm;
+                if(tsfp_geometry_collect(buf,size,model->mesh_table_offset,model->mesh_count,&sm,1)==1){
+                    uint32_t bytes=(uint32_t)sm.vertex_count*16u;
+                    if(sm.data_offset<=size && bytes<=size-sm.data_offset)
+                        r=tsfp_vif_scan(buf+sm.data_offset,bytes,vif);
+                }
+            }
         }
-
-        vita2d_end_drawing();
-        vita2d_swap_buffers();
-        sceDisplayWaitVblankStart();
     }
+    free(buf); fclose(fp); return r;
+}
 
-    vita2d_fini();
-    free(screen);
-    sceKernelExitProcess(0);
-    return 0;
+static uint32_t probe_boot_vu(void){
+    uint8_t *buf=NULL; size_t n,off,len; uint32_t xg=UINT32_MAX;
+    if(load_file(BOOT_PATH,&buf,&n)!=0)return xg;
+    if(tsfp_vu_find_vutext(buf,n,&off,&len)==0){
+        uint32_t pc=UINT32_MAX;
+        if(len&&tsfp_vu_probe(buf+off,len,0x683u,&pc)==0)xg=pc;
+    }
+    free(buf); return xg;
+}
+
+static void draw(int result,const TsP5ckInfo *info,const TsP5ckEntry *entry,const TsFpResourceSummary *resource,
+                 const TsFpModelHeader *model,const TsFpGeometrySummary *geometry,const TsFpVifSummary *vif,uint32_t xgkick_pc){
+    unsigned status=0xFFE03030;
+    if(result==0)status=0xFF20C060; else if(result==-10)status=0xFFE0A020;
+    vita2d_clear_screen();
+    vita2d_draw_rectangle(40,40,880,480,0xFF181818);
+    vita2d_draw_rectangle(80,90,800,64,status);
+    if(info->entry_count){float w=(float)(info->entry_count>1000?800:(info->entry_count*800u)/1000u);vita2d_draw_rectangle(80,190,w,42,0xFF40A0FF);}
+    if(entry->length){float w=(float)(entry->length>200000?800:(entry->length*800u)/200000u);vita2d_draw_rectangle(80,270,w,42,0xFF8040FF);}
+    if(resource->string_count){float w=(float)(resource->string_count>32?800:(resource->string_count*800u)/32u);vita2d_draw_rectangle(80,350,w,42,0xFFFFA040);}
+    if(model->mesh_count){float w=(float)(model->mesh_count>100?800:(model->mesh_count*800u)/100u);vita2d_draw_rectangle(80,390,w,20,0xFFC040A0);}
+    if(model->material_count){float w=(float)(model->material_count>100?800:(model->material_count*800u)/100u);vita2d_draw_rectangle(80,420,w,20,0xFF40C080);}
+    if(geometry->submesh_count){float w=(float)(geometry->submesh_count>256?800:(geometry->submesh_count*800u)/256u);vita2d_draw_rectangle(80,450,w,18,0xFF60A0E0);}
+    if(vif->payload_bytes){float w=(float)(vif->payload_bytes>64?800:(vif->payload_bytes*800u)/64u);vita2d_draw_rectangle(80,470,w,12,0xFF80C060);}
+    if(preview_count>=3)vita2d_draw_array(SCE_GXM_PRIMITIVE_TRIANGLES,preview,preview_count-(preview_count%3));
+    if(xgkick_pc!=UINT32_MAX)vita2d_draw_rectangle(80,500,800,10,0xFFC08040);
+}
+
+int main(void){
+    SceCtrlData pad; TsP5ckInfo info; TsP5ckEntry entry; TsFpResourceSummary resource;
+    TsFpModelHeader model; TsFpGeometrySummary geometry; TsFpVifSummary vif;
+    memset(&pad,0,sizeof(pad));memset(&info,0,sizeof(info));memset(&entry,0,sizeof(entry));
+    memset(&resource,0,sizeof(resource));memset(&model,0,sizeof(model));memset(&geometry,0,sizeof(geometry));memset(&vif,0,sizeof(vif));
+    int result=load_probe(&info,&entry,&resource,&model,&geometry,&vif);
+    uint32_t xgkick_pc=probe_boot_vu();
+    if(result==0)build_model_preview();
+    vita2d_init();
+    for(;;){
+        sceCtrlPeekBufferPositive(0,&pad,1);if(pad.buttons&SCE_CTRL_START)break;
+        vita2d_start_drawing();draw(result,&info,&entry,&resource,&model,&geometry,&vif,xgkick_pc);
+        vita2d_end_drawing();vita2d_swap_buffers();sceDisplayWaitVblankStart();
+    }
+    vita2d_fini();sceKernelExitProcess(0);return 0;
 }
