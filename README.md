@@ -17,6 +17,7 @@ Verified from the demo image:
 - Future Perfect model/geometry metadata and VIF packet decoding are implemented
 - VIF memory unpacking now models masks and addition-decompression state
 - The Vita runtime can inspect the PS2 ELF `.vutext` and locate the `MSCAL 0x683` VU1 program
+- A native VU1 interpreter core now covers the main arithmetic/conversion/integer/memory operations and captures `XGKICK` output for the next renderer stage
 - Android/Termux extraction requires no third-party Python package
 
 The original PS2 MIPS executable is **not** copied into the Vita build and is not
