@@ -33,3 +33,15 @@ typedef struct {
 int tsfp_vif_probe(const uint8_t *data, size_t size, TsFpVifSummary *out);
 int tsfp_vif_scan(const uint8_t *data, size_t size, TsFpVifSummary *out);
 #endif
+
+
+typedef struct {
+    uint32_t bytes_written;
+    uint32_t qwords_written;
+    uint32_t unpack_commands;
+    uint32_t mscal_address;
+} TsFpVifMemorySummary;
+
+int tsfp_vif_unpack_memory(const uint8_t *data, size_t size,
+                           uint8_t *vu_memory, size_t vu_size,
+                           TsFpVifMemorySummary *out);
