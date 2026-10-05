@@ -218,16 +218,22 @@ static void lower_exec(TsFpVuState *s,uint32_t lo,uint32_t next_pc){
                 s->vf[it][i]=(uint32_t)(int32_t)(int16_t)(s->vi[is]&0xffffu);
             return;
         }
-        case 0x3e: /* ILWR VI[it], (VI[is])field */
-            a=((size_t)s->vi[is]&0x3ffu)*16u+(dest?((dest==1u)?0u:(dest==2u)?4u:(dest==4u)?8u:12u):0u);
+        case 0x3e: { /* ILWR VI[it], (VI[is])field */
+            unsigned field=0; int found=0;
+            for(unsigned i=0;i<4;i++)if(mask_has(dest,i)){field=i;found=1;break;}
+            if(!found){s->unsupported++;return;}
+            a=((size_t)s->vi[is]&0x3ffu)*16u+field*4u;
             if(a+4>s->memory_size){s->unsupported++;return;}
             if(it)s->vi[it]=rd32(s->memory+a)&0xffffu;
             return;
-        case 0x3f: /* ISWR VI[it], (VI[is])field */
-            a=((size_t)s->vi[is]&0x3ffu)*16u+(dest?((dest==1u)?0u:(dest==2u)?4u:(dest==4u)?8u:12u):0u);
-            if(a+4>s->memory_size){s->unsupported++;return;}
-            wr32(s->memory+a,it?s->vi[it]:0u);
+        }
+        case 0x3f: { /* ISWR VI[it], (VI[is])field */
+            a=((size_t)s->vi[is]&0x3ffu)*16u;
+            if(a+16>s->memory_size){s->unsupported++;return;}
+            uint32_t v=it?(s->vi[it]&0xffffu):0u;
+            for(unsigned i=0;i<4;i++)if(mask_has(dest,i))wr32(s->memory+a+i*4u,v);
             return;
+        }
         case 0x6c: { /* XGKICK VI[is] */
             a=((size_t)s->vi[is]&0x3ffu)*16u;
             s->xgkick_pc=s->pc;
