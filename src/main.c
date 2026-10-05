@@ -31,6 +31,7 @@ static void draw(int result,const TsP5ckInfo *info,const TsP5ckEntry *entry,cons
     if(resource->string_count) { float w=(float)(resource->string_count>32?800:(resource->string_count*800u)/32u); vita2d_draw_rectangle(80,350,w,42,0xFFFFA040); }
     if(resource->metadata_offset) { float w=(float)(resource->metadata_offset>64?800:(resource->metadata_offset*800u)/64u); vita2d_draw_rectangle(80,430,w,30,0xFF40C0C0); }
     if(model->mesh_count) { float w=(float)(model->mesh_count>100?800:(model->mesh_count*800u)/100u); vita2d_draw_rectangle(80,390,w,20,0xFFC040A0); }
+    if(model->material_count) { float w=(float)(model->material_count>100?800:(model->material_count*800u)/100u); vita2d_draw_rectangle(80,420,w,20,0xFF40C080); }
 }
 int main(void) {
     SceCtrlData pad; TsP5ckInfo info; TsP5ckEntry entry; TsFpResourceSummary resource; TsFpModelHeader model; int result;
