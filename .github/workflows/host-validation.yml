@@ -41,6 +41,10 @@ jobs:
         run: |
           gcc -std=c11 -Wall -Wextra -Isrc tests/test_fp_vu_exec.c src/fp_vu.c src/fp_vu_exec.c -lm -o /tmp/test_fp_vu_exec
           /tmp/test_fp_vu_exec
+      - name: Compile and test native packet parser
+        run: |
+          gcc -std=c11 -Wall -Wextra -Isrc tests/test_fp_gif.c src/fp_gif.c -o /tmp/test_fp_gif
+          /tmp/test_fp_gif
       - name: Compile and test native TS3 model parser
         run: |
           gcc -std=c11 -Wall -Wextra -Isrc tests/test_ts3_model.c src/ts3_model.c -lm -o /tmp/test_ts3_model
