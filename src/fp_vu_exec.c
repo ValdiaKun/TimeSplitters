@@ -104,7 +104,7 @@ static void upper_exec(TsFpVuState *s, uint32_t up) {
         {
             unsigned group=(fd>>3)&3u, sub=(up>>6)&31u;
             if(sub==4u || sub==5u) {
-                unsigned scale = sub==4u ? 4u : 0u;
+                unsigned scale = group==0u ? 0u : group==1u ? 4u : group==2u ? 12u : 15u;
                 for(unsigned i=0;i<4;i++) {
                     if(!(mask&(1u<<i))) continue;
                     float x=f32(s->vf[fs][i]);
