@@ -1,27 +1,35 @@
 # Local game-data preparation
 
-This directory contains development tooling only. Do not add the commercial
-game ISO, extracted game assets, or other copyrighted game data to Git.
+The repository does not contain the commercial game ISO or copyrighted game
+assets. Keep your legally obtained demo/game image on your own device.
 
-## Prepare a local copy
+## Android / Termux
 
-1. Obtain an ISO from a copy of the game you are legally entitled to use.
-2. Install Python 3.9+.
-3. Install the helper dependency:
+No third-party Python package is required.
 
-    python -m pip install -r tools/requirements.txt
+```sh
+python tools/prepare_game_data.py "/sdcard/Download/TimeSplitters - Future Perfect (Europe) (Demo).iso"
+```
 
-4. Run:
+The script validates ISO9660, extracts the ISO filesystem into ignored
+`game_data/`, and reports Future Perfect `P5CK` archive entry counts.
 
-    python tools/prepare_game_data.py "/path/to/TimeSplitters - Future Perfect.iso"
+For format research:
 
-The script prints the ISO SHA-256, extracts the disc filesystem into the ignored
-game_data directory, and reports any P5CK/PAK archives it finds.
+```sh
+python tools/prepare_game_data.py "/sdcard/Download/TimeSplitters - Future Perfect (Europe) (Demo).iso" --extract-p5ck
+```
 
-## Repository boundary
+Do not commit `game_data/`.
 
-The repository contains source code and tools for the port/reimplementation.
-The original game's ISO and copyrighted assets remain local to the developer.
+## Vita demo test
 
-The next asset-pipeline step is to add readers for the Future Perfect P5CK
-format and convert only the data needed by the native Vita runtime.
+The first Vita milestone is a native data-probe application. It does not execute
+the original PS2 MIPS executable. Copy locally extracted demo data to:
+
+```text
+ux0:data/TimeSplitters/PAK/CHR.PAK
+```
+
+The Vita target checks the P5CK header and directory table. The next milestone is
+decoding selected P5CK payloads and bringing up the first rendered asset.
