@@ -64,7 +64,10 @@ int tsfp_vif_scan(const uint8_t *data, size_t size, TsFpVifSummary *out) {
             cmd == 0x05 || cmd == 0x06 || cmd == 0x07 ||
             cmd == 0x10 || cmd == 0x11 || cmd == 0x13 ||
             cmd == 0x14 || cmd == 0x15 || cmd == 0x17) {
-            if (cmd == 0x14 || cmd == 0x15) out->mscal_count++;
+            if (cmd == 0x14 || cmd == 0x15) {
+                out->mscal_count++;
+                out->mscal_address = imm;
+            }
             continue;
         }
         if (cmd == 0x20) { if (pos + 4 > size) return -3; pos += 4; continue; }
