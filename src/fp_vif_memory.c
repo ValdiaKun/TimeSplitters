@@ -22,27 +22,26 @@ static uint32_t unpack_one(const uint8_t *src, uint8_t format, int uns, uint32_t
     unsigned n=vn(format), l=vl(format);
     if ((format & 0xfu) == 0xfu) {
         uint32_t x=rd32(src);
-        for (unsigned i=0;i<4;i++) {
-            uint32_t v=(x >> (i*5)) & 0x1fu;
-            out[i]=uns ? v : (uint32_t)sx(v,5);
-        }
+        uint32_t v[4];
+        v[0]=(x&0x001fu)<<3;
+        v[1]=(x&0x03e0u)>>2;
+        v[2]=(x&0x7c00u)>>7;
+        v[3]=(x&0x8000u)>>8;
+        for(unsigned i=0;i<4;i++) out[i]=v[i];
         return 4;
     }
     unsigned bits=32u>>l, bytes=(bits*n+7u)/8u;
-    if (bits==32) {
-        for (unsigned i=0;i<n;i++) out[i]=rd32(src+i*4);
-    } else if (bits==16) {
-        for (unsigned i=0;i<n;i++) {
-            uint32_t x=rd16(src+i*2);
-            out[i]=uns ? x : (uint32_t)sx(x,16);
-        }
+    uint32_t v[4]={0,0,0,0};
+    if(bits==32){
+        for(unsigned i=0;i<n;i++)v[i]=rd32(src+i*4);
+    } else if(bits==16){
+        for(unsigned i=0;i<n;i++){uint32_t x=rd16(src+i*2);v[i]=uns?x:(uint32_t)sx(x,16);}
     } else {
-        for (unsigned i=0;i<n;i++) {
-            uint32_t x=src[i];
-            out[i]=uns ? x : (uint32_t)sx(x,8);
-        }
+        for(unsigned i=0;i<n;i++){uint32_t x=src[i];v[i]=uns?x:(uint32_t)sx(x,8);}
     }
-    for (unsigned i=n;i<4;i++) out[i]=0;
+    if(n==1){out[0]=out[1]=out[2]=out[3]=v[0];}
+    else if(n==2){out[0]=out[2]=v[0];out[1]=out[3]=v[1];}
+    else {for(unsigned i=0;i<4;i++)out[i]=v[i];}
     return bytes;
 }
 
