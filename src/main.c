@@ -2,6 +2,7 @@
 #include <string.h>
 #include <psp2/kernel/processmgr.h>
 #include <psp2/ctrl.h>
+#include <psp2/display.h>
 #include <vita2d.h>
 #include "p5ck.h"
 #define DATA_PATH "ux0:data/TimeSplitters/PAK/CHR.PAK"
