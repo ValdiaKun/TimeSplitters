@@ -96,6 +96,20 @@ int main(void) {
         assert(got[0]==0x11223344u && got[1]==0x11223344u && got[2]==0x11223344u && got[3]==0x11223344u);
     }
     {
+        /* V3-16 consumes two 32-bit words per vector.  The second vector
+           must begin at the next word boundary, not after 6 packed bytes. */
+        uint8_t m[96]={0};
+        uint32_t head[]={v(0x01,0,0x0101),v(0x69,2,0x0020),
+                         0x11223344,0x00005566,0xaabbccdd,0x0000eeff};
+        memcpy(m,head,sizeof(head)); memset(&ms,0,sizeof(ms));
+        assert(tsfp_vif_unpack_memory(m,sizeof(head),vu,sizeof(vu),&ms)==0);
+        uint32_t got0[4],got1[4];
+        memcpy(got0,vu+0x200,sizeof(got0)); memcpy(got1,vu+0x210,sizeof(got1));
+        assert(got0[0]==0x3344u && got0[1]==0x1122u && got0[2]==0x5566u && got0[3]==0u);
+        assert(got1[0]==0xccddu && got1[1]==0xaabbu && got1[2]==0xeeffu && got1[3]==0u);
+        assert(ms.qwords_written==2);
+    }
+    {
         uint8_t m[64]={0}; uint32_t head[]={v(0x01,0,0x0101),v(0x64,1,0x0010),0x00000011,0x00000022};
         memcpy(m,head,sizeof(head)); memset(&ms,0,sizeof(ms));
         assert(tsfp_vif_unpack_memory(m,sizeof(head),vu,sizeof(vu),&ms)==0);
