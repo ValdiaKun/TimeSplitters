@@ -9,6 +9,8 @@ typedef struct {
     uint32_t mesh_count;
     uint32_t material_count;
     uint32_t lod_count;
+    uint32_t mesh_table_offset;
+    uint32_t lod_table_offset;
     float scale;
 } TsFpModelHeader;
 int tsfp_model_probe(const uint8_t *data, size_t size, TsFpModelHeader *out);
