@@ -40,11 +40,13 @@ int main(void) {
     assert(s.cycle_length == 4 && s.write_length == 4);
     assert(s.unpack_address == 0 && s.unpack_top_relative == 1);
     {
-        uint8_t z[48] = {0};
-        uint32_t h[2] = { v(0x01,0,0x0000), v(0x6c,1,0x0000) };
+        uint8_t z[64] = {0};
+        uint32_t h[] = {
+            v(0x01,0,0x0000), v(0x6c,1,0x0000),
+            0, v(0x30,0,0), 0,0,0,0,
+            0,0,0,0
+        };
         memcpy(z,h,sizeof(h));
-        uint32_t rowcmd = v(0x30,0,0);
-        memcpy(z+8,&rowcmd,4);
         memset(&s,0,sizeof(s));
         assert(tsfp_vif_probe(z,sizeof(z),&s)==0);
         assert(s.cycle_length==256 && s.write_length==256);
