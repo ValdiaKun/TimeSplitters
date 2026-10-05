@@ -179,17 +179,17 @@ static void lower_exec(TsFpVuState *s,uint32_t lo,uint32_t next_pc){
         if(take){s->branch_pending=1;s->branch_target=(uint32_t)((int32_t)next_pc+imm);}
         return;
     }
-    if(op==0x10u){if(it)s->vi[it]=((s->clip_flag&0xffffffu)==(lo&0xffffffu))?1u:0u;return;}
+    if(op==0x10u){s->vi[1]=((s->clip_flag&0xffffffu)==(lo&0xffffffu))?1u:0u;return;}
     if(op==0x11u){s->clip_flag=lo&0xffffffu;return;}
-    if(op==0x12u){s->clip_flag&=lo&0xffffffu;return;}
-    if(op==0x13u){s->clip_flag|=lo&0xffffffu;return;}
+    if(op==0x12u){s->vi[1]=((s->clip_flag&(lo&0xffffffu))!=0u)?1u:0u;return;}
+    if(op==0x13u){s->vi[1]=(((s->clip_flag|(lo&0xffffffu))&0xffffffu)==0xffffffu)?1u:0u;return;}
     if(op==0x14u){if(it)s->vi[it]=((s->status_flag&0xfffu)==(lo&0xfffu))?1u:0u;return;}
-    if(op==0x15u){s->status_flag=lo&0xfffu;return;}
-    if(op==0x16u){s->status_flag&=lo&0xfffu;return;}
-    if(op==0x17u){s->status_flag|=lo&0xfffu;return;}
+    if(op==0x15u){s->status_flag=(s->status_flag&0x3fu)|(lo&0xfc0u);return;}
+    if(op==0x16u){if(it)s->vi[it]=((s->status_flag&(lo&0xfffu))!=0u)?1u:0u;return;}
+    if(op==0x17u){if(it)s->vi[it]=(((s->status_flag|(lo&0xfffu))&0xfffu)==0xfffu)?1u:0u;return;}
     if(op==0x18u){if(it)s->vi[it]=((s->mac_flag&0xffffu)==(s->vi[is]&0xffffu))?1u:0u;return;}
-    if(op==0x1au){s->mac_flag&=s->vi[is]&0xffffu;return;}
-    if(op==0x1bu){s->mac_flag|=s->vi[is]&0xffffu;return;}
+    if(op==0x1au){if(it)s->vi[it]=(s->mac_flag&s->vi[is])&0xffffu;return;}
+    if(op==0x1bu){if(it)s->vi[it]=(s->mac_flag|s->vi[is])&0xffffu;return;}
     if(op==0x1cu){if(it)s->vi[it]=s->clip_flag&0xfffu;return;}
     if(op==0x7cu||op==0x7du||op==0x7eu||op==0x7fu){
         unsigned ftf=(lo>>23)&3u,fsf=(lo>>21)&3u;
