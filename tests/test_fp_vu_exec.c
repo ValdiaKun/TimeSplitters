@@ -83,7 +83,7 @@ int main(void) {
         x=lower(0x1a,0,0,2); memcpy(m+16,&x,4); x=0; memcpy(m+20,&x,4);
         x=lower(0x1b,0,0,2); memcpy(m+24,&x,4); x=0x40000000u; memcpy(m+28,&x,4);
         TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
-        t.vi[2]=0x55u; assert(tsfp_vu_execute(m,sizeof(m),0,&t,16)==0);
+        t.vi[2]=0x55u; t.mac_flag=0x55u; assert(tsfp_vu_execute(m,sizeof(m),0,&t,16)==0);
         assert(t.vi[3]==1u);
     }
     return 0;
