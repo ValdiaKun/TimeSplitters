@@ -17,6 +17,12 @@ typedef struct {
     uint32_t payload_offset;
     uint32_t payload_bytes;
     uint32_t unpack_vectors;
+    uint32_t unpack_address;
+    uint8_t unpack_unsigned;
+    uint8_t unpack_top_relative;
+    uint8_t cycle_length;
+    uint8_t write_length;
+    uint32_t vector[4];
 } TsFpVifSummary;
 
 int tsfp_vif_probe(const uint8_t *data, size_t size, TsFpVifSummary *out);
