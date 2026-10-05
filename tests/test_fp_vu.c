@@ -21,5 +21,18 @@ int main(void) {
     uint32_t pc = UINT32_MAX;
     assert(tsfp_vu_probe(micro, sizeof(micro), 0, &pc) == 0);
     assert(pc == 1);
+    {
+        uint8_t elf[0x120];
+        memset(elf,0,sizeof(elf));
+        elf[0]=0x7f; elf[1]='E'; elf[2]='L'; elf[3]='F'; elf[4]=1; elf[5]=1;
+        elf[32]=0x40; elf[46]=40; elf[48]=3; elf[50]=1;
+        const char names[]="\0.shstrtab\0.vutext\0";
+        memcpy(elf+0x20,names,sizeof(names));
+        elf[0x40+40+0]=1; elf[0x40+40+16]=0x20; elf[0x40+40+20]=sizeof(names);
+        elf[0x40+80+0]=11; elf[0x40+80+16]=0x100; elf[0x40+80+20]=16;
+        size_t off=0,len=0;
+        assert(tsfp_vu_find_vutext(elf,sizeof(elf),&off,&len)==0);
+        assert(off==0x100 && len==16);
+    }
     return 0;
 }
