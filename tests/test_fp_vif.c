@@ -10,7 +10,7 @@ static uint32_t v(uint8_t cmd, uint8_t num, uint16_t imm) {
 int main(void) {
     uint8_t d[128] = {0};
     TsFpVifSummary s;
-    uint32_t words[26] = {
+    uint32_t words[30] = {
         v(0x01, 0, 0x0404),
         v(0x6c, 1, 0x8000),
         0x0000802a, 0x302e4000, 0x00000412, 0x00000000,
@@ -43,6 +43,6 @@ int main(void) {
     assert(s.command_count >= 10);
     assert(s.unpack_count == 5);
     assert(s.mscal_count == 2);
-    assert(s.unpack_qwords == 1 + 2 + 2 + 2 + 1);
+    assert(s.unpack_qwords == 1 + 2 + 1 + 1 + 1);
     return 0;
 }
