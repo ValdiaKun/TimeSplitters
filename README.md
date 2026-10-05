@@ -20,6 +20,7 @@ Verified from the demo image:
 - A native VU1 interpreter core now covers the main arithmetic/conversion/integer/memory/control operations and captures complete `XGKICK` GIF packets
 - The Vita runtime now traverses all validated CHR submeshes, executes each VIF/VU1 display list, converts GIF triangle/strip/fan/sprite output into Vita triangles, and renders the assembled model preview
 - The VIF decoder now honors the UNPACK mask bit, cycle-slot column filling, and PS2 row-addition/difference semantics
+- The VU core now implements CLIP flag generation used by PS2 microprogram control flow
 - Android/Termux extraction requires no third-party Python package
 
 The original PS2 MIPS executable is **not** copied into the Vita build and is not
