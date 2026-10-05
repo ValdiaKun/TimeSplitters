@@ -63,7 +63,7 @@ static void draw(int result,const TsP5ckInfo *info,const TsP5ckEntry *entry,cons
     if(geometry->submesh_count) { float w=(float)(geometry->submesh_count>256?800:(geometry->submesh_count*800u)/256u); vita2d_draw_rectangle(80,450,w,18,0xFF60A0E0); }
 }
 int main(void) {
-    SceCtrlData pad; TsP5ckInfo info; TsP5ckEntry entry; TsFpResourceSummary resource; TsFpModelHeader model; TsFpGeometrySummary geometry; TsFpVifSummary vif; int result;
+    SceCtrlData pad; TsP5ckInfo info; TsP5ckEntry entry; TsFpResourceSummary resource; TsFpModelHeader model; TsFpGeometrySummary geometry; TsFpVifSummary vif; int result; uint32_t xgkick_pc;
     memset(&pad,0,sizeof(pad)); memset(&info,0,sizeof(info)); memset(&entry,0,sizeof(entry)); memset(&resource,0,sizeof(resource)); memset(&model,0,sizeof(model)); memset(&geometry,0,sizeof(geometry)); memset(&vif,0,sizeof(vif));
     result=load_probe(&info,&entry,&resource,&model,&geometry,&vif); xgkick_pc=probe_boot_vu(); vita2d_init();
     for(;;) { sceCtrlPeekBufferPositive(0,&pad,1); if(pad.buttons&SCE_CTRL_START) break; vita2d_start_drawing(); draw(result,&info,&entry,&resource,&model,&geometry,&vif,xgkick_pc); vita2d_end_drawing(); vita2d_swap_buffers(); sceDisplayWaitVblankStart(); }
