@@ -61,7 +61,7 @@ int main(void) {
             v(0x01,0,0x0404), v(0x30,0,0), row[0],row[1],row[2],row[3],
             v(0x31,0,0), col[0],col[1],col[2],col[3],
             v(0x20,0,0), mask,
-            v(0x05,0,1), v(0x6c,1,0)
+            v(0x05,0,1), v(0x7c,1,0)
         };
         memcpy(m+p,head,sizeof(head)); p+=sizeof(head);
         memcpy(m+p,payload,sizeof(payload)); p+=sizeof(payload);
@@ -71,7 +71,7 @@ int main(void) {
         uint32_t got[4];
         memcpy(got, vu, sizeof(got));
         assert(got[0] == 11u);
-        assert(got[1] == 200u);
+        assert(got[1] == 100u);
         assert(got[2] == 0u);
         assert(got[3] == 44u);
     }

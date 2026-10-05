@@ -50,7 +50,7 @@ int tsfp_vif_unpack_memory(const uint8_t *data, size_t size,
                            uint8_t *vu_memory, size_t vu_size,
                            TsFpVifMemorySummary *out) {
     size_t p=0;
-    uint32_t addr=0, tops=0, base=0, offset=0;
+    uint32_t addr=0, tops=0, base=0, offset=0, itops=0;
     uint32_t row[4]={0,0,0,0}, col[4]={0,0,0,0};
     uint32_t mask=0;
     uint16_t cl=1, wl=1; uint8_t mode=0;
@@ -76,7 +76,7 @@ int tsfp_vif_unpack_memory(const uint8_t *data, size_t size,
         }
         if (cmd==0x02) { offset=(uint32_t)(imm&0x3ffu)*16u; continue; }
         if (cmd==0x03) { base=(uint32_t)(imm&0x3ffu)*16u; continue; }
-        if (cmd==0x04) { tops=(uint32_t)(imm&0x3ffu); continue; }
+        if (cmd==0x04) { itops=(uint32_t)(imm&0x3ffu); continue; }
         if (cmd==0x05) { mode=(uint8_t)(imm&3u); continue; }
         if (cmd==0x06 || cmd==0x07 || cmd==0x10 || cmd==0x11 || cmd==0x13 || cmd==0x17) continue;
         if (cmd==0x14 || cmd==0x15) { out->mscal_address=imm; continue; }
@@ -107,20 +107,17 @@ int tsfp_vif_unpack_memory(const uint8_t *data, size_t size,
 
                 size_t target=(size_t)addr;
                 if (imm&0x8000u) target=(size_t)(tops*16u)+addr;
-                if (mode==1) {
-                    for(unsigned i=0;i<4;i++) q[i]+=row[i];
-                } else if (mode==2) {
-                    for(unsigned i=0;i<4;i++) {
-                        q[i]+=row[i];
-                        row[i]=q[i];
-                    }
-                }
-
                 for(unsigned i=0;i<4;i++) {
-                    unsigned m=(mask>>(i*2u))&3u;
-                    if(m==1u) q[i]=row[i];
-                    else if(m==2u) {
-                        q[i]=col[i];
+                    unsigned cycle_slot=cycle_pos<4u?cycle_pos:3u;
+                    unsigned mask_index=cycle_slot*4u+i;
+                    unsigned m=((cmd&0x10u)!=0u)?((mask>>(mask_index*2u))&3u):0u;
+                    if(m==0u) {
+                        if(mode==1u) q[i]+=row[i];
+                        else if(mode==2u) { q[i]+=row[i]; row[i]=q[i]; }
+                    } else if(m==1u) {
+                        q[i]=row[i];
+                    } else if(m==2u) {
+                        q[i]=col[cycle_slot];
                     }
                     if(m!=3u) {
                         if(target+4u>vu_size)return -6;
@@ -154,6 +151,7 @@ int tsfp_vif_unpack_memory(const uint8_t *data, size_t size,
         }
         (void)base;
         (void)offset;
+        (void)itops;
         return -9;
     }
     return p==size ? 0 : -10;
