@@ -32,7 +32,7 @@ int tsfp_vif_probe(const uint8_t *data, size_t size, TsFpVifSummary *out) {
 
     out->payload_offset = 32;
     out->unpack_vectors = out->unpack.num;
-    out->payload_bytes = out->unpack_vectors * 4u;
+    out->payload_bytes = out->unpack_vectors * 16u;
     if (out->payload_bytes > size - out->payload_offset) return -6;
     return 0;
 }
