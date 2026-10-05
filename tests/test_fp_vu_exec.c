@@ -121,8 +121,8 @@ int main(void) {
     {
         /* MTIR/MFIR transfer only the selected field / 16-bit integer value. */
         uint8_t m[80]={0}; uint32_t x;
-        uint32_t mtir=0x80000000u | (3u<<21) | (3u<<16) | (12u<<11) | 0x3c0u;
-        uint32_t mfir=0x80000000u | (1u<<21) | (5u<<16) | (3u<<11) | 0x3c1u;
+        uint32_t mtir=0x80000000u | (3u<<21) | (3u<<16) | (12u<<11) | 0x3fcu;
+        uint32_t mfir=0x80000000u | (1u<<21) | (5u<<16) | (3u<<11) | 0x3fdu;
         memcpy(m+0,&mtir,4); x=0; memcpy(m+4,&x,4);
         memcpy(m+8,&mfir,4); x=0; memcpy(m+12,&x,4);
         x=0; memcpy(m+16,&x,4); x=0x40000000u; memcpy(m+20,&x,4);
