@@ -21,7 +21,7 @@ typedef struct {
  * are embedded in the executable.
  */
 int tsfp_geometry_probe(const uint8_t *data, size_t size,
-                        uint32_t table_offset, uint32_t mesh_count,
+                        uint32_t table_offset, uint32_t mesh_count, uint32_t end_offset,
                         TsFpGeometrySummary *out);
 
 #endif
