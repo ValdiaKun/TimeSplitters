@@ -214,6 +214,7 @@ void tsfp_vu_state_init(TsFpVuState *state,uint8_t *memory,size_t memory_size,ui
     if(!state)return;
     memset(state,0,sizeof(*state));
     state->memory=memory; state->memory_size=memory_size;
+    state->vf[0][3]=u32(1.0f);
     state->gif=gif; state->gif_size=gif_size; state->xgkick_pc=UINT32_MAX;
 }
 int tsfp_vu_execute(const uint8_t *micro,size_t size,uint32_t start,TsFpVuState *state,uint32_t max_steps){
