@@ -154,8 +154,8 @@ int main(void) {
         TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
         t.vf[5][0]=u32(1.0f); t.vf[5][1]=u32(2.0f); t.vf[5][2]=u32(3.0f); t.vf[5][3]=u32(4.0f);
         assert(tsfp_vu_execute(m,sizeof(m),0,&t,8)==0);
-        assert(f32(t.vf[6][0])==2.0f && f32(t.vf[6][1])==3.0f &&
-               f32(t.vf[6][2])==4.0f && f32(t.vf[6][3])==1.0f);
+        assert(f32(t.vf[6][0])==4.0f && f32(t.vf[6][1])==1.0f &&
+               f32(t.vf[6][2])==2.0f && f32(t.vf[6][3])==3.0f);
     }
     {
         /* ILWR/ISWR select one VF word using the same X/Y/Z/W destination mask. */
