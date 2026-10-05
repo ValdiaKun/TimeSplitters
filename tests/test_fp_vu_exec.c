@@ -64,7 +64,7 @@ int main(void) {
         TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
         t.vf[1][0]=u32(6.0f); t.vf[2][0]=u32(2.0f);
         assert(tsfp_vu_execute(m,sizeof(m),0,&t,8)==0);
-        fprintf(stderr,"DIV Q=%f\\n",f32(t.q));
+        fprintf(stderr,"DIV Q=%f unsupported=%u steps=%u raw=%08x\\n",f32(t.q),t.unsupported,t.steps, t.q);
         assert(f32(t.q)==3.0f);
     }
     return 0;
