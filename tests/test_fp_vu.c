@@ -27,8 +27,8 @@ int main(void) {
         elf[0]=0x7f; elf[1]='E'; elf[2]='L'; elf[3]='F'; elf[4]=1; elf[5]=1;
         elf[32]=0x40; elf[46]=40; elf[48]=3; elf[50]=1;
         const char names[]="\0.shstrtab\0.vutext\0";
-        memcpy(elf+0x20,names,sizeof(names));
-        uint32_t sh1_name=1, sh1_off=0x20, sh1_len=(uint32_t)sizeof(names);
+        memcpy(elf+0xc0,names,sizeof(names));
+        uint32_t sh1_name=1, sh1_off=0xc0, sh1_len=(uint32_t)sizeof(names);
         uint32_t sh2_name=11, sh2_off=0x100, sh2_len=16;
         memcpy(elf+0x40+40+0,&sh1_name,4);
         memcpy(elf+0x40+40+16,&sh1_off,4);
