@@ -33,7 +33,7 @@ int main(void) {
         uint8_t lm[48]={0};
         float lv[4]={9,10,11,12};
         memcpy(mem+48,lv,16);
-        uint32_t q=lower(0,2,0,0)|3; memcpy(lm+0,&q,4);
+        uint32_t q=lower(0,0,0,2)|3; memcpy(lm+0,&q,4);
         q=0x40000000u; memcpy(lm+12,&q,4);
         TsFpVuState l; tsfp_vu_state_init(&l,mem,sizeof(mem),gif,sizeof(gif));
         assert(tsfp_vu_execute(lm,sizeof(lm),0,&l,8)==0);
