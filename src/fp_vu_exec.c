@@ -47,67 +47,43 @@ static void mac3(TsFpVuState *s,unsigned fd,unsigned fs,unsigned ft,unsigned mas
 }
 
 static void special_upper(TsFpVuState *s,uint32_t up){
-    unsigned ft=(up>>16)&31u,fs=(up>>11)&31u,mask=(up>>21)&15u;
-    unsigned fd=(up>>6)&31u, sop=(up&3u)|(fd<<2);
-    float r[4];
+    unsigned ft=(up>>16)&31u,fs=(up>>11)&31u,mask=(up>>21)&15u,fd=(up>>6)&31u;
+    unsigned sop=(up&3u)|(fd<<2); float r[4];
     switch(sop){
-    case 0: case 1: case 2: case 3:
-        for(unsigned i=0;i<4;i++){float b=bc(s,ft,sop),x=f32(s->vf[fs][i]);s->acc[i]=u32(x+b);} return;
-    case 16: case 17: case 18: case 19: case 20: case 21: case 22: case 23:
-        {
-            unsigned shift=(sop==16||sop==20)?0u:(sop==17||sop==21)?4u:(sop==18||sop==22)?12u:15u;
-            int toint=(sop==20||sop==21||sop==22||sop==23);
-            for(unsigned i=0;i<4;i++)if(mask&(1u<<i)){
-                float x=f32(s->vf[fs][i]);
-                s->vf[ft][i]=toint?(uint32_t)(int32_t)(x*(float)(1u<<shift)):u32((float)(int32_t)s->vf[fs][i]/(float)(1u<<shift));
-            }
-        } return;
-    case 0: case 1: case 2: case 3:
-        for(unsigned i=0;i<4;i++)s->acc[i]=u32(f32(s->vf[fs][i])+bc(s,ft,sop));return;
-    case 4: case 5: case 6: case 7:
-        for(unsigned i=0;i<4;i++)s->acc[i]=u32(f32(s->vf[fs][i])-bc(s,ft,sop-4));return;
-    case 8: case 9: case 10: case 11:
-        for(unsigned i=0;i<4;i++)s->acc[i]=u32(f32(s->acc[i])+f32(s->vf[fs][i])*bc(s,ft,sop-8));return;
-    case 12: case 13: case 14: case 15:
-        for(unsigned i=0;i<4;i++)s->acc[i]=u32(f32(s->acc[i])-f32(s->vf[fs][i])*bc(s,ft,sop-12));return;
-    case 20: case 21: case 22: case 23:
-        {
-            unsigned shift=(sop==20||sop==21)?0u:(sop==22?4u:12u);
-            int toint=(sop==21||sop==23);
-            if(sop==23)shift=15;
-            for(unsigned i=0;i<4;i++)if(mask&(1u<<i)){
-                float x=f32(s->vf[fs][i]);
-                s->vf[ft][i]=toint?(uint32_t)(int32_t)(x*(float)(1u<<shift)):u32((float)(int32_t)s->vf[fs][i]/(float)(1u<<shift));
-            }
-        } return;
-    case 24: case 25: case 26: case 27:
-        for(unsigned i=0;i<4;i++)s->acc[i]=u32(f32(s->vf[fs][i])*bc(s,ft,sop-24));return;
-    case 28: for(unsigned i=0;i<4;i++)s->acc[i]=u32(f32(s->vf[fs][i])*qf(s));return;
-    case 29: for(unsigned i=0;i<4;i++)s->vf[ft][i]=s->vf[fs][i]&0x7fffffffu;return;
-    case 30: for(unsigned i=0;i<4;i++)s->acc[i]=u32(f32(s->vf[fs][i])*if_(s));return;
-    case 31: return;
-    case 32: for(unsigned i=0;i<4;i++)s->acc[i]=u32(f32(s->vf[fs][i])+qf(s));return;
-    case 33: for(unsigned i=0;i<4;i++)s->acc[i]=u32(f32(s->acc[i])+f32(s->vf[fs][i])*qf(s));return;
-    case 34: for(unsigned i=0;i<4;i++)s->acc[i]=u32(f32(s->vf[fs][i])+if_(s));return;
-    case 35: for(unsigned i=0;i<4;i++)s->acc[i]=u32(f32(s->acc[i])+f32(s->vf[fs][i])*if_(s));return;
-    case 36: for(unsigned i=0;i<4;i++)s->acc[i]=u32(f32(s->vf[fs][i])-qf(s));return;
-    case 37: for(unsigned i=0;i<4;i++)s->acc[i]=u32(f32(s->acc[i])-f32(s->vf[fs][i])*qf(s));return;
-    case 38: for(unsigned i=0;i<4;i++)s->acc[i]=u32(f32(s->vf[fs][i])-if_(s));return;
-    case 39: for(unsigned i=0;i<4;i++)s->acc[i]=u32(f32(s->acc[i])-f32(s->vf[fs][i])*if_(s));return;
-    case 40: mac3(s,0,fs,ft,mask,0,1);return;
-    case 41: mac3(s,0,fs,ft,mask,3,1);return;
-    case 42: mac3(s,0,fs,ft,mask,2,1);return;
-    case 44: mac3(s,0,fs,ft,mask,1,1);return;
-    case 45: mac3(s,0,fs,ft,mask,4,1);return;
-    case 46:
-        s->acc[0]=u32(f32(s->vf[fs][1])*f32(s->vf[ft][2]));
-        s->acc[1]=u32(f32(s->vf[fs][2])*f32(s->vf[ft][0]));
-        s->acc[2]=u32(f32(s->vf[fs][0])*f32(s->vf[ft][1])); return;
-    case 47: return;
+    case 0:case 1:case 2:case 3: for(unsigned i=0;i<4;i++)s->acc[i]=u32(f32(s->vf[fs][i])+bc(s,ft,sop));return;
+    case 4:case 5:case 6:case 7: for(unsigned i=0;i<4;i++)s->acc[i]=u32(f32(s->vf[fs][i])-bc(s,ft,sop-4));return;
+    case 8:case 9:case 10:case 11: for(unsigned i=0;i<4;i++)s->acc[i]=u32(f32(s->acc[i])+f32(s->vf[fs][i])*bc(s,ft,sop-8));return;
+    case 12:case 13:case 14:case 15: for(unsigned i=0;i<4;i++)s->acc[i]=u32(f32(s->acc[i])-f32(s->vf[fs][i])*bc(s,ft,sop-12));return;
+    case 16:case 17:case 18:case 19:case 20:case 21:case 22:case 23:{
+        unsigned sh=(sop==16||sop==20)?0:(sop==17||sop==21)?4:(sop==18||sop==22)?12:15;
+        int toint=sop>=20;
+        for(unsigned i=0;i<4;i++)if(mask&(1u<<i)){
+            float x=f32(s->vf[fs][i]);
+            s->vf[ft][i]=toint?(uint32_t)(int32_t)(x*(float)(1u<<sh)):u32((float)(int32_t)s->vf[fs][i]/(float)(1u<<sh));
+        } return;}
+    case 24:case 25:case 26:case 27: for(unsigned i=0;i<4;i++)s->acc[i]=u32(f32(s->vf[fs][i])*bc(s,ft,sop-24));return;
+    case 28:for(unsigned i=0;i<4;i++)s->acc[i]=u32(f32(s->vf[fs][i])*qf(s));return;
+    case 29:for(unsigned i=0;i<4;i++)if(mask&(1u<<i))s->vf[ft][i]=s->vf[fs][i]&0x7fffffffu;return;
+    case 30:for(unsigned i=0;i<4;i++)s->acc[i]=u32(f32(s->vf[fs][i])*if_(s));return;
+    case 31:return;
+    case 32:for(unsigned i=0;i<4;i++)s->acc[i]=u32(f32(s->vf[fs][i])+qf(s));return;
+    case 33:for(unsigned i=0;i<4;i++)s->acc[i]=u32(f32(s->acc[i])+f32(s->vf[fs][i])*qf(s));return;
+    case 34:for(unsigned i=0;i<4;i++)s->acc[i]=u32(f32(s->vf[fs][i])+if_(s));return;
+    case 35:for(unsigned i=0;i<4;i++)s->acc[i]=u32(f32(s->acc[i])+f32(s->vf[fs][i])*if_(s));return;
+    case 36:for(unsigned i=0;i<4;i++)s->acc[i]=u32(f32(s->vf[fs][i])-qf(s));return;
+    case 37:for(unsigned i=0;i<4;i++)s->acc[i]=u32(f32(s->acc[i])-f32(s->vf[fs][i])*qf(s));return;
+    case 38:for(unsigned i=0;i<4;i++)s->acc[i]=u32(f32(s->vf[fs][i])-if_(s));return;
+    case 39:for(unsigned i=0;i<4;i++)s->acc[i]=u32(f32(s->acc[i])-f32(s->vf[fs][i])*if_(s));return;
+    case 40:mac3(s,0,fs,ft,mask,0,1);return;
+    case 41:mac3(s,0,fs,ft,mask,3,1);return;
+    case 42:mac3(s,0,fs,ft,mask,2,1);return;
+    case 44:mac3(s,0,fs,ft,mask,1,1);return;
+    case 45:mac3(s,0,fs,ft,mask,4,1);return;
+    case 46:s->acc[0]=u32(f32(s->vf[fs][1])*f32(s->vf[ft][2]));s->acc[1]=u32(f32(s->vf[fs][2])*f32(s->vf[ft][0]));s->acc[2]=u32(f32(s->vf[fs][0])*f32(s->vf[ft][1]));return;
+    case 47:return;
     default:s->unsupported++;return;
     }
 }
-
 static void upper_exec(TsFpVuState *s,uint32_t up){
     unsigned ft=(up>>16)&31u,fs=(up>>11)&31u,fd=(up>>6)&31u,mask=(up>>21)&15u,op=up&63u;
     if(op>=0x3cu){special_upper(s,up);return;}
