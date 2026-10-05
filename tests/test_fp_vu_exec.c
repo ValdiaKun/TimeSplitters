@@ -2,7 +2,6 @@
 #include <assert.h>
 #include <stdint.h>
 #include <string.h>
-#include <stdio.h>
 static uint32_t u32(float x){uint32_t v;memcpy(&v,&x,4);return v;}
 static float f32(uint32_t x){float v;memcpy(&v,&x,4);return v;}
 
@@ -20,19 +19,25 @@ int main(void) {
     w=lower(0x08,0,0,1)|2; memcpy(micro+0,&w,4); w=0; memcpy(micro+4,&w,4);
     w=lower(0x08,0,0,2)|3; memcpy(micro+8,&w,4); w=0; memcpy(micro+12,&w,4);
     w=lower(0x30,3,1,2); memcpy(micro+16,&w,4); w=0; memcpy(micro+20,&w,4);
-    /* vf1 = (1,2,3,4), vf2 = (5,6,7,8), vf3 = vf1 + vf2 */
+    /* vf1/vf2 are initialized directly for the ALU regression. */
     float a[4]={1,2,3,4}, b[4]={5,6,7,8};
-    memcpy(mem+32,a,16); memcpy(mem+48,b,16);
-    w=lower(0,0,0,1)|2; memcpy(micro+24,&w,4); w=0; memcpy(micro+28,&w,4);
-    w=lower(0,0,0,2)|3; memcpy(micro+32,&w,4); w=0; memcpy(micro+36,&w,4);
-    w=upper(0x28,3,1,2,0xf); memcpy(micro+40,&w,4); w=0; memcpy(micro+44,&w,4);
-    w=0x40000000u; memcpy(micro+52,&w,4); w=0; memcpy(micro+48,&w,4);
     TsFpVuState s; tsfp_vu_state_init(&s,mem,sizeof(mem),gif,sizeof(gif));
+    memcpy(s.vf[1],a,16); memcpy(s.vf[2],b,16);
     assert(tsfp_vu_execute(micro,sizeof(micro),0,&s,32)==0);
     assert(s.vi[3]==5u);
     float got[4]; memcpy(got,s.vf[3],sizeof(got));
-    fprintf(stderr,"VU add result: %f %f %f %f | vf1=%f vf2=%f\\n",got[0],got[1],got[2],got[3],f32(s.vf[1][0]),f32(s.vf[2][0]));
     assert(got[0]==6.0f && got[1]==8.0f && got[2]==10.0f && got[3]==12.0f);
+    {
+        uint8_t lm[48]={0};
+        float lv[4]={9,10,11,12};
+        memcpy(mem+48,lv,16);
+        uint32_t q=lower(0,2,0,0)|3; memcpy(lm+0,&q,4);
+        q=0x40000000u; memcpy(lm+12,&q,4);
+        TsFpVuState l; tsfp_vu_state_init(&l,mem,sizeof(mem),gif,sizeof(gif));
+        assert(tsfp_vu_execute(lm,sizeof(lm),0,&l,8)==0);
+        float lgot[4]; memcpy(lgot,l.vf[2],sizeof(lgot));
+        assert(lgot[0]==9.0f && lgot[1]==10.0f && lgot[2]==11.0f && lgot[3]==12.0f);
+    }
     {
         uint8_t m[64]={0};
         uint32_t x;
