@@ -88,5 +88,19 @@ int main(void) {
         assert(got[2] == 0u);
         assert(got[3] == 44u);
     }
+    {
+        uint8_t m[64]={0}; uint32_t head[]={v(0x01,0,0x0101),v(0x60,1,0x0000),0x11223344};
+        memcpy(m,head,sizeof(head)); memset(&ms,0,sizeof(ms));
+        assert(tsfp_vif_unpack_memory(m,sizeof(head),vu,sizeof(vu),&ms)==0);
+        uint32_t got[4]; memcpy(got,vu,sizeof(got));
+        assert(got[0]==0x11223344u && got[1]==0x11223344u && got[2]==0x11223344u && got[3]==0x11223344u);
+    }
+    {
+        uint8_t m[64]={0}; uint32_t head[]={v(0x01,0,0x0101),v(0x64,1,0x0010),0x00000011,0x00000022};
+        memcpy(m,head,sizeof(head)); memset(&ms,0,sizeof(ms));
+        assert(tsfp_vif_unpack_memory(m,sizeof(head),vu,sizeof(vu),&ms)==0);
+        uint32_t got[4]; memcpy(got,vu+0x100,sizeof(got));
+        assert(got[0]==0x11u && got[1]==0x22u && got[2]==0x11u && got[3]==0x22u);
+    }
     return 0;
 }
