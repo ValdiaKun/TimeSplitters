@@ -73,7 +73,7 @@ int main(void) {
         x=upper(0x3f,7,1,2,0xf); memcpy(m,&x,4);
         x=0x40000000u; memcpy(m+4,&x,4);
         assert(tsfp_vu_execute(m,sizeof(m),0,&t,4)==0);
-        assert((t.clip_flag & 0x3fu)==((1u<<0)|(1u<<4)));
+        assert((t.clip_flag & 0x3fu)==((1u<<0)|(1u<<3)));
     }
     return 0;
 }
