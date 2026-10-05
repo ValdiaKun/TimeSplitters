@@ -116,7 +116,6 @@ int tsfp_vif_unpack_memory(const uint8_t *data, size_t size,
                     }
                 }
 
-                uint32_t write_cycle=cycle_pos+1u;
                 for(unsigned i=0;i<4;i++) {
                     unsigned m=(mask>>(i*2u))&3u;
                     if(m==1u) q[i]=row[i];
