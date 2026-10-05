@@ -134,7 +134,7 @@ int main(void) {
     }
     {
         uint8_t m[32]={0}; uint32_t x=0;
-        x=0; memcpy(m,&x,4); x=upper(0x2e,3,1,2,0x7); memcpy(m+4,&x,4);
+        x=0; memcpy(m,&x,4); x=upper(0x2e,3,1,2,0xe); memcpy(m+4,&x,4);
         x=0; memcpy(m+8,&x,4); x=0x40000000u; memcpy(m+12,&x,4);
         TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
         float a[4]={10,20,30,0}, b[4]={2,3,4,0};
