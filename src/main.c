@@ -86,6 +86,7 @@ typedef struct {
 static int render_mscal(uint16_t address,uint8_t *vu_memory,size_t vu_size,void *user){
     TsFpVifRenderContext *ctx=(TsFpVifRenderContext*)user;
     TsFpGifSummary gif;
+    TsFpGifVertex local[1024];
     size_t before;
     if(!ctx||!ctx->vu||!ctx->micro||address!=0x0683u)return -1;
     ctx->vu->memory=vu_memory;
@@ -113,7 +114,6 @@ static int build_model_preview(void){
     uint8_t *model_data=NULL,*elf=NULL,*vu_mem=NULL,*gif_mem=NULL;
     size_t model_size=0,elf_size=0,submesh_count=0;
     TsFpModelHeader model; TsFpSubmesh submeshes[256];
-    TsFpGifVertex local[1024];
     TsFpGifVertex *triangles=NULL;
     float minx=FLT_MAX,miny=FLT_MAX,maxx=-FLT_MAX,maxy=-FLT_MAX;
     int result=-1;
