@@ -30,6 +30,18 @@ int main(void) {
     float got[4]; memcpy(got,s.vf[3],sizeof(got));
     assert(got[0]==6.0f && got[1]==8.0f && got[2]==10.0f && got[3]==12.0f);
     {
+        /* VU destination mask encoding: bit3=x, bit2=y, bit1=z, bit0=w. */
+        uint8_t pm[32]={0}; uint32_t x;
+        x=0; memcpy(pm,&x,4); x=upper(0x28,3,1,2,0x8); memcpy(pm+4,&x,4);
+        x=0; memcpy(pm+8,&x,4); x=0x40000000u; memcpy(pm+12,&x,4);
+        TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
+        t.vf[1][0]=1.0f; t.vf[1][1]=2.0f; t.vf[1][2]=3.0f; t.vf[1][3]=4.0f;
+        t.vf[2][0]=5.0f; t.vf[2][1]=6.0f; t.vf[2][2]=7.0f; t.vf[2][3]=8.0f;
+        assert(tsfp_vu_execute(pm,sizeof(pm),0,&t,8)==0);
+        assert(f32(t.vf[3][0])==6.0f && f32(t.vf[3][1])==0.0f &&
+               f32(t.vf[3][2])==0.0f && f32(t.vf[3][3])==0.0f);
+    }
+    {
         uint8_t lm[48]={0};
         float lv[4]={9,10,11,12};
         memcpy(mem+48,lv,16);
