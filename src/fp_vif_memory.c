@@ -112,8 +112,10 @@ int tsfp_vif_unpack_memory(const uint8_t *data, size_t size,
                     unsigned mask_index=cycle_slot*4u+i;
                     unsigned m=((cmd&0x10u)!=0u)?((mask>>(mask_index*2u))&3u):0u;
                     if(m==0u) {
-                        if(mode==1u) q[i]+=row[i];
+                        if(f==0xfu) { /* V4-5 ignores STMOD. */ }
+                        else if(mode==1u) q[i]+=row[i];
                         else if(mode==2u) { q[i]+=row[i]; row[i]=q[i]; }
+                        else if(mode==3u) { row[i]=q[i]; }
                     } else if(m==1u) {
                         q[i]=row[i];
                     } else if(m==2u) {
