@@ -35,8 +35,8 @@ int main(void) {
         x=0; memcpy(pm,&x,4); x=upper(0x28,3,1,2,0x8); memcpy(pm+4,&x,4);
         x=0; memcpy(pm+8,&x,4); x=0x40000000u; memcpy(pm+12,&x,4);
         TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
-        t.vf[1][0]=1.0f; t.vf[1][1]=2.0f; t.vf[1][2]=3.0f; t.vf[1][3]=4.0f;
-        t.vf[2][0]=5.0f; t.vf[2][1]=6.0f; t.vf[2][2]=7.0f; t.vf[2][3]=8.0f;
+        t.vf[1][0]=u32(1.0f); t.vf[1][1]=u32(2.0f); t.vf[1][2]=u32(3.0f); t.vf[1][3]=u32(4.0f);
+        t.vf[2][0]=u32(5.0f); t.vf[2][1]=u32(6.0f); t.vf[2][2]=u32(7.0f); t.vf[2][3]=u32(8.0f);
         assert(tsfp_vu_execute(pm,sizeof(pm),0,&t,8)==0);
         assert(f32(t.vf[3][0])==6.0f && f32(t.vf[3][1])==0.0f &&
                f32(t.vf[3][2])==0.0f && f32(t.vf[3][3])==0.0f);
