@@ -144,5 +144,30 @@ int main(void) {
         float got[4]; memcpy(got,t.vf[3],16);
         assert(got[0]==2.0f && got[1]==14.0f && got[2]==27.0f);
     }
+    {
+        /* MR32 rotates source fields x<-y, y<-z, z<-w, w<-x for selected destinations. */
+        uint8_t m[32]={0}; uint32_t x;
+        x=0x80000000u | (15u<<21) | (6u<<16) | (5u<<11) | 0x3fdu; memcpy(m,&x,4);
+        x=0; memcpy(m+4,&x,4);
+        x=0; memcpy(m+8,&x,4); x=0x40000000u; memcpy(m+12,&x,4);
+        TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
+        t.vf[5][0]=u32(1.0f); t.vf[5][1]=u32(2.0f); t.vf[5][2]=u32(3.0f); t.vf[5][3]=u32(4.0f);
+        assert(tsfp_vu_execute(m,sizeof(m),0,&t,8)==0);
+        assert(f32(t.vf[6][0])==2.0f && f32(t.vf[6][1])==3.0f &&
+               f32(t.vf[6][2])==4.0f && f32(t.vf[6][3])==1.0f);
+    }
+    {
+        /* ILWR/ISWR select one VF word using the same X/Y/Z/W destination mask. */
+        uint8_t m[48]={0}; uint32_t x;
+        x=0x0000beefu; memcpy(mem+64+4,&x,4);
+        x=0x80000000u | (4u<<21) | (5u<<16) | (3u<<11) | 0x3feu; memcpy(m,&x,4);
+        x=0x80000000u | (2u<<21) | (5u<<16) | (4u<<11) | 0x3ffu; memcpy(m+8,&x,4);
+        x=0; memcpy(m+16,&x,4); x=0x40000000u; memcpy(m+20,&x,4);
+        TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
+        t.vi[3]=4; t.vi[4]=4;
+        assert(tsfp_vu_execute(m,sizeof(m),0,&t,16)==0);
+        assert(t.vi[5]==0xbeefu);
+        assert(rd32(mem+64+8)==0xbeefu);
+    }
     return 0;
 }
