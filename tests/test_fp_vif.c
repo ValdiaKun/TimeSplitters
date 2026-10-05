@@ -56,7 +56,7 @@ int main(void) {
         uint32_t row[4] = {10,20,30,40};
         uint32_t col[4] = {100,200,300,400};
         uint32_t payload[4] = {1,2,3,4};
-        uint32_t mask = 0x000000e4u; /* x=row, y=col, z=protected, w=data */
+        uint32_t mask = 0x00000038u; /* x=data, y=col, z=protected, w=data */
         uint32_t head[] = {
             v(0x01,0,0x0404), v(0x30,0,0), row[0],row[1],row[2],row[3],
             v(0x31,0,0), col[0],col[1],col[2],col[3],
@@ -73,7 +73,7 @@ int main(void) {
         assert(got[0] == 11u);
         assert(got[1] == 200u);
         assert(got[2] == 0u);
-        assert(got[3] == 4u);
+        assert(got[3] == 44u);
     }
     return 0;
 }
