@@ -2,7 +2,6 @@
 #include <assert.h>
 #include <stdint.h>
 #include <string.h>
-#include <stdio.h>
 static uint32_t u32(float x){uint32_t v;memcpy(&v,&x,4);return v;}
 static float f32(uint32_t x){float v;memcpy(&v,&x,4);return v;}
 
@@ -55,8 +54,6 @@ int main(void) {
     {
         uint8_t m[64]={0};
         uint32_t x;
-        float num=6.0f, den=2.0f;
-        (void)num; (void)den;
         x=0; memcpy(m+8,&x,4);
         /* DIV Q, vf1.x, vf2.x uses lower special opcode 0x7c. */
         x=lower(0x7c,14,1,2); memcpy(m+16,&x,4); x=0; memcpy(m+20,&x,4);
@@ -64,7 +61,6 @@ int main(void) {
         TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
         t.vf[1][0]=u32(6.0f); t.vf[2][0]=u32(2.0f);
         assert(tsfp_vu_execute(m,sizeof(m),0,&t,8)==0);
-        fprintf(stderr,"DIV Q=%f unsupported=%u steps=%u raw=%08x\\n",f32(t.q),t.unsupported,t.steps, t.q);
         assert(f32(t.q)==3.0f);
     }
     return 0;
