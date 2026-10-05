@@ -177,12 +177,12 @@ int tsfp_vu_execute(const uint8_t *micro,size_t size,uint32_t start,TsFpVuState 
     state->pc=start;
     for(state->steps=0;state->steps<max_steps&&state->pc<size/8u;state->steps++){
         uint32_t pc=state->pc,lo=rd32(micro+pc*8u),up=rd32(micro+pc*8u+4u);
+        uint32_t delayed=state->branch_pending, delayed_target=state->branch_target;
+        state->branch_pending=0;
         state->pc=pc+1u;
         if(up&0x80000000u) state->vi[21]=lo; else lower_exec(state,lo,state->pc);
         upper_exec(state,up);
-        if(state->branch_pending && pc+1u!=state->branch_target){
-            state->pc=state->branch_target; state->branch_pending=0;
-        }
+        if(delayed && !state->branch_pending) state->pc=delayed_target;
         if(up&0x40000000u)return 0;
     }
     return state->steps>=max_steps?-2:0;
