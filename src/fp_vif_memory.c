@@ -93,6 +93,8 @@ int tsfp_vif_unpack_memory(const uint8_t *data, size_t size,
         }
         if ((cmd&0xe0u)==0x60u) {
             uint8_t f=cmd&0x0fu;
+            addr=(size_t)(imm&0x03ffu)*16u;
+            if(imm&0x8000u) addr+=(size_t)tops*16u;
             unsigned n=num ? num : 256;
             unsigned bits=(f==0xfu)?20u:(32u>>vl(f))*vn(f);
             unsigned bytes=(bits+7u)/8u;
@@ -105,7 +107,6 @@ int tsfp_vif_unpack_memory(const uint8_t *data, size_t size,
                 p+=bytes;
 
                 size_t target=(size_t)addr;
-                if (imm&0x8000u) target=(size_t)(tops*16u)+addr;
                 for(unsigned i=0;i<4;i++) {
                     unsigned cycle_slot=cycle_pos<4u?cycle_pos:3u;
                     unsigned mask_index=cycle_slot*4u+i;
