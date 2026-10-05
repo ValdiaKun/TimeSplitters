@@ -167,6 +167,10 @@ static void lower_exec(TsFpVuState *s,uint32_t lo,uint32_t next_pc){
             if(it) write_mask(s,it,dest,(float[4]){
                 f32(s->vf[is][0]),f32(s->vf[is][1]),f32(s->vf[is][2]),f32(s->vf[is][3])});
             return;
+        case 0x31: /* MR32 VF[it], VF[is] */
+            if(it) for(unsigned i=0;i<4;i++) if(mask_has(dest,i))
+                s->vf[it][i]=s->vf[is][(i+1u)&3u];
+            return;
         case 0x34: /* LQI VF[ft], (VI[is]++) */
             a=((size_t)s->vi[is]&0x3ffu)*16u;
             if(a+16>s->memory_size){s->unsupported++;return;}
