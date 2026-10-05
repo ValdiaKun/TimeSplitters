@@ -1,33 +1,16 @@
 #include "fp_vif.h"
 #include <string.h>
 
-static uint32_t unpack_word_bytes(uint8_t format) {
-    switch (format & 0x0f) {
-        case 0x0c: return 16; /* V4-32 */
-        case 0x08: return 16; /* V3-32, padded to a qword */
-        case 0x04: return 16; /* V2-32, padded to a qword */
-        case 0x00: return 4;  /* S-32 */
-        case 0x0d: return 8;  /* V4-16 */
-        case 0x09: return 8;  /* V3-16, padded */
-        case 0x05: return 8;  /* V2-16, padded */
-        case 0x01: return 2;  /* S-16 */
-        case 0x0e: return 4;  /* V4-8 */
-        case 0x0a: return 4;  /* V3-8, padded */
-        case 0x06: return 4;  /* V2-8, padded */
-        case 0x02: return 1;  /* S-8 */
-        case 0x0f: return 4;  /* V4-5, packed into words */
-        default: return 0;
-    }
+static uint32_t unpack_bits_per_vector(uint8_t format) {
+    uint8_t vl = format & 3u;
+    uint8_t vn = (format >> 2) & 3u;
+    if ((format & 0x0fu) == 0x0fu) return 20u;
+    return (32u >> vl) * (uint32_t)(vn + 1u);
 }
 
 static uint32_t unpack_words_per_vector(uint8_t format) {
-    switch (format & 0x0f) {
-        case 0x0c: return 4; case 0x08: return 4; case 0x04: return 4;
-        case 0x00: return 1; case 0x0d: return 2; case 0x09: return 2;
-        case 0x05: return 2; case 0x01: return 1; case 0x0e: return 1;
-        case 0x0a: return 1; case 0x06: return 1; case 0x02: return 1;
-        case 0x0f: return 1; default: return 0;
-    }
+    uint32_t bits = unpack_bits_per_vector(format);
+    return (bits + 31u) / 32u;
 }
 
 static uint32_t rd32(const uint8_t *p) {
@@ -109,7 +92,7 @@ int tsfp_vif_scan(const uint8_t *data, size_t size, TsFpVifSummary *out) {
             if (consumed > size - pos) return -6;
             out->unpack_count++;
             out->unpack_qwords += (consumed / 16u);
-            out->unpack_data_bytes += vectors * bytes;
+            out->unpack_data_bytes += vectors * ((bits + 7u) / 8u);
             pos += consumed;
             (void)imm;
             continue;
