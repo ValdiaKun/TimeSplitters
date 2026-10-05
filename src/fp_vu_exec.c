@@ -170,38 +170,26 @@ static void lower_exec(TsFpVuState *s,uint32_t lo,uint32_t next_pc){
         case 0x34: /* LQI VF[ft], (VI[is]++) */
             a=((size_t)s->vi[is]&0x3ffu)*16u;
             if(a+16>s->memory_size){s->unsupported++;return;}
-            if(dest&1u)s->vf[it][0]=rd32(s->memory+a);
-            if(dest&2u)s->vf[it][1]=rd32(s->memory+a+4);
-            if(dest&4u)s->vf[it][2]=rd32(s->memory+a+8);
-            if(dest&8u)s->vf[it][3]=rd32(s->memory+a+12);
+            for(unsigned i=0;i<4;i++)if(mask_has(dest,i))s->vf[it][i]=rd32(s->memory+a+i*4u);
             s->vi[is]=(s->vi[is]+1u)&0x3ffu;
             return;
         case 0x35: /* SQI VF[fs], (VI[it]++) */
             a=((size_t)s->vi[it]&0x3ffu)*16u;
             if(a+16>s->memory_size){s->unsupported++;return;}
-            if(dest&1u)wr32(s->memory+a,s->vf[is][0]);
-            if(dest&2u)wr32(s->memory+a+4,s->vf[is][1]);
-            if(dest&4u)wr32(s->memory+a+8,s->vf[is][2]);
-            if(dest&8u)wr32(s->memory+a+12,s->vf[is][3]);
+            for(unsigned i=0;i<4;i++)if(mask_has(dest,i))wr32(s->memory+a+i*4u,s->vf[is][i]);
             s->vi[it]=(s->vi[it]+1u)&0x3ffu;
             return;
         case 0x36: /* LQD VF[ft], (--VI[is]) */
             s->vi[is]=(s->vi[is]-1u)&0x3ffu;
             a=(size_t)s->vi[is]*16u;
             if(a+16>s->memory_size){s->unsupported++;return;}
-            if(dest&1u)s->vf[it][0]=rd32(s->memory+a);
-            if(dest&2u)s->vf[it][1]=rd32(s->memory+a+4);
-            if(dest&4u)s->vf[it][2]=rd32(s->memory+a+8);
-            if(dest&8u)s->vf[it][3]=rd32(s->memory+a+12);
+            for(unsigned i=0;i<4;i++)if(mask_has(dest,i))s->vf[it][i]=rd32(s->memory+a+i*4u);
             return;
         case 0x37: /* SQD VF[fs], (--VI[it]) */
             s->vi[it]=(s->vi[it]-1u)&0x3ffu;
             a=(size_t)s->vi[it]*16u;
             if(a+16>s->memory_size){s->unsupported++;return;}
-            if(dest&1u)wr32(s->memory+a,s->vf[is][0]);
-            if(dest&2u)wr32(s->memory+a+4,s->vf[is][1]);
-            if(dest&4u)wr32(s->memory+a+8,s->vf[is][2]);
-            if(dest&8u)wr32(s->memory+a+12,s->vf[is][3]);
+            for(unsigned i=0;i<4;i++)if(mask_has(dest,i))wr32(s->memory+a+i*4u,s->vf[is][i]);
             return;
         case 0x38: { /* DIV Q, VF[fs]fsf, VF[ft]ftf */
             unsigned ftf=(lo>>23)&3u,fsf=(lo>>21)&3u;
@@ -226,10 +214,8 @@ static void lower_exec(TsFpVuState *s,uint32_t lo,uint32_t next_pc){
             return;
         }
         case 0x3d: { /* MFIR VF[ft]field, VI[is] */
-            if(it && (dest&1u))s->vf[it][0]=s->vi[is];
-            if(it && (dest&2u))s->vf[it][1]=s->vi[is];
-            if(it && (dest&4u))s->vf[it][2]=s->vi[is];
-            if(it && (dest&8u))s->vf[it][3]=s->vi[is];
+            if(it)for(unsigned i=0;i<4;i++)if(mask_has(dest,i))
+                s->vf[it][i]=(uint32_t)(int32_t)(int16_t)(s->vi[is]&0xffffu);
             return;
         }
         case 0x3e: /* ILWR VI[it], (VI[is])field */
