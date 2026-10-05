@@ -1,13 +1,6 @@
 #include "fp_vif.h"
 #include <string.h>
 
-static uint32_t unpack_bits_per_vector(uint8_t format) {
-    uint8_t vl = format & 3u;
-    uint8_t vn = (format >> 2) & 3u;
-    if ((format & 0x0fu) == 0x0fu) return 20u;
-    return (32u >> vl) * (uint32_t)(vn + 1u);
-}
-
 static uint32_t rd32(const uint8_t *p) {
     return (uint32_t)p[0] | ((uint32_t)p[1] << 8) |
            ((uint32_t)p[2] << 16) | ((uint32_t)p[3] << 24);
