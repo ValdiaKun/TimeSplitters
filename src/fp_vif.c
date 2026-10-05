@@ -8,11 +8,6 @@ static uint32_t unpack_bits_per_vector(uint8_t format) {
     return (32u >> vl) * (uint32_t)(vn + 1u);
 }
 
-static uint32_t unpack_words_per_vector(uint8_t format) {
-    uint32_t bits = unpack_bits_per_vector(format);
-    return (bits + 31u) / 32u;
-}
-
 static uint32_t rd32(const uint8_t *p) {
     return (uint32_t)p[0] | ((uint32_t)p[1] << 8) |
            ((uint32_t)p[2] << 16) | ((uint32_t)p[3] << 24);
