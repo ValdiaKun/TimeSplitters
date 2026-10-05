@@ -15,7 +15,6 @@ static int32_t sx(uint32_t v, unsigned bits) {
     uint32_t m = 1u << (bits - 1u);
     return (int32_t)((v ^ m) - m);
 }
-
 static unsigned vn(uint8_t f) { return ((f >> 2) & 3u) + 1u; }
 static unsigned vl(uint8_t f) { return f & 3u; }
 
@@ -23,7 +22,10 @@ static uint32_t unpack_one(const uint8_t *src, uint8_t format, int uns, uint32_t
     unsigned n=vn(format), l=vl(format);
     if ((format & 0xfu) == 0xfu) {
         uint32_t x=rd32(src);
-        for (unsigned i=0;i<4;i++) out[i]=((x >> (i*5)) & 0x1fu);
+        for (unsigned i=0;i<4;i++) {
+            uint32_t v=(x >> (i*5)) & 0x1fu;
+            out[i]=uns ? v : (uint32_t)sx(v,5);
+        }
         return 4;
     }
     unsigned bits=32u>>l, bytes=(bits*n+7u)/8u;
@@ -36,7 +38,7 @@ static uint32_t unpack_one(const uint8_t *src, uint8_t format, int uns, uint32_t
         }
     } else {
         for (unsigned i=0;i<n;i++) {
-            uint32_t x=(src[i] & 0xffu);
+            uint32_t x=src[i];
             out[i]=uns ? x : (uint32_t)sx(x,8);
         }
     }
@@ -48,8 +50,12 @@ int tsfp_vif_unpack_memory(const uint8_t *data, size_t size,
                            uint8_t *vu_memory, size_t vu_size,
                            TsFpVifMemorySummary *out) {
     size_t p=0;
-    uint32_t addr=0, tops=0, row[4]={0,0,0,0};
-    uint8_t cl=1, wl=1;
+    uint32_t addr=0, tops=0, base=0, offset=0;
+    uint32_t row[4]={0,0,0,0}, col[4]={0,0,0,0};
+    uint32_t mask=0;
+    uint8_t cl=1, wl=1, mode=0;
+    uint32_t cycle_pos=0;
+
     if (!data || !vu_memory || !out || vu_size < 16) return -1;
     memset(out,0,sizeof(*out));
     memset(vu_memory,0,vu_size);
@@ -58,44 +64,98 @@ int tsfp_vif_unpack_memory(const uint8_t *data, size_t size,
         uint32_t w=rd32(data+p); p+=4;
         uint8_t cmd=(uint8_t)(w>>24), num=(uint8_t)(w>>16);
         uint16_t imm=(uint16_t)w;
-        if (cmd==0) continue;
 
-        if (cmd==0x01) { cl=(uint8_t)(imm&0xffu); wl=(uint8_t)(imm>>8); if (!cl) cl=256; continue; }
-        if (cmd==0x02) { addr=(uint32_t)imm*16u; continue; }
-        if (cmd==0x03) { addr=(uint32_t)imm*16u; continue; }
-        if (cmd==0x04 || cmd==0x07 || cmd==0x10 || cmd==0x11 || cmd==0x13 || cmd==0x17) continue;
+        if (cmd==0) continue;
+        if (cmd==0x01) {
+            cl=(uint8_t)(imm&0xffu);
+            wl=(uint8_t)(imm>>8);
+            if (!cl) cl=256;
+            if (!wl) wl=256;
+            cycle_pos=0;
+            continue;
+        }
+        if (cmd==0x02) { offset=(uint32_t)(imm&0x3ffu)*16u; continue; }
+        if (cmd==0x03) { base=(uint32_t)(imm&0x3ffu)*16u; continue; }
+        if (cmd==0x04) { tops=(uint32_t)(imm&0x3ffu); continue; }
+        if (cmd==0x05) { mode=(uint8_t)(imm&3u); continue; }
+        if (cmd==0x06 || cmd==0x07 || cmd==0x10 || cmd==0x11 || cmd==0x13 || cmd==0x17) continue;
         if (cmd==0x14 || cmd==0x15) { out->mscal_address=imm; continue; }
-        if (cmd==0x20) { if(p+4>size)return -2; p+=4; continue; }
+        if (cmd==0x20) {
+            if(p+4>size)return -2;
+            mask=rd32(data+p); p+=4; continue;
+        }
         if (cmd==0x30 || cmd==0x31) {
             if(p+16>size)return -3;
-            if(cmd==0x30) for(unsigned i=0;i<4;i++) row[i]=rd32(data+p+i*4);
+            for(unsigned i=0;i<4;i++) {
+                uint32_t x=rd32(data+p+i*4);
+                if(cmd==0x30) row[i]=x; else col[i]=x;
+            }
             p+=16; continue;
         }
         if ((cmd&0xe0u)==0x60u) {
-            uint8_t f=cmd&0x0fu; unsigned n= num ? num : 256;
+            uint8_t f=cmd&0x0fu;
+            unsigned n=num ? num : 256;
             unsigned bits=(f==0xfu)?20u:(32u>>vl(f))*vn(f);
             unsigned bytes=(bits+7u)/8u;
             if (!bits) return -4;
+
             for(unsigned v=0;v<n;v++) {
                 if(p+bytes>size)return -5;
                 uint32_t q[4];
-                unsigned used=unpack_one(data+p,f,(imm&0x4000u)!=0,q);
-                p+=used;
+                (void)unpack_one(data+p,f,(imm&0x4000u)!=0,q);
+                p+=bytes;
+
                 size_t target=(size_t)addr;
-                if (imm&0x8000u) target=(size_t)((tops*16u)+addr);
-                if(target+16>vu_size)return -6;
-                for(unsigned i=0;i<4;i++) wr32(vu_memory+target+i*4,q[i]);
-                addr+=16;
+                if (imm&0x8000u) target=(size_t)(tops*16u)+addr;
+                if (mode==1) {
+                    for(unsigned i=0;i<4;i++) q[i]+=row[i];
+                } else if (mode==2) {
+                    for(unsigned i=0;i<4;i++) {
+                        q[i]+=row[i];
+                        row[i]=q[i];
+                    }
+                }
+
+                uint32_t write_cycle=cycle_pos+1u;
+                for(unsigned i=0;i<4;i++) {
+                    unsigned m=(mask>>(i*2u))&3u;
+                    if(m==1u) q[i]=row[i];
+                    else if(m==2u) {
+                        unsigned ci=write_cycle>4u?3u:write_cycle-1u;
+                        q[i]=col[ci];
+                    }
+                    if(m!=3u) {
+                        if(target+4u>vu_size)return -6;
+                        wr32(vu_memory+target+i*4u,q[i]);
+                    }
+                }
+
+                if(target+16u>vu_size)return -6;
+                addr+=16u;
                 out->qwords_written++;
-                if (wl && cl && out->qwords_written % cl == 0 && cl < wl)
-                    addr+=(size_t)(wl-cl)*16u;
+                cycle_pos++;
+                if(cycle_pos>=cl) cycle_pos=0;
+                if(cl>wl && cycle_pos==wl) {
+                    addr+=(size_t)(cl-wl)*16u;
+                    cycle_pos=0;
+                }
             }
             out->unpack_commands++;
             out->bytes_written=out->qwords_written*16u;
             continue;
         }
-        if (cmd==0x4a) { uint32_t bytes=(uint32_t)(num?num:256u)*8u; if(p+bytes>size)return -7; p+=bytes; continue; }
-        if (cmd==0x50 || cmd==0x51) { uint32_t bytes=(uint32_t)imm*16u; if(p+bytes>size)return -8; p+=bytes; continue; }
+        if (cmd==0x4a) {
+            uint32_t bytes=(uint32_t)(num?num:256u)*8u;
+            if(p+bytes>size)return -7;
+            p+=bytes; continue;
+        }
+        if (cmd==0x50 || cmd==0x51) {
+            uint32_t bytes=(uint32_t)imm*16u;
+            if(p+bytes>size)return -8;
+            p+=bytes; continue;
+        }
+        (void)base;
+        (void)offset;
         return -9;
     }
     return p==size ? 0 : -10;
