@@ -86,6 +86,40 @@ int main(void) {
         t.vi[2]=0x55u; t.mac_flag=0x55u; assert(tsfp_vu_execute(m,sizeof(m),0,&t,16)==0);
         assert(t.vi[3]==1u);
     }
+
+    {
+        /* Special lower pipeline: LQI/SQI post-increment and field masks. */
+        uint8_t m[80]={0}; uint32_t x;
+        uint32_t lqi=0x80000000u | (15u<<21) | (2u<<16) | (3u<<11) | 0x340u;
+        uint32_t sqi=0x80000000u | (15u<<21) | (2u<<16) | (4u<<11) | 0x341u;
+        float src[4]={7,8,9,10};
+        memcpy(mem+64,src,16);
+        memcpy(m+0,&lqi,4); x=0; memcpy(m+4,&x,4);
+        memcpy(m+8,&sqi,4); x=0; memcpy(m+12,&x,4);
+        x=0; memcpy(m+16,&x,4); x=0x40000000u; memcpy(m+20,&x,4);
+        TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
+        t.vi[3]=4; t.vi[4]=6;
+        assert(tsfp_vu_execute(m,sizeof(m),0,&t,16)==0);
+        float got[4]; memcpy(got,t.vf[2],16);
+        assert(got[0]==7.0f && got[1]==8.0f && got[2]==9.0f && got[3]==10.0f);
+        assert(t.vi[3]==5u && t.vi[4]==7u);
+        memcpy(got,mem+96,16);
+        assert(got[0]==7.0f && got[1]==8.0f && got[2]==9.0f && got[3]==10.0f);
+    }
+    {
+        /* MTIR/MFIR transfer only the selected field / 16-bit integer value. */
+        uint8_t m[80]={0}; uint32_t x;
+        uint32_t mtir=0x80000000u | (3u<<21) | (3u<<16) | (12u<<11) | 0x3c0u;
+        uint32_t mfir=0x80000000u | (1u<<21) | (5u<<16) | (3u<<11) | 0x3c1u;
+        memcpy(m+0,&mtir,4); x=0; memcpy(m+4,&x,4);
+        memcpy(m+8,&mfir,4); x=0; memcpy(m+12,&x,4);
+        x=0; memcpy(m+16,&x,4); x=0x40000000u; memcpy(m+20,&x,4);
+        TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
+        t.vf[12][3]=0x1234abcd; t.vi[3]=0;
+        assert(tsfp_vu_execute(m,sizeof(m),0,&t,16)==0);
+        assert(t.vi[3]==0xabcd);
+        assert(t.vf[5][0]==0xabcd);
+    }
     {
         uint8_t m[32]={0}; uint32_t x=0;
         x=0; memcpy(m,&x,4); x=upper(0x2e,3,1,2,0x7); memcpy(m+4,&x,4);
