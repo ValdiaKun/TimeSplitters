@@ -40,7 +40,7 @@ int tsfp_vu_probe(const uint8_t *micro, size_t size, uint32_t start, uint32_t *x
     for (size_t pc = start; pc < words; ++pc) {
         uint32_t lower = rd32(micro + pc * 8u);
         uint32_t upper = rd32(micro + pc * 8u + 4u);
-        if (((lower >> 25) & 0x7fu) == 0x6cu) {
+        if (!(upper & 0x80000000u) && ((lower >> 25) & 0x7fu) == 0x6cu) {
             *xgkick_pc = (uint32_t)pc;
         }
         if (upper & 0x40000000u) return 0;
