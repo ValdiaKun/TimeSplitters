@@ -20,8 +20,8 @@ typedef struct {
     uint32_t unpack_address;
     uint8_t unpack_unsigned;
     uint8_t unpack_top_relative;
-    uint8_t cycle_length;
-    uint8_t write_length;
+    uint16_t cycle_length;
+    uint16_t write_length;
     uint32_t vector[4];
     uint32_t command_count;
     uint32_t unpack_count;
