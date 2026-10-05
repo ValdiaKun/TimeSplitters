@@ -23,6 +23,11 @@ typedef struct {
     uint8_t cycle_length;
     uint8_t write_length;
     uint32_t vector[4];
+    uint32_t command_count;
+    uint32_t unpack_count;
+    uint32_t unpack_qwords;
+    uint32_t unpack_data_bytes;
+    uint32_t mscal_count;
 } TsFpVifSummary;
 
 int tsfp_vif_probe(const uint8_t *data, size_t size, TsFpVifSummary *out);
