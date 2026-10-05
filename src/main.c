@@ -15,6 +15,8 @@
 #include "fp_gif.h"
 #define DATA_PATH "ux0:data/TimeSplitters/PAK/CHR.PAK"
 #define BOOT_PATH "ux0:data/TimeSplitters/SLED_530.66"
+static vita2d_color_vertex preview[1024];
+static size_t preview_count=0;
 static void run_vu_path(const uint8_t *vif_data,size_t vif_size,TsFpGifSummary *gif);
 static int load_probe(TsP5ckInfo *info, TsP5ckEntry *entry, TsFpResourceSummary *resource, TsFpModelHeader *model, TsFpGeometrySummary *geometry, TsFpVifSummary *vif, TsFpGifSummary *gif) {
     FILE *fp=fopen(DATA_PATH,"rb"); uint8_t *buf=NULL; size_t n; int r;
@@ -46,7 +48,13 @@ static void run_vu_path(const uint8_t *vif_data,size_t vif_size,TsFpGifSummary *
     if(tsfp_vu_find_vutext(elf,n,&off,&len)!=0) goto done;
     tsfp_vu_state_init(&vs,vu_mem,16u*1024u,gif_mem,64u*1024u);
     if(tsfp_vu_execute(elf+off,len,0x683u,&vs,4096)!=0) goto done;
-    (void)tsfp_gif_parse(gif_mem,vs.gif_used,gif,verts,512);
+    if(tsfp_gif_parse(gif_mem,vs.gif_used,gif,verts,512)==0){
+        preview_count=gif->vertices<512?gif->vertices:512;
+        float minx=1e30f,miny=1e30f,maxx=-1e30f,maxy=-1e30f;
+        for(size_t i=0;i<preview_count;i++){if(verts[i].x<minx)minx=verts[i].x;if(verts[i].x>maxx)maxx=verts[i].x;if(verts[i].y<miny)miny=verts[i].y;if(verts[i].y>maxy)maxy=verts[i].y;}
+        float sx=(maxx-minx)>0?760.0f/(maxx-minx):1.0f,sy=(maxy-miny)>0?400.0f/(maxy-miny):1.0f,s=sx<sy?sx:sy;
+        for(size_t i=0;i<preview_count;i++){preview[i].x=100.0f+(verts[i].x-minx)*s;preview[i].y=120.0f+(verts[i].y-miny)*s;preview[i].z=0.5f;preview[i].color=((unsigned)verts[i].a<<24)|((unsigned)verts[i].b<<16)|((unsigned)verts[i].g<<8)|verts[i].r;}
+    }
 done:
     if(fp) fclose(fp);
     free(elf); free(gif_mem); free(vu_mem);
@@ -82,7 +90,7 @@ static void draw(int result,const TsP5ckInfo *info,const TsP5ckEntry *entry,cons
     if(model->mesh_count) { float w=(float)(model->mesh_count>100?800:(model->mesh_count*800u)/100u); vita2d_draw_rectangle(80,390,w,20,0xFFC040A0); }
     if(model->material_count) { float w=(float)(model->material_count>100?800:(model->material_count*800u)/100u); vita2d_draw_rectangle(80,420,w,20,0xFF40C080); }
     if(vif->payload_bytes) { float w=(float)(vif->payload_bytes>64?800:(vif->payload_bytes*800u)/64u); vita2d_draw_rectangle(80,470,w,12,0xFF80C060); }
-    if(gif->vertices) vita2d_draw_rectangle(80,510,800,10,0xFF40A080);
+    if(preview_count>=3){ size_t n=preview_count-(preview_count%3); vita2d_draw_array(SCE_GXM_PRIMITIVE_TRIANGLES,preview,n); }
     if(xgkick_pc!=UINT32_MAX) vita2d_draw_rectangle(80,500,800,10,0xFFC08040);
     if(geometry->submesh_count) { float w=(float)(geometry->submesh_count>256?800:(geometry->submesh_count*800u)/256u); vita2d_draw_rectangle(80,450,w,18,0xFF60A0E0); }
 }
