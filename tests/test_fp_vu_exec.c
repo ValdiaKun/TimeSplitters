@@ -86,5 +86,16 @@ int main(void) {
         t.vi[2]=0x55u; t.mac_flag=0x55u; assert(tsfp_vu_execute(m,sizeof(m),0,&t,16)==0);
         assert(t.vi[3]==1u);
     }
+    {
+        uint8_t m[32]={0}; uint32_t x=0;
+        x=0; memcpy(m,&x,4); x=upper(0x2e,3,1,2,0x7); memcpy(m+4,&x,4);
+        x=0; memcpy(m+8,&x,4); x=0x40000000u; memcpy(m+12,&x,4);
+        TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
+        float a[4]={10,20,30,0}, b[4]={2,3,4,0};
+        memcpy(t.acc,a,16); memcpy(t.vf[1],(float[4]){1,2,3,0},16); memcpy(t.vf[2],b,16);
+        assert(tsfp_vu_execute(m,sizeof(m),0,&t,8)==0);
+        float got[4]; memcpy(got,t.vf[3],16);
+        assert(got[0]==6.0f && got[1]==17.0f && got[2]==28.0f);
+    }
     return 0;
 }
