@@ -11,9 +11,13 @@ static int32_t sx11(uint32_t v){v&=0x7ffu;return (v&0x400u)?(int32_t)(v|0xfffff8
 static float qf(const TsFpVuState *s){return f32(s->q);}
 static float if_(const TsFpVuState *s){return f32(s->vi[21]);}
 static float bc(const TsFpVuState *s,unsigned ft,unsigned b){return f32(s->vf[ft][b&3u]);}
+static int mask_has(unsigned mask,unsigned component){
+    /* VU field encoding is W=bit0, Z=bit1, Y=bit2, X=bit3. */
+    return (mask & (1u << (3u-component))) != 0u;
+}
 static void write_mask(TsFpVuState *s,unsigned fd,unsigned mask,const float r[4]){
     if(!fd)return;
-    for(unsigned i=0;i<4;i++)if(mask&(1u<<i))s->vf[fd][i]=u32(r[i]);
+    for(unsigned i=0;i<4;i++)if(mask_has(mask,i))s->vf[fd][i]=u32(r[i]);
 }
 static float fpmax(float a,float b){return a>b?a:b;}
 static float fpmin(float a,float b){return a<b?a:b;}
@@ -50,30 +54,30 @@ static void special_upper(TsFpVuState *s,uint32_t up){
     unsigned ft=(up>>16)&31u,fs=(up>>11)&31u,mask=(up>>21)&15u,fd=(up>>6)&31u;
     unsigned sop=(up&3u)|(fd<<2);
     switch(sop){
-    case 0:case 1:case 2:case 3: for(unsigned i=0;i<4;i++)if(mask&(1u<<i))s->acc[i]=u32(f32(s->vf[fs][i])+bc(s,ft,sop));return;
-    case 4:case 5:case 6:case 7: for(unsigned i=0;i<4;i++)if(mask&(1u<<i))s->acc[i]=u32(f32(s->vf[fs][i])-bc(s,ft,sop-4));return;
-    case 8:case 9:case 10:case 11: for(unsigned i=0;i<4;i++)if(mask&(1u<<i))s->acc[i]=u32(f32(s->acc[i])+f32(s->vf[fs][i])*bc(s,ft,sop-8));return;
-    case 12:case 13:case 14:case 15: for(unsigned i=0;i<4;i++)if(mask&(1u<<i))s->acc[i]=u32(f32(s->acc[i])-f32(s->vf[fs][i])*bc(s,ft,sop-12));return;
+    case 0:case 1:case 2:case 3: for(unsigned i=0;i<4;i++)if(mask_has(mask,i))s->acc[i]=u32(f32(s->vf[fs][i])+bc(s,ft,sop));return;
+    case 4:case 5:case 6:case 7: for(unsigned i=0;i<4;i++)if(mask_has(mask,i))s->acc[i]=u32(f32(s->vf[fs][i])-bc(s,ft,sop-4));return;
+    case 8:case 9:case 10:case 11: for(unsigned i=0;i<4;i++)if(mask_has(mask,i))s->acc[i]=u32(f32(s->acc[i])+f32(s->vf[fs][i])*bc(s,ft,sop-8));return;
+    case 12:case 13:case 14:case 15: for(unsigned i=0;i<4;i++)if(mask_has(mask,i))s->acc[i]=u32(f32(s->acc[i])-f32(s->vf[fs][i])*bc(s,ft,sop-12));return;
     case 16:case 17:case 18:case 19:case 20:case 21:case 22:case 23:{
         unsigned sh=(sop==16||sop==20)?0:(sop==17||sop==21)?4:(sop==18||sop==22)?12:15;
         int toint=sop>=20;
-        for(unsigned i=0;i<4;i++)if(mask&(1u<<i)){
+        for(unsigned i=0;i<4;i++)if(mask_has(mask,i)){
             float x=f32(s->vf[fs][i]);
             s->vf[ft][i]=toint?(uint32_t)(int32_t)(x*(float)(1u<<sh)):u32((float)(int32_t)s->vf[fs][i]/(float)(1u<<sh));
         } return;}
-    case 24:case 25:case 26:case 27: for(unsigned i=0;i<4;i++)if(mask&(1u<<i))s->acc[i]=u32(f32(s->vf[fs][i])*bc(s,ft,sop-24));return;
-    case 28:for(unsigned i=0;i<4;i++)if(mask&(1u<<i))s->acc[i]=u32(f32(s->vf[fs][i])*qf(s));return;
-    case 29:for(unsigned i=0;i<4;i++)if(mask&(1u<<i))s->vf[ft][i]=s->vf[fs][i]&0x7fffffffu;return;
-    case 30:for(unsigned i=0;i<4;i++)if(mask&(1u<<i))s->acc[i]=u32(f32(s->vf[fs][i])*if_(s));return;
+    case 24:case 25:case 26:case 27: for(unsigned i=0;i<4;i++)if(mask_has(mask,i))s->acc[i]=u32(f32(s->vf[fs][i])*bc(s,ft,sop-24));return;
+    case 28:for(unsigned i=0;i<4;i++)if(mask_has(mask,i))s->acc[i]=u32(f32(s->vf[fs][i])*qf(s));return;
+    case 29:for(unsigned i=0;i<4;i++)if(mask_has(mask,i))s->vf[ft][i]=s->vf[fs][i]&0x7fffffffu;return;
+    case 30:for(unsigned i=0;i<4;i++)if(mask_has(mask,i))s->acc[i]=u32(f32(s->vf[fs][i])*if_(s));return;
     case 31:return;
-    case 32:for(unsigned i=0;i<4;i++)if(mask&(1u<<i))s->acc[i]=u32(f32(s->vf[fs][i])+qf(s));return;
-    case 33:for(unsigned i=0;i<4;i++)if(mask&(1u<<i))s->acc[i]=u32(f32(s->acc[i])+f32(s->vf[fs][i])*qf(s));return;
-    case 34:for(unsigned i=0;i<4;i++)if(mask&(1u<<i))s->acc[i]=u32(f32(s->vf[fs][i])+if_(s));return;
-    case 35:for(unsigned i=0;i<4;i++)if(mask&(1u<<i))s->acc[i]=u32(f32(s->acc[i])+f32(s->vf[fs][i])*if_(s));return;
-    case 36:for(unsigned i=0;i<4;i++)if(mask&(1u<<i))s->acc[i]=u32(f32(s->vf[fs][i])-qf(s));return;
-    case 37:for(unsigned i=0;i<4;i++)if(mask&(1u<<i))s->acc[i]=u32(f32(s->acc[i])-f32(s->vf[fs][i])*qf(s));return;
-    case 38:for(unsigned i=0;i<4;i++)if(mask&(1u<<i))s->acc[i]=u32(f32(s->vf[fs][i])-if_(s));return;
-    case 39:for(unsigned i=0;i<4;i++)if(mask&(1u<<i))s->acc[i]=u32(f32(s->acc[i])-f32(s->vf[fs][i])*if_(s));return;
+    case 32:for(unsigned i=0;i<4;i++)if(mask_has(mask,i))s->acc[i]=u32(f32(s->vf[fs][i])+qf(s));return;
+    case 33:for(unsigned i=0;i<4;i++)if(mask_has(mask,i))s->acc[i]=u32(f32(s->acc[i])+f32(s->vf[fs][i])*qf(s));return;
+    case 34:for(unsigned i=0;i<4;i++)if(mask_has(mask,i))s->acc[i]=u32(f32(s->vf[fs][i])+if_(s));return;
+    case 35:for(unsigned i=0;i<4;i++)if(mask_has(mask,i))s->acc[i]=u32(f32(s->acc[i])+f32(s->vf[fs][i])*if_(s));return;
+    case 36:for(unsigned i=0;i<4;i++)if(mask_has(mask,i))s->acc[i]=u32(f32(s->vf[fs][i])-qf(s));return;
+    case 37:for(unsigned i=0;i<4;i++)if(mask_has(mask,i))s->acc[i]=u32(f32(s->acc[i])-f32(s->vf[fs][i])*qf(s));return;
+    case 38:for(unsigned i=0;i<4;i++)if(mask_has(mask,i))s->acc[i]=u32(f32(s->vf[fs][i])-if_(s));return;
+    case 39:for(unsigned i=0;i<4;i++)if(mask_has(mask,i))s->acc[i]=u32(f32(s->acc[i])-f32(s->vf[fs][i])*if_(s));return;
     case 40:mac3(s,0,fs,ft,mask,0,1);return;
     case 41:mac3(s,0,fs,ft,mask,3,1);return;
     case 42:mac3(s,0,fs,ft,mask,2,1);return;
