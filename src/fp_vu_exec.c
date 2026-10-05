@@ -113,7 +113,12 @@ static void upper_exec(TsFpVuState *s,uint32_t up){
     case 0x2b:{float r[4];for(unsigned i=0;i<4;i++)r[i]=fpmax(f32(s->vf[fs][i]),f32(s->vf[ft][i]));write_mask(s,fd,mask,r);break;}
     case 0x2c:mac3(s,fd,fs,ft,mask,1,0);break;
     case 0x2d:mac3(s,fd,fs,ft,mask,4,0);break;
-    case 0x2e:for(unsigned i=0;i<3;i++)if(mask&(1u<<i))s->acc[i]=u32(f32(s->vf[fs][(i+1)%3])*f32(s->vf[ft][(i+2)%3]));break;
+    case 0x2e:{
+        float r[4]={f32(s->acc[0])-f32(s->vf[fs][1])*f32(s->vf[ft][2]),
+                    f32(s->acc[1])-f32(s->vf[fs][2])*f32(s->vf[ft][0]),
+                    f32(s->acc[2])-f32(s->vf[fs][0])*f32(s->vf[ft][1]),0.0f};
+        write_mask(s,fd,mask,r); break;
+    }
     case 0x2f:{float r[4];for(unsigned i=0;i<4;i++)r[i]=fpmin(f32(s->vf[fs][i]),f32(s->vf[ft][i]));write_mask(s,fd,mask,r);break;}
     default:s->unsupported++;break;
     }
