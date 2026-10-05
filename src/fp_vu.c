@@ -1,4 +1,5 @@
 #include "fp_vu.h"
+#include <string.h>
 
 static uint32_t rd32(const uint8_t *p) {
     return (uint32_t)p[0] | ((uint32_t)p[1] << 8) |
