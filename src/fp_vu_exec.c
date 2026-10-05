@@ -66,14 +66,13 @@ static void special_upper(TsFpVuState *s,uint32_t up){
     case 29:for(unsigned i=0;i<4;i++)if(mask&(1u<<i))s->vf[ft][i]=s->vf[fs][i]&0x7fffffffu;return;
     case 30:for(unsigned i=0;i<4;i++)if(mask&(1u<<i))s->acc[i]=u32(f32(s->vf[fs][i])*if_(s));return;
     case 31:{
-        float w=f32(s->vf[ft][3]);
+        float w=fabsf(f32(s->vf[ft][3]));
         uint32_t clip=0;
-        for(unsigned i=0;i<3;i++){
-            float x=f32(s->vf[fs][i]);
-            if(x>w) clip|=1u<<i;
-            if(x<-w) clip|=1u<<(i+3u);
-        }
-        s->clip_flag=clip;
+        float x=f32(s->vf[fs][0]), y=f32(s->vf[fs][1]), z=f32(s->vf[fs][2]);
+        if(x>w) clip|=0x01u; if(x<-w) clip|=0x02u;
+        if(y>w) clip|=0x04u; if(y<-w) clip|=0x08u;
+        if(z>w) clip|=0x10u; if(z<-w) clip|=0x20u;
+        s->clip_flag=(s->clip_flag<<6)|clip;
         return;
     }
     case 43:return;
