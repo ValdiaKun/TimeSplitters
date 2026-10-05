@@ -150,7 +150,112 @@ static size_t gif_packet_size(const uint8_t *mem,size_t size,size_t start){
 
 static void lower_exec(TsFpVuState *s,uint32_t lo,uint32_t next_pc){
     unsigned op=(lo>>25)&0x7fu,it=(lo>>16)&31u,is=(lo>>11)&31u,id=(lo>>6)&31u;
+    unsigned dest=(lo>>21)&15u;
     int32_t imm=sx11(lo);
+
+    /* Lower "special1" instructions are selected by bit 31 plus the
+       low six-bit opcode.  The 4-bit destination mask is at bits 21..24. */
+    if((lo&0x80000000u) && (lo&0x3fu)>=0x3cu){
+        unsigned sop=(lo&3u)|((lo>>4)&0x7cu);
+        size_t a;
+        switch(sop){
+        case 0x30: /* MOVE */
+            if(it) write_mask(s,it,dest,(float[4]){
+                f32(s->vf[is][0]),f32(s->vf[is][1]),f32(s->vf[is][2]),f32(s->vf[is][3])});
+            return;
+        case 0x34: /* LQI VF[ft], (VI[is]++) */
+            a=((size_t)s->vi[is]&0x3ffu)*16u;
+            if(a+16>s->memory_size){s->unsupported++;return;}
+            if(dest&1u)s->vf[it][0]=rd32(s->memory+a);
+            if(dest&2u)s->vf[it][1]=rd32(s->memory+a+4);
+            if(dest&4u)s->vf[it][2]=rd32(s->memory+a+8);
+            if(dest&8u)s->vf[it][3]=rd32(s->memory+a+12);
+            s->vi[is]=(s->vi[is]+1u)&0x3ffu;
+            return;
+        case 0x35: /* SQI VF[fs], (VI[it]++) */
+            a=((size_t)s->vi[it]&0x3ffu)*16u;
+            if(a+16>s->memory_size){s->unsupported++;return;}
+            if(dest&1u)wr32(s->memory+a,s->vf[is][0]);
+            if(dest&2u)wr32(s->memory+a+4,s->vf[is][1]);
+            if(dest&4u)wr32(s->memory+a+8,s->vf[is][2]);
+            if(dest&8u)wr32(s->memory+a+12,s->vf[is][3]);
+            s->vi[it]=(s->vi[it]+1u)&0x3ffu;
+            return;
+        case 0x36: /* LQD VF[ft], (--VI[is]) */
+            s->vi[is]=(s->vi[is]-1u)&0x3ffu;
+            a=(size_t)s->vi[is]*16u;
+            if(a+16>s->memory_size){s->unsupported++;return;}
+            if(dest&1u)s->vf[it][0]=rd32(s->memory+a);
+            if(dest&2u)s->vf[it][1]=rd32(s->memory+a+4);
+            if(dest&4u)s->vf[it][2]=rd32(s->memory+a+8);
+            if(dest&8u)s->vf[it][3]=rd32(s->memory+a+12);
+            return;
+        case 0x37: /* SQD VF[fs], (--VI[it]) */
+            s->vi[it]=(s->vi[it]-1u)&0x3ffu;
+            a=(size_t)s->vi[it]*16u;
+            if(a+16>s->memory_size){s->unsupported++;return;}
+            if(dest&1u)wr32(s->memory+a,s->vf[is][0]);
+            if(dest&2u)wr32(s->memory+a+4,s->vf[is][1]);
+            if(dest&4u)wr32(s->memory+a+8,s->vf[is][2]);
+            if(dest&8u)wr32(s->memory+a+12,s->vf[is][3]);
+            return;
+        case 0x38: { /* DIV Q, VF[fs]fsf, VF[ft]ftf */
+            unsigned ftf=(lo>>23)&3u,fsf=(lo>>21)&3u;
+            s->q=u32(f32(s->vf[is][fsf])/f32(s->vf[it][ftf]));
+            return;
+        }
+        case 0x39: { /* SQRT Q, VF[ft]ftf */
+            unsigned ftf=(lo>>23)&3u;
+            s->q=u32(sqrtf(fabsf(f32(s->vf[it][ftf]))));
+            return;
+        }
+        case 0x3a: { /* RSQRT Q, VF[fs]fsf / sqrt(abs(VF[ft]ftf)) */
+            unsigned ftf=(lo>>23)&3u,fsf=(lo>>21)&3u;
+            s->q=u32(f32(s->vf[is][fsf])/sqrtf(fabsf(f32(s->vf[it][ftf]))));
+            return;
+        }
+        case 0x3b: /* WAITQ: timing is not cycle-accurate here. */
+            return;
+        case 0x3c: { /* MTIR VI[it], VF[fs]field */
+            unsigned fsf=(lo>>21)&3u;
+            if(it)s->vi[it]=s->vf[is][fsf]&0xffffu;
+            return;
+        }
+        case 0x3d: { /* MFIR VF[ft]field, VI[is] */
+            if(it && (dest&1u))s->vf[it][0]=s->vi[is];
+            if(it && (dest&2u))s->vf[it][1]=s->vi[is];
+            if(it && (dest&4u))s->vf[it][2]=s->vi[is];
+            if(it && (dest&8u))s->vf[it][3]=s->vi[is];
+            return;
+        }
+        case 0x3e: /* ILWR VI[it], (VI[is])field */
+            a=((size_t)s->vi[is]&0x3ffu)*16u+(dest?((dest==1u)?0u:(dest==2u)?4u:(dest==4u)?8u:12u):0u);
+            if(a+4>s->memory_size){s->unsupported++;return;}
+            if(it)s->vi[it]=rd32(s->memory+a)&0xffffu;
+            return;
+        case 0x3f: /* ISWR VI[it], (VI[is])field */
+            a=((size_t)s->vi[is]&0x3ffu)*16u+(dest?((dest==1u)?0u:(dest==2u)?4u:(dest==4u)?8u:12u):0u);
+            if(a+4>s->memory_size){s->unsupported++;return;}
+            wr32(s->memory+a,it?s->vi[it]:0u);
+            return;
+        case 0x6c: { /* XGKICK VI[is] */
+            a=((size_t)s->vi[is]&0x3ffu)*16u;
+            s->xgkick_pc=s->pc;
+            if(a<s->memory_size&&s->gif&&s->gif_used<s->gif_size){
+                size_t n=gif_packet_size(s->memory,s->memory_size,a);
+                if(!n)n=s->memory_size-a;
+                if(n>s->gif_size-s->gif_used)n=s->gif_size-s->gif_used;
+                memcpy(s->gif+s->gif_used,s->memory+a,n);
+                s->gif_used+=n;
+            }
+            return;
+        }
+        default:
+            s->unsupported++;
+            return;
+        }
+    }
+
     if(op==0x00u||op==0x01u){
         size_t a=mem_addr(s,is,imm);
         if(a+16>s->memory_size){s->unsupported++;return;}
@@ -160,13 +265,13 @@ static void lower_exec(TsFpVuState *s,uint32_t lo,uint32_t next_pc){
     if(op==0x04u||op==0x05u){
         size_t a=mem_addr(s,is,imm)+(id&3u)*4u;
         if(a+4>s->memory_size){s->unsupported++;return;}
-        if(op==4)s->vi[it]=rd32(s->memory+a);else wr32(s->memory+a,s->vi[it]);
+        if(op==4)s->vi[it]=rd32(s->memory+a)&0xffffu;else wr32(s->memory+a,s->vi[it]&0xffffu);
         return;
     }
     if(op==0x08u||op==0x09u){if(it)s->vi[it]=(uint32_t)((int32_t)s->vi[is]+imm*(op==8?1:-1));return;}
     if(op==0x30u){if(id)s->vi[id]=s->vi[it]+s->vi[is];return;}
     if(op==0x31u){if(id)s->vi[id]=s->vi[it]-s->vi[is];return;}
-    if(op==0x32u){if(id)s->vi[id]=s->vi[it]+(lo&0x7ffu);return;}
+    if(op==0x32u){if(id)s->vi[id]=s->vi[it]+sx11(lo);return;}
     if(op==0x34u){if(id)s->vi[id]=s->vi[it]&s->vi[is];return;}
     if(op==0x35u){if(id)s->vi[id]=s->vi[it]|s->vi[is];return;}
     if(op==0x20u){s->branch_pending=1;s->branch_target=(uint32_t)((int32_t)next_pc+imm);return;}
@@ -179,10 +284,10 @@ static void lower_exec(TsFpVuState *s,uint32_t lo,uint32_t next_pc){
         if(take){s->branch_pending=1;s->branch_target=(uint32_t)((int32_t)next_pc+imm);}
         return;
     }
-    if(op==0x10u){s->vi[1]=((s->clip_flag&0xffffffu)==(lo&0xffffffu))?1u:0u;return;}
+    if(op==0x10u){if(it)s->vi[it]=((s->clip_flag&0xffffffu)==(lo&0xffffffu))?1u:0u;return;}
     if(op==0x11u){s->clip_flag=lo&0xffffffu;return;}
-    if(op==0x12u){s->vi[1]=((s->clip_flag&(lo&0xffffffu))!=0u)?1u:0u;return;}
-    if(op==0x13u){s->vi[1]=(((s->clip_flag|(lo&0xffffffu))&0xffffffu)==0xffffffu)?1u:0u;return;}
+    if(op==0x12u){if(it)s->vi[it]=((s->clip_flag&(lo&0xffffffu))!=0u)?1u:0u;return;}
+    if(op==0x13u){if(it)s->vi[it]=(((s->clip_flag|(lo&0xffffffu))&0xffffffu)==0xffffffu)?1u:0u;return;}
     if(op==0x14u){if(it)s->vi[it]=((s->status_flag&0xfffu)==(lo&0xfffu))?1u:0u;return;}
     if(op==0x15u){s->status_flag=(s->status_flag&0x3fu)|(lo&0xfc0u);return;}
     if(op==0x16u){if(it)s->vi[it]=((s->status_flag&(lo&0xfffu))!=0u)?1u:0u;return;}
@@ -193,21 +298,9 @@ static void lower_exec(TsFpVuState *s,uint32_t lo,uint32_t next_pc){
     if(op==0x1cu){if(it)s->vi[it]=s->clip_flag&0xfffu;return;}
     if(op==0x7cu||op==0x7du||op==0x7eu||op==0x7fu){
         unsigned ftf=(lo>>23)&3u,fsf=(lo>>21)&3u;
-        float ftv=f32(s->vf[it][ftf]), fsv=f32(s->vf[is][fsf]);
-        if(op==0x7cu) s->q=u32(fsv/ftv);
-        else if(op==0x7du) s->q=u32(sqrtf(fabsf(ftv)));
-        else if(op==0x7eu) s->q=u32(fsv/sqrtf(fabsf(ftv)));
-        return;
-    }
-    if(op==0x6cu){
-        size_t a=((size_t)s->vi[is]&0x3ffu)*16u;
-        s->xgkick_pc=s->pc;
-        if(a<s->memory_size&&s->gif&&s->gif_used<s->gif_size){
-            size_t n=gif_packet_size(s->memory,s->memory_size,a);
-            if(!n)n=s->memory_size-a;
-            if(n>s->gif_size-s->gif_used)n=s->gif_size-s->gif_used;
-            memcpy(s->gif+s->gif_used,s->memory+a,n);s->gif_used+=n;
-        }
+        if(op==0x7cu) s->q=u32(f32(s->vf[is][fsf])/f32(s->vf[it][ftf]));
+        else if(op==0x7du) s->q=u32(sqrtf(fabsf(f32(s->vf[it][ftf]))));
+        else if(op==0x7eu) s->q=u32(f32(s->vf[is][fsf])/sqrtf(fabsf(f32(s->vf[it][ftf]))));
         return;
     }
     if(op==0x68u){if(it)s->vi[it]=s->top;return;}
