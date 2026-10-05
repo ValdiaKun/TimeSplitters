@@ -27,6 +27,7 @@ int main(void) {
     TsFpVuState s; tsfp_vu_state_init(&s,mem,sizeof(mem),gif,sizeof(gif));
     assert(tsfp_vu_execute(micro,sizeof(micro),0,&s,32)==0);
     assert(s.vi[3]==5u);
-    assert(s.vf[3][0]==6.0f && s.vf[3][1]==8.0f && s.vf[3][2]==10.0f && s.vf[3][3]==12.0f);
+    float got[4]; memcpy(got,s.vf[3],sizeof(got));
+    assert(got[0]==6.0f && got[1]==8.0f && got[2]==10.0f && got[3]==12.0f);
     return 0;
 }
