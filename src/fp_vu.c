@@ -22,8 +22,8 @@ int tsfp_vu_find_vutext(const uint8_t *elf, size_t size, size_t *offset, size_t 
         const uint8_t *sec = elf + shoff + (size_t)i * shentsz;
         uint32_t name = rd32(sec), off = rd32(sec + 16), len = rd32(sec + 20);
         if (name >= str_len || (size_t)off + len > size) continue;
-        const char *n = (const char *)(elf + str_off + name);
-        if (strcmp(n, ".vutext") == 0) {
+        if (str_len - name >= 8u &&
+            memcmp(elf + str_off + name, ".vutext", 8u) == 0) {
             *offset = off;
             *length = len;
             return 0;
