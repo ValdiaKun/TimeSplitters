@@ -2,6 +2,7 @@
 #include <assert.h>
 #include <stdint.h>
 #include <string.h>
+#include <stdio.h>
 static uint32_t u32(float x){uint32_t v;memcpy(&v,&x,4);return v;}
 static float f32(uint32_t x){float v;memcpy(&v,&x,4);return v;}
 
@@ -30,6 +31,7 @@ int main(void) {
     assert(tsfp_vu_execute(micro,sizeof(micro),0,&s,32)==0);
     assert(s.vi[3]==5u);
     float got[4]; memcpy(got,s.vf[3],sizeof(got));
+    fprintf(stderr,"VU add result: %f %f %f %f | vf1=%f vf2=%f\\n",got[0],got[1],got[2],got[3],f32(s.vf[1][0]),f32(s.vf[2][0]));
     assert(got[0]==6.0f && got[1]==8.0f && got[2]==10.0f && got[3]==12.0f);
     {
         uint8_t m[64]={0};
