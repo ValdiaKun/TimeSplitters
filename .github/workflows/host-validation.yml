@@ -16,6 +16,11 @@ jobs:
           python-version: "3.x"
       - name: Compile Python tools
         run: python -m compileall -q tools
+      - name: Compile and test native Future Perfect resource parser
+        run: |
+          gcc -std=c11 -Wall -Wextra -Isrc -c src/fp_resource.c -o /tmp/fp_resource.o
+          gcc -std=c11 -Wall -Wextra -Isrc tests/test_fp_resource.c src/fp_resource.c -o /tmp/test_fp_resource
+          /tmp/test_fp_resource
       - name: Compile and test native TS3 model parser
         run: |
           gcc -std=c11 -Wall -Wextra -Isrc tests/test_ts3_model.c src/ts3_model.c -lm -o /tmp/test_ts3_model
