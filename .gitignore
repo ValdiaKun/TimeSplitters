@@ -1,49 +1,20 @@
-# Prerequisites
-*.d
-
-# Compiled Object files
-*.slo
-*.lo
-*.o
-*.obj
-
-# Precompiled Headers
-*.gch
-*.pch
-
-# Linker files
-*.ilk
-
-# Debugger Files
-*.pdb
-
-# Compiled Dynamic libraries
-*.so
-*.dylib
-*.dll
-*.so.*
-
-# Fortran module files
-*.mod
-*.smod
-
-# Compiled Static libraries
-*.lai
-*.la
-*.a
-*.lib
-
-# Executables
-*.exe
-*.out
-*.app
-
-# Build directories
+# Build output
 build/
 Build/
 build-*/
+*.vpk
+*.elf
+*.self
 
-# CMake generated files
+# Commercial game data - never commit
+*.iso
+*.bin
+*.pak
+*.c2n
+*.ps2
+*.zip
+
+# CMake
 CMakeFiles/
 CMakeCache.txt
 cmake_install.cmake
@@ -51,18 +22,10 @@ Makefile
 install_manifest.txt
 compile_commands.json
 
-# Temporary files
+# Tool/editor files
+.vscode/
+.cache/
 *.tmp
 *.log
 *.bak
 *.swp
-
-# vcpkg
-vcpkg_installed/
-
-# debug information files
-*.dwo
-
-# test output & cache
-Testing/
-.cache/
