@@ -129,5 +129,15 @@ int main(void) {
         uint32_t got[4]; memcpy(got,vu+0x100,sizeof(got));
         assert(got[0]==0x11u && got[1]==0x22u && got[2]==0x11u && got[3]==0x22u);
     }
+    {
+        /* V4-5 is packed into one full 32-bit word even though it carries 20 bits.
+           A truncated three-byte payload must be rejected before rd32 reads past it. */
+        uint8_t m[32]={0};
+        uint32_t head[]={v(0x01,0,0x0101),v(0x6f,1,0x0000)};
+        memcpy(m,head,sizeof(head));
+        m[8]=0x12; m[9]=0x34; m[10]=0x56;
+        memset(&ms,0,sizeof(ms));
+        assert(tsfp_vif_unpack_memory(m,11,vu,sizeof(vu),&ms)==-5);
+    }
     return 0;
 }
