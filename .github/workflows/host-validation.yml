@@ -31,7 +31,7 @@ jobs:
           /tmp/test_fp_geometry
       - name: Compile and test native Future Perfect VIF decoder
         run: |
-          gcc -std=c11 -Wall -Wextra -Isrc tests/test_fp_vif.c src/fp_vif.c -o /tmp/test_fp_vif
+          gcc -std=c11 -Wall -Wextra -Isrc tests/test_fp_vif.c src/fp_vif.c src/fp_vif_memory.c -o /tmp/test_fp_vif
           /tmp/test_fp_vif
       - name: Compile and test native TS3 model parser
         run: |
