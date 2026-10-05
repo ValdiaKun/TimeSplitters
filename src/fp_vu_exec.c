@@ -53,21 +53,23 @@ static void special_upper(TsFpVuState *s,uint32_t up){
     switch(sop){
     case 0: case 1: case 2: case 3:
         for(unsigned i=0;i<4;i++){float b=bc(s,ft,sop),x=f32(s->vf[fs][i]);s->acc[i]=u32(x+b);} return;
-    case 4: case 5: case 16: case 17: case 18: case 19:
+    case 16: case 17: case 18: case 19: case 20: case 21: case 22: case 23:
         {
-            unsigned shift=(sop==4||sop==5)?0u:(sop==16||sop==17)?4u:(sop==18||sop==19)?12u:15u;
-            int toint=(sop==5||sop==17||sop==19);
+            unsigned shift=(sop==16||sop==20)?0u:(sop==17||sop==21)?4u:(sop==18||sop==22)?12u:15u;
+            int toint=(sop==20||sop==21||sop==22||sop==23);
             for(unsigned i=0;i<4;i++)if(mask&(1u<<i)){
                 float x=f32(s->vf[fs][i]);
                 s->vf[ft][i]=toint?(uint32_t)(int32_t)(x*(float)(1u<<shift)):u32((float)(int32_t)s->vf[fs][i]/(float)(1u<<shift));
             }
         } return;
-    case 6: for(unsigned i=0;i<4;i++)s->acc[i]=u32(f32(s->vf[fs][i])*bc(s,ft,0));return;
-    case 7: for(unsigned i=0;i<4;i++)s->acc[i]=u32(f32(s->vf[fs][i])*qf(s));return;
-    case 8: for(unsigned i=0;i<4;i++)s->acc[i]=u32(f32(s->vf[fs][i])+qf(s));return;
-    case 9: for(unsigned i=0;i<4;i++)s->acc[i]=u32(f32(s->vf[fs][i])-qf(s));return;
-    case 10: mac3(s,0,fs,ft,mask,0,1);return;
-    case 11: mac3(s,0,fs,ft,mask,1,1);return;
+    case 0: case 1: case 2: case 3:
+        for(unsigned i=0;i<4;i++)s->acc[i]=u32(f32(s->vf[fs][i])+bc(s,ft,sop));return;
+    case 4: case 5: case 6: case 7:
+        for(unsigned i=0;i<4;i++)s->acc[i]=u32(f32(s->vf[fs][i])-bc(s,ft,sop-4));return;
+    case 8: case 9: case 10: case 11:
+        for(unsigned i=0;i<4;i++)s->acc[i]=u32(f32(s->acc[i])+f32(s->vf[fs][i])*bc(s,ft,sop-8));return;
+    case 12: case 13: case 14: case 15:
+        for(unsigned i=0;i<4;i++)s->acc[i]=u32(f32(s->acc[i])-f32(s->vf[fs][i])*bc(s,ft,sop-12));return;
     case 20: case 21: case 22: case 23:
         {
             unsigned shift=(sop==20||sop==21)?0u:(sop==22?4u:12u);
@@ -88,6 +90,7 @@ static void special_upper(TsFpVuState *s,uint32_t up){
     case 33: for(unsigned i=0;i<4;i++)s->acc[i]=u32(f32(s->acc[i])+f32(s->vf[fs][i])*qf(s));return;
     case 34: for(unsigned i=0;i<4;i++)s->acc[i]=u32(f32(s->vf[fs][i])+if_(s));return;
     case 35: for(unsigned i=0;i<4;i++)s->acc[i]=u32(f32(s->acc[i])+f32(s->vf[fs][i])*if_(s));return;
+    case 36: for(unsigned i=0;i<4;i++)s->acc[i]=u32(f32(s->vf[fs][i])-qf(s));return;
     case 37: for(unsigned i=0;i<4;i++)s->acc[i]=u32(f32(s->acc[i])-f32(s->vf[fs][i])*qf(s));return;
     case 38: for(unsigned i=0;i<4;i++)s->acc[i]=u32(f32(s->vf[fs][i])-if_(s));return;
     case 39: for(unsigned i=0;i<4;i++)s->acc[i]=u32(f32(s->acc[i])-f32(s->vf[fs][i])*if_(s));return;
