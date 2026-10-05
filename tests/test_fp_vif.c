@@ -43,6 +43,6 @@ int main(void) {
     assert(s.command_count >= 10);
     assert(s.unpack_count == 5);
     assert(s.mscal_count == 2);
-    assert(s.unpack_qwords == 1 + 2 + 1 + 1 + 1);
+    assert(s.unpack_qwords == 1 + 2 + 2 + 2 + 1);
     return 0;
 }
