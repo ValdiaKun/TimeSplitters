@@ -59,6 +59,16 @@ def main():
             64:"IADD",65:"ISUB",66:"IADDI",68:"IAND",69:"IOR",108:"XGKICK"
         }
         uop = upper.get(up & 0x3f, f"UPPER_{up & 0x3f:02x}")
+        if (up & 0x3f) >= 0x3c:
+            special = [
+                ["ADDAx","SUBAx","MADDAx","MSUBAx","ITOF0","FTOI0","MULAx","MULAq","ADDAq","SUBAq","ADDA","SUBA"],
+                ["ADDAy","SUBAy","MADDAy","MSUBAy","ITOF4","FTOI4","MULAy","ABS","MADDAq","MSUBAq","MADDA","MSUBA"],
+                ["ADDAz","SUBAz","MADDAz","MSUBAz","ITOF12","FTOI12","MULAz","MULAi","ADDAi","SUBAi","MULA","OPMULA"],
+                ["ADDAw","SUBAw","MADDAw","MSUBAw","ITOF15","FTOI15","MULAw","CLIP","MADDAi","MSUBAi","NOP"]
+            ]
+            group=(up>>6)&31
+            fd=(up>>6)&31
+            uop=special[(fd>>3)&3][group] if group < 12 else uop
         lop = lower.get((lo >> 25) & 0x7f, f"LOWER_{(lo >> 25) & 0x7f:02x}")
         ft=(up>>16)&31; fs=(up>>11)&31; fd=(up>>6)&31
         dest=(up>>21)&15
