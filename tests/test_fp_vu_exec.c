@@ -66,7 +66,7 @@ int main(void) {
     {
         uint8_t m[80]={0}; uint32_t x;
         /* FCSET 0x123, FCEQ VI3,0x123, FCGET VI4. */
-        x=0; memcpy(m+0,&x,4); x=0x40000000u; memcpy(m+4,&x,4);
+        x=0; memcpy(m+0,&x,4); x=0; memcpy(m+4,&x,4);
         x=lower(0x11,0,0,0)|0x123u; memcpy(m+8,&x,4); x=0; memcpy(m+12,&x,4);
         x=lower(0x10,3,0,0)|0x123u; memcpy(m+16,&x,4); x=0; memcpy(m+20,&x,4);
         x=lower(0x1c,4,0,0); memcpy(m+24,&x,4); x=0; memcpy(m+28,&x,4);
