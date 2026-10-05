@@ -42,7 +42,10 @@ static uint32_t unpack_one(const uint8_t *src, uint8_t format, int uns, uint32_t
     if(n==1){out[0]=out[1]=out[2]=out[3]=v[0];}
     else if(n==2){out[0]=out[2]=v[0];out[1]=out[3]=v[1];}
     else {for(unsigned i=0;i<4;i++)out[i]=v[i];}
-    return bytes;
+    /* VIF consumes complete 32-bit words even when a vector's packed payload
+       is narrower than one or more words.  This matters for V3-16/V3-8/V2-8
+       streams: the next vector starts on the next 32-bit word boundary. */
+    return (bytes + 3u) & ~3u;
 }
 
 int tsfp_vif_unpack_memory(const uint8_t *data, size_t size,
