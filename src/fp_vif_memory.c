@@ -112,8 +112,8 @@ int tsfp_vif_unpack_memory_ex(const uint8_t *data, size_t size,
             for(unsigned v=0;v<n;v++) {
                 if(p+bytes>size)return -5;
                 uint32_t q[4];
-                (void)unpack_one(data+p,f,(imm&0x4000u)!=0,q);
-                p+=bytes;
+                unsigned consumed=unpack_one(data+p,f,(imm&0x4000u)!=0,q);
+                p+=consumed;
 
                 size_t target=(size_t)addr;
                 for(unsigned i=0;i<4;i++) {
