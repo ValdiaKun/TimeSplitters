@@ -28,6 +28,7 @@ typedef struct {
     uint32_t unpack_qwords;
     uint32_t unpack_data_bytes;
     uint32_t mscal_count;
+    uint32_t mscal_address;
 } TsFpVifSummary;
 
 int tsfp_vif_probe(const uint8_t *data, size_t size, TsFpVifSummary *out);
