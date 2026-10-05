@@ -1,0 +1,25 @@
+name: Vita build
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: vitasdk/vitasdk:2026.08
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Configure
+        run: cmake -S . -B build
+      - name: Build
+        run: cmake --build build -j2
+      - name: Publish VPK
+        uses: actions/upload-artifact@v4
+        with:
+          name: TimeSplitters-Vita
+          path: build/*.vpk
+          if-no-files-found: error
