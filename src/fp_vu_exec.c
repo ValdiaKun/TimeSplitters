@@ -35,7 +35,7 @@ static void upper_exec(TsFpVuState *s, uint32_t up) {
     float r[4];
     const float *a=(const float*)s->vf[fs];
     (void)a;
-    if (op < 0x30u) {
+    if (op < 0x20u && op != 0x1cu && op != 0x1eu) {
         unsigned bc=op&3u;
         unsigned kind=(op>>2)&7u;
         float b;
