@@ -48,7 +48,7 @@ static void mac3(TsFpVuState *s,unsigned fd,unsigned fs,unsigned ft,unsigned mas
 
 static void special_upper(TsFpVuState *s,uint32_t up){
     unsigned ft=(up>>16)&31u,fs=(up>>11)&31u,mask=(up>>21)&15u,fd=(up>>6)&31u;
-    unsigned sop=(up&3u)|(fd<<2); float r[4];
+    unsigned sop=(up&3u)|(fd<<2);
     switch(sop){
     case 0:case 1:case 2:case 3: for(unsigned i=0;i<4;i++)if(mask&(1u<<i))s->acc[i]=u32(f32(s->vf[fs][i])+bc(s,ft,sop));return;
     case 4:case 5:case 6:case 7: for(unsigned i=0;i<4;i++)if(mask&(1u<<i))s->acc[i]=u32(f32(s->vf[fs][i])-bc(s,ft,sop-4));return;
@@ -188,7 +188,7 @@ static void lower_exec(TsFpVuState *s,uint32_t lo,uint32_t next_pc){
     if(op==0x1cu){if(it)s->vi[it]=s->clip_flag&0xfffu;return;}
     if(op==0x7cu||op==0x7du||op==0x7eu||op==0x7fu){
         unsigned ftf=(lo>>23)&3u,fsf=(lo>>21)&3u;
-        float ftv=f32(s->vf[ft][ftf]), fsv=f32(s->vf[fs][fsf]);
+        float ftv=f32(s->vf[it][ftf]), fsv=f32(s->vf[is][fsf]);
         if(op==0x7cu) s->q=u32(fsv/ftv);
         else if(op==0x7du) s->q=u32(sqrtf(fabsf(ftv)));
         else if(op==0x7eu) s->q=u32(fsv/sqrtf(fabsf(ftv)));
@@ -211,7 +211,10 @@ static void lower_exec(TsFpVuState *s,uint32_t lo,uint32_t next_pc){
 }
 
 void tsfp_vu_state_init(TsFpVuState *state,uint8_t *memory,size_t memory_size,uint8_t *gif,size_t gif_size){
-    if(!state)return;memset(state,0,sizeof(*state));state->memory=memory;state->memory_size=memory_size;state->gif=gif;state->gif_size=gif_size;state->xgkick_pc=UINT32_MAX;
+    if(!state)return;
+    memset(state,0,sizeof(*state));
+    state->memory=memory; state->memory_size=memory_size;
+    state->gif=gif; state->gif_size=gif_size; state->xgkick_pc=UINT32_MAX;
 }
 int tsfp_vu_execute(const uint8_t *micro,size_t size,uint32_t start,TsFpVuState *state,uint32_t max_steps){
     if(!micro||!state||(size&7u)||start>=size/8u)return -1;
