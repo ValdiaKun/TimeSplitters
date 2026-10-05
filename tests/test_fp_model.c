@@ -15,11 +15,14 @@ int main(void){
     memcpy(d+0x40,&count,4);
     memcpy(d+0x44,&mats,4);
     memcpy(d+0x48,&lods,4);
+    memcpy(d+0x40+24,&(uint32_t){0x90},4);
+    memcpy(d+0x40+28,&(uint32_t){0x400},4);
     memcpy(d+0x40+36,&scale,4);
 
     assert(tsfp_model_probe(d,sizeof(d),&h)==0);
     assert(h.material_offset==0x50 && h.info_offset==0x40 && h.auxiliary_offset==0x70);
     assert(h.mesh_count==41 && h.material_count==29 && h.lod_count==1);
+    assert(h.mesh_table_offset==0x90 && h.lod_table_offset==0x400);
     assert(h.scale==scale);
     return 0;
 }
