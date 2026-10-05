@@ -77,6 +77,7 @@ static int build_model_preview(void){
     size_t model_size=0,elf_size=0,submesh_count=0;
     TsFpModelHeader model; TsFpSubmesh submeshes[256];
     TsFpGifVertex local[1024];
+    TsFpGifVertex *triangles=NULL;
     float minx=FLT_MAX,miny=FLT_MAX,maxx=-FLT_MAX,maxy=-FLT_MAX;
     int result=-1;
 
@@ -89,7 +90,7 @@ static int build_model_preview(void){
     vu_mem=(uint8_t*)malloc(VU_MEMORY_SIZE); gif_mem=(uint8_t*)malloc(GIF_MEMORY_SIZE);
     if(!vu_mem||!gif_mem) goto done;
 
-    TsFpGifVertex *triangles=(TsFpGifVertex*)malloc(sizeof(*triangles)*PREVIEW_CAPACITY);
+    triangles=(TsFpGifVertex*)malloc(sizeof(*triangles)*PREVIEW_CAPACITY);
     size_t tri_count=0;
     if(!triangles) goto done;
     for(size_t si=0;si<submesh_count && tri_count<PREVIEW_CAPACITY;si++){
