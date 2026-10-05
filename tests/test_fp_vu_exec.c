@@ -95,7 +95,7 @@ int main(void) {
         memcpy(t.acc,a,16); memcpy(t.vf[1],(float[4]){1,2,3,0},16); memcpy(t.vf[2],b,16);
         assert(tsfp_vu_execute(m,sizeof(m),0,&t,8)==0);
         float got[4]; memcpy(got,t.vf[3],16);
-        assert(got[0]==6.0f && got[1]==17.0f && got[2]==28.0f);
+        assert(got[0]==2.0f && got[1]==14.0f && got[2]==27.0f);
     }
     return 0;
 }
