@@ -7,7 +7,7 @@ int tsfp_model_probe(const uint8_t *data,size_t size,TsFpModelHeader *out){
  uint32_t a,b,c,count,mats,lods; float scale;
  if(!data||!out||size<16)return -1;
  a=rd32(data); b=rd32(data+4); c=rd32(data+8);
- if(min(a,b,c)<0x40 || max(a,b,c)>=size) return -2;
+ if(a<0x40 || b<0x40 || c<0x40 || a>=size || b>=size || c>=size) return -2;
  if((a|b|c)&3u || a==b || a==c || b==c)return -3;
  if(b+40>size)return -4;
  count=rd32(data+b); mats=rd32(data+b+4); lods=rd32(data+b+8); scale=rf32(data+b+36);
