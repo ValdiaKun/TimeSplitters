@@ -4,6 +4,7 @@
 #include <string.h>
 static uint32_t u32(float x){uint32_t v;memcpy(&v,&x,4);return v;}
 static float f32(uint32_t x){float v;memcpy(&v,&x,4);return v;}
+static uint32_t rd32(const uint8_t *p){return (uint32_t)p[0]|((uint32_t)p[1]<<8)|((uint32_t)p[2]<<16)|((uint32_t)p[3]<<24);}
 
 static uint32_t upper(uint8_t op, uint8_t fd, uint8_t fs, uint8_t ft, uint8_t mask) {
     return ((uint32_t)op) | ((uint32_t)fd<<6) | ((uint32_t)fs<<11) |
