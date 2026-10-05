@@ -49,11 +49,14 @@ def scan(pak, sample):
     out=[]
     with pak.open("rb") as f:
         for i,(crc,off,length,stored) in enumerate(entries):
-            n=min(stored or length,sample)
+            stored_length=stored or length
+            n=min(stored_length,sample)
             f.seek(off); data=f.read(n)
             ss=strings(data)
+            is_gzip=data.startswith(b"\\x1f\\x8b")
             out.append({
                 "entry":i,"crc":f"{crc:08x}","offset":off,"length":length,"stored":stored,
+                "stored_length":stored_length,"compressed":bool(stored),"gzip":is_gzip,
                 "class":classify(data,ss),"head":data[:16].hex(" "),"strings":ss[:20]
             })
     return out
