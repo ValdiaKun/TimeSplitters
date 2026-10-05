@@ -1,0 +1,37 @@
+name: Host validation
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - name: Compile Python tools
+        run: python -m compileall -q tools
+      - name: Validate P5CK synthetic parser
+        run: |
+          python - <<'PY'
+          import struct, tempfile
+          from pathlib import Path
+          import sys
+          sys.path.insert(0, "tools")
+          import inspect_p5ck
+          with tempfile.TemporaryDirectory() as d:
+              p = Path(d) / "test.PAK"
+              with p.open("wb") as f:
+                  f.write(b"P5CK")
+                  f.write(struct.pack("<II", 0x20, 16))
+                  f.write(b"\0" * (0x20 - f.tell()))
+                  f.write(struct.pack("<IIII", 0x12345678, 0x10, 4, 0))
+              rows = inspect_p5ck.read_entries(p)
+              assert rows[0][0] == 0x12345678
+          print("P5CK parser validation passed")
+          PY
