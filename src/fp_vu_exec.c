@@ -124,6 +124,25 @@ static size_t mem_addr(const TsFpVuState *s,unsigned is,int32_t imm){
     a&=0x3ff;
     return (size_t)a*16u;
 }
+static size_t gif_packet_size(const uint8_t *mem,size_t size,size_t start){
+    size_t p=start;
+    while(p+16<=size){
+        uint64_t lo=rd32(mem+p)|((uint64_t)rd32(mem+p+4)<<32);
+        uint32_t nloop=(uint32_t)(lo&0x7fffu);
+        uint8_t eop=(uint8_t)((lo>>15)&1u),flg=(uint8_t)((lo>>58)&3u),nreg=(uint8_t)((lo>>60)&15u);
+        if(!nreg)nreg=16;
+        size_t bytes;
+        if(flg==0)bytes=(size_t)nloop*nreg*16u;
+        else if(flg==1)bytes=((size_t)nloop*nreg+1u)/2u*16u;
+        else if(flg==2)bytes=(size_t)nloop*16u;
+        else bytes=0;
+        if(p+16u+bytes>size)return 0;
+        p+=16u+bytes;
+        if(eop)return p-start;
+    }
+    return 0;
+}
+
 static void lower_exec(TsFpVuState *s,uint32_t lo,uint32_t next_pc){
     unsigned op=(lo>>25)&0x7fu,it=(lo>>16)&31u,is=(lo>>11)&31u,id=(lo>>6)&31u;
     int32_t imm=sx11(lo);
@@ -179,7 +198,9 @@ static void lower_exec(TsFpVuState *s,uint32_t lo,uint32_t next_pc){
         size_t a=((size_t)s->vi[is]&0x3ffu)*16u;
         s->xgkick_pc=s->pc;
         if(a<s->memory_size&&s->gif&&s->gif_used<s->gif_size){
-            size_t n=s->memory_size-a;if(n>s->gif_size-s->gif_used)n=s->gif_size-s->gif_used;
+            size_t n=gif_packet_size(s->memory,s->memory_size,a);
+            if(!n)n=s->memory_size-a;
+            if(n>s->gif_size-s->gif_used)n=s->gif_size-s->gif_used;
             memcpy(s->gif+s->gif_used,s->memory+a,n);s->gif_used+=n;
         }
         return;
