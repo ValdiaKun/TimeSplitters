@@ -30,8 +30,10 @@ int tsfp_vif_probe(const uint8_t *data, size_t size, TsFpVifSummary *out) {
     for (uint32_t i = 0; i < 4; ++i)
         out->row[i] = rd32(data + 16 + i * 4);
 
-    out->cycle_length = (uint8_t)(out->stcycl.immediate & 0xffu);
-    out->write_length = (uint8_t)(out->stcycl.immediate >> 8);
+    out->cycle_length = (uint16_t)(out->stcycl.immediate & 0xffu);
+    out->write_length = (uint16_t)(out->stcycl.immediate >> 8);
+    if (out->cycle_length == 0) out->cycle_length = 256;
+    if (out->write_length == 0) out->write_length = 256;
     out->unpack_address = (uint32_t)(out->unpack.immediate & 0x3ffu);
     out->unpack_unsigned = (uint8_t)((out->unpack.immediate >> 14) & 1u);
     out->unpack_top_relative = (uint8_t)((out->unpack.immediate >> 15) & 1u);
