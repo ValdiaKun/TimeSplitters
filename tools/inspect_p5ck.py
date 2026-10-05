@@ -33,14 +33,17 @@ def ascii_strings(data: bytes, minimum=4):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("pak", type=Path)
+    ap.add_argument("--start", type=int, default=0)
     ap.add_argument("--count", type=int, default=12)
     ap.add_argument("--max-bytes", type=int, default=262144)
     args = ap.parse_args()
     rows = list(read_entries(args.pak))
     print(f"P5CK: {args.pak}")
     print(f"Entries: {len(rows)}")
+    end = min(args.start + args.count - 1, len(rows) - 1)
+    print(f"Showing entries {args.start}..{end}")
     with args.pak.open("rb") as f:
-        for i, crc, offset, length, stored in rows[:args.count]:
+        for i, crc, offset, length, stored in rows[args.start:args.start + args.count]:
             f.seek(offset)
             data = f.read(min(stored or length, args.max_bytes))
             magic = data[:16].hex(" ")
