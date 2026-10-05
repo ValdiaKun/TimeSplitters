@@ -14,6 +14,9 @@ Verified from the demo image:
 - Future Perfect `P5CK` archives are present
 - Demo includes the story archive `PAK/STORY/L_2_ST.PAK`
 - Native C P5CK header/directory parser is now part of this repository
+- Future Perfect model/geometry metadata and VIF packet decoding are implemented
+- VIF memory unpacking now models masks and addition-decompression state
+- The Vita runtime can inspect the PS2 ELF `.vutext` and locate the `MSCAL 0x683` VU1 program
 - Android/Termux extraction requires no third-party Python package
 
 The original PS2 MIPS executable is **not** copied into the Vita build and is not
@@ -33,6 +36,7 @@ and its directory-table size.
 Copy the locally extracted demo data to the Vita, at minimum:
 
     ux0:data/TimeSplitters/PAK/CHR.PAK
+    ux0:data/TimeSplitters/SLED_530.66
 
 Build with VitaSDK:
 
@@ -67,8 +71,8 @@ Press START to exit.
 1. ISO/P5CK pipeline — **working**
 2. Native P5CK reader — **working**
 3. Vita-side data probe — **implemented**
-4. Decode selected demo asset types
-5. Bring up a first 3D scene
+4. Future Perfect VIF/VU1 ingestion — **in progress**
+5. Bring up a first 3D scene from the native VU/GIF path
 6. Implement camera, player/input, collision and level logic
 7. Add audio/video systems
 8. Reach a playable demo slice
