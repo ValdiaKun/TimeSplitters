@@ -63,5 +63,17 @@ int main(void) {
         assert(tsfp_vu_execute(m,sizeof(m),0,&t,8)==0);
         assert(f32(t.q)==3.0f);
     }
+    {
+        uint8_t m[32]={0};
+        uint32_t x;
+        /* CLIP compares XYZ against +/- W and updates the clip flag. */
+        TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
+        t.vf[1][0]=u32(2.0f); t.vf[1][1]=u32(-2.0f); t.vf[1][2]=u32(0.5f);
+        t.vf[2][3]=u32(1.0f);
+        x=upper(0x3f,7,1,2,0xf); memcpy(m,&x,4);
+        x=0x40000000u; memcpy(m+4,&x,4);
+        assert(tsfp_vu_execute(m,sizeof(m),0,&t,4)==0);
+        assert((t.clip_flag & 0x3fu)==((1u<<0)|(1u<<4)));
+    }
     return 0;
 }
