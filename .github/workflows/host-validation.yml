@@ -35,7 +35,7 @@ jobs:
                   f.write(struct.pack("<II", 0x20, 16))
                   f.write(b"\0" * (0x20 - f.tell()))
                   f.write(struct.pack("<IIII", 0x12345678, 0x10, 4, 0))
-              rows = inspect_p5ck.read_entries(p)
+              rows = list(inspect_p5ck.read_entries(p))
               assert rows[0][0] == 0x12345678
           print("P5CK parser validation passed")
           PY
