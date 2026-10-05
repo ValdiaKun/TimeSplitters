@@ -15,7 +15,7 @@ Verified from the demo image:
 - Demo includes the story archive `PAK/STORY/L_2_ST.PAK`
 - Native C P5CK header/directory parser is now part of this repository
 - Future Perfect model/geometry metadata and VIF packet decoding are implemented
-- VIF memory unpacking now models masks and addition-decompression state
+- VIF memory unpacking now models masks, addition-decompression state, and packed UNPACK word alignment
 - The Vita runtime can inspect the PS2 ELF `.vutext` and locate the `MSCAL 0x683` VU1 program
 - A native VU1 interpreter core now covers the main arithmetic/conversion/integer/memory/control operations and captures complete `XGKICK` GIF packets
 - The Vita runtime now traverses all validated CHR submeshes, executes each VIF/VU1 display list, converts GIF triangle/strip/fan/sprite output into Vita triangles, and renders the assembled model preview

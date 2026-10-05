@@ -6,6 +6,12 @@
 static uint32_t v(uint8_t cmd, uint8_t num, uint16_t imm) {
     return ((uint32_t)cmd << 24) | ((uint32_t)num << 16) | imm;
 }
+static int mscal_count_cb(uint16_t address,uint8_t *vu,size_t size,void *user) {
+    (void)vu; (void)size;
+    assert(address==0x683u);
+    (*(unsigned*)user)++;
+    return 0;
+}
 
 int main(void) {
     uint8_t d[128] = {0};
@@ -62,6 +68,13 @@ int main(void) {
     assert(tsfp_vif_unpack_memory(d, sizeof(words), vu, sizeof(vu), &ms) == 0);
     assert(ms.unpack_commands == 5 && ms.mscal_address == 0x683);
     assert(ms.qwords_written == 8);
+    {
+        unsigned callbacks=0;
+        memset(&ms,0,sizeof(ms));
+        memset(vu,0,sizeof(vu));
+        assert(tsfp_vif_unpack_memory_ex(d,sizeof(words),vu,sizeof(vu),&ms,mscal_count_cb,&callbacks)==0);
+        assert(callbacks==2 && ms.mscal_address==0x683);
+    }
 
     {
         uint8_t m[128] = {0};

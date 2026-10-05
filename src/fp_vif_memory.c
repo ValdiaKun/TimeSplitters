@@ -48,9 +48,11 @@ static uint32_t unpack_one(const uint8_t *src, uint8_t format, int uns, uint32_t
     return (bytes + 3u) & ~3u;
 }
 
-int tsfp_vif_unpack_memory(const uint8_t *data, size_t size,
-                           uint8_t *vu_memory, size_t vu_size,
-                           TsFpVifMemorySummary *out) {
+int tsfp_vif_unpack_memory_ex(const uint8_t *data, size_t size,
+                              uint8_t *vu_memory, size_t vu_size,
+                              TsFpVifMemorySummary *out,
+                              TsFpVifMscalCallback mscal,
+                              void *user) {
     size_t p=0;
     uint32_t addr=0, tops=0, base=0, offset=0, itops=0;
     uint32_t row[4]={0,0,0,0}, col[4]={0,0,0,0};
@@ -81,7 +83,11 @@ int tsfp_vif_unpack_memory(const uint8_t *data, size_t size,
         if (cmd==0x04) { itops=(uint32_t)(imm&0x3ffu); continue; }
         if (cmd==0x05) { mode=(uint8_t)(imm&3u); continue; }
         if (cmd==0x06 || cmd==0x07 || cmd==0x10 || cmd==0x11 || cmd==0x13 || cmd==0x17) continue;
-        if (cmd==0x14 || cmd==0x15) { out->mscal_address=imm; continue; }
+        if (cmd==0x14 || cmd==0x15) {
+            out->mscal_address=imm;
+            if (mscal && mscal(imm,vu_memory,vu_size,user)!=0) return -11;
+            continue;
+        }
         if (cmd==0x20) {
             if(p+4>size)return -2;
             mask=rd32(data+p); p+=4; continue;
@@ -106,8 +112,8 @@ int tsfp_vif_unpack_memory(const uint8_t *data, size_t size,
             for(unsigned v=0;v<n;v++) {
                 if(p+bytes>size)return -5;
                 uint32_t q[4];
-                (void)unpack_one(data+p,f,(imm&0x4000u)!=0,q);
-                p+=bytes;
+                unsigned consumed=unpack_one(data+p,f,(imm&0x4000u)!=0,q);
+                p+=consumed;
 
                 size_t target=(size_t)addr;
                 for(unsigned i=0;i<4;i++) {
@@ -160,4 +166,10 @@ int tsfp_vif_unpack_memory(const uint8_t *data, size_t size,
         return -9;
     }
     return p==size ? 0 : -10;
+}
+
+int tsfp_vif_unpack_memory(const uint8_t *data, size_t size,
+                           uint8_t *vu_memory, size_t vu_size,
+                           TsFpVifMemorySummary *out) {
+    return tsfp_vif_unpack_memory_ex(data,size,vu_memory,vu_size,out,NULL,NULL);
 }
