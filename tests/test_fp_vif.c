@@ -10,7 +10,7 @@ static uint32_t v(uint8_t cmd, uint8_t num, uint16_t imm) {
 int main(void) {
     uint8_t d[128] = {0};
     TsFpVifSummary s;
-    uint32_t words[25] = {
+    uint32_t words[26] = {
         v(0x01, 0, 0x0404),
         v(0x6c, 1, 0x8000),
         0x0000802a, 0x302e4000, 0x00000412, 0x00000000,
