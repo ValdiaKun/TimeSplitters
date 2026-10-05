@@ -112,7 +112,7 @@ int main(void) {
         /* V3-16 consumes two 32-bit words per vector.  The second vector
            must begin at the next word boundary, not after 6 packed bytes. */
         uint8_t m[96]={0};
-        uint32_t head[]={v(0x01,0,0x0101),v(0x69,2,0x0020),
+        uint32_t head[]={v(0x01,0,0x0101),v(0x69,2,0x4020),
                          0x11223344,0x00005566,0xaabbccdd,0x0000eeff};
         memcpy(m,head,sizeof(head)); memset(&ms,0,sizeof(ms));
         assert(tsfp_vif_unpack_memory(m,sizeof(head),vu,sizeof(vu),&ms)==0);
