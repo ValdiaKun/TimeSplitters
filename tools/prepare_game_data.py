@@ -34,7 +34,9 @@ def dir_records(f, extent: int, size: int):
         name_len = record[32]
         raw_name = record[33:33 + name_len]
         if raw_name not in (b"\x00", b"\x01"):
-            name = raw_name.decode("ascii", "replace").rstrip(";1")
+            name = raw_name.decode("ascii", "replace")
+            if name.endswith(";1"):
+                name = name[:-2]
             yield name, entry_extent, entry_size, flags
         i += length
 
