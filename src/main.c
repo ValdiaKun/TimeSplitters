@@ -72,6 +72,45 @@ static size_t append_triangles(TsFpGifVertex *dst,size_t cap,const TsFpGifVertex
     return w;
 }
 
+
+typedef struct {
+    const uint8_t *micro;
+    size_t micro_size;
+    TsFpVuState *vu;
+    uint8_t *gif_memory;
+    size_t gif_size;
+    TsFpGifVertex *triangles;
+    size_t triangle_capacity;
+    size_t *triangle_count;
+} TsFpVifRenderContext;
+
+static int render_mscal(uint16_t address,uint8_t *vu_memory,size_t vu_size,void *user){
+    TsFpVifRenderContext *ctx=(TsFpVifRenderContext*)user;
+    TsFpGifVertex local[1024];
+    TsFpGifSummary gif;
+    size_t before;
+    if(!ctx||!ctx->vu||!ctx->micro||address!=0x0683u)return -1;
+    ctx->vu->memory=vu_memory;
+    ctx->vu->memory_size=vu_size;
+    ctx->vu->branch_pending=0;
+    before=ctx->vu->gif_used;
+    if(tsfp_vu_execute(ctx->micro,ctx->micro_size,address,ctx->vu,8192)!=0)return -2;
+    if(ctx->vu->gif_used>before){
+        memset(local,0,sizeof(local));
+        if(tsfp_gif_parse(ctx->gif_memory+before,ctx->vu->gif_used-before,
+                          &gif,local,1024)!=0)return -3;
+        if(ctx->triangle_count && *ctx->triangle_count<ctx->triangle_capacity){
+            size_t room=ctx->triangle_capacity-*ctx->triangle_count;
+            size_t wrote=append_triangles(ctx->triangles+*ctx->triangle_count,room,
+                                          local,gif.vertices,gif.primitive&7u);
+            *ctx->triangle_count+=wrote;
+        }
+    }
+    /* The captured GIF packet has been consumed by the host renderer. */
+    ctx->vu->gif_used=0;
+    return 0;
+}
+
 static int build_model_preview(void){
     uint8_t *model_data=NULL,*elf=NULL,*vu_mem=NULL,*gif_mem=NULL;
     size_t model_size=0,elf_size=0,submesh_count=0;
@@ -93,6 +132,8 @@ static int build_model_preview(void){
     triangles=(TsFpGifVertex*)malloc(sizeof(*triangles)*PREVIEW_CAPACITY);
     size_t tri_count=0;
     if(!triangles) goto done;
+    size_t voff,vlen;
+    if(tsfp_vu_find_vutext(elf,elf_size,&voff,&vlen)!=0) goto done;
     for(size_t si=0;si<submesh_count && tri_count<PREVIEW_CAPACITY;si++){
         uint32_t off=submeshes[si].data_offset;
         size_t vif_size=(size_t)submeshes[si].vertex_count*16u;
@@ -100,20 +141,16 @@ static int build_model_preview(void){
 
         TsFpVifSummary vif;
         if(tsfp_vif_scan(model_data+off,vif_size,&vif)!=0) continue;
-        TsFpVifMemorySummary vm;
-        if(tsfp_vif_unpack_memory(model_data+off,vif_size,vu_mem,VU_MEMORY_SIZE,&vm)!=0) continue;
-
-        size_t voff,vlen;
-        if(tsfp_vu_find_vutext(elf,elf_size,&voff,&vlen)!=0) continue;
         TsFpVuState vs;
+        TsFpVifRenderContext ctx;
         tsfp_vu_state_init(&vs,vu_mem,VU_MEMORY_SIZE,gif_mem,GIF_MEMORY_SIZE);
-        if(tsfp_vu_execute(elf+voff,vlen,0x683u,&vs,8192)!=0) continue;
-        TsFpGifSummary gif;
-        memset(local,0,sizeof(local));
-        if(tsfp_gif_parse(gif_mem,vs.gif_used,&gif,local,1024)!=0) continue;
-        size_t wrote=append_triangles(triangles+tri_count,PREVIEW_CAPACITY-tri_count,
-                                       local,gif.vertices,gif.primitive&7u);
-        tri_count+=wrote;
+        ctx.micro=elf+voff; ctx.micro_size=vlen; ctx.vu=&vs;
+        ctx.gif_memory=gif_mem; ctx.gif_size=GIF_MEMORY_SIZE;
+        ctx.triangles=triangles; ctx.triangle_capacity=PREVIEW_CAPACITY;
+        ctx.triangle_count=&tri_count;
+        TsFpVifMemorySummary vm;
+        if(tsfp_vif_unpack_memory_ex(model_data+off,vif_size,vu_mem,VU_MEMORY_SIZE,
+                                     &vm,render_mscal,&ctx)!=0) continue;
     }
 
     if(tri_count>=3){
