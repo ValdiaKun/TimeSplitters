@@ -10,6 +10,8 @@ static uint32_t v(uint8_t cmd, uint8_t num, uint16_t imm) {
 int main(void) {
     uint8_t d[128] = {0};
     TsFpVifSummary s;
+    uint8_t vu[4096];
+    TsFpVifMemorySummary ms;
     uint32_t words[26] = {
         v(0x01, 0, 0x0404),
         v(0x6c, 1, 0x8000),
@@ -44,5 +46,8 @@ int main(void) {
     assert(s.unpack_count == 5);
     assert(s.mscal_count == 2);
     assert(s.unpack_qwords == 1 + 2 + 2 + 2 + 1);
+    assert(tsfp_vif_unpack_memory(d, sizeof(words), vu, sizeof(vu), &ms) == 0);
+    assert(ms.unpack_commands == 5 && ms.mscal_address == 0x683);
+    assert(ms.qwords_written == 8);
     return 0;
 }
