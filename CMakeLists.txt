@@ -1,0 +1,41 @@
+cmake_minimum_required(VERSION 3.16)
+
+if(NOT DEFINED CMAKE_TOOLCHAIN_FILE)
+    if(DEFINED ENV{VITASDK})
+        set(CMAKE_TOOLCHAIN_FILE "$ENV{VITASDK}/share/vita.toolchain.cmake" CACHE PATH "VitaSDK toolchain")
+    else()
+        message(FATAL_ERROR "VITASDK is not set. Install VitaSDK and export VITASDK.")
+    endif()
+endif()
+
+project(TimeSplitters LANGUAGES C)
+include("${VITASDK}/share/vita.cmake" REQUIRED)
+
+set(VITA_APPNAME "TimeSplitters")
+set(VITA_TITLEID "TSFP00001")
+set(VITA_VERSION "00.10")
+
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -O2 -ffunction-sections -fdata-sections")
+
+add_executable(${VITA_APPNAME} src/main.c)
+
+target_include_directories(${VITA_APPNAME} PRIVATE ${CMAKE_SOURCE_DIR}/src)
+
+target_link_libraries(${VITA_APPNAME}
+    vita2d
+    SceCtrl_stub
+    SceDisplay_stub
+    SceGxm_stub
+    SceSysmodule_stub
+    SceAppUtil_stub
+    m
+)
+
+vita_create_self(eboot.bin ${VITA_APPNAME} SAFE)
+
+vita_create_vpk(${VITA_APPNAME}.vpk ${VITA_TITLEID} eboot.bin
+    VERSION ${VITA_VERSION}
+    NAME ${VITA_APPNAME}
+)
