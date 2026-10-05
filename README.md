@@ -79,3 +79,17 @@ Press START to exit.
 Do not commit the commercial game ISO, extracted copyrighted assets, or other
 redistributable game data to this repository. Use locally supplied data from a
 copy you are legally entitled to use.
+
+
+## Automated reverse-engineering pipeline
+
+The repository now provides a single Termux entry point:
+
+```sh
+cd ~/TimeSplitters
+bash tools/termux_analyze_demo.sh
+```
+
+The pipeline updates the tools, locates the local demo ISO, validates/extracts the ISO, scans every P5CK archive, writes a local JSON analysis report, finds optional `.c2n` checksum maps, and extracts a bounded set of Future Perfect resource records from `L_2_ST.PAK`. Generated game data and reports remain outside Git.
+
+External format research confirms that P5CK is the Future Perfect PAK format and that its four-word directory record is CRC, offset, length, and a fourth field used by existing tooling as the compressed/GZip length. The project keeps the commercial/demo assets out of the repository and only commits the reverse-engineering tools and native Vita code.
