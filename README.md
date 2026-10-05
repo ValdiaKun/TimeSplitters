@@ -18,7 +18,8 @@ Verified from the demo image:
 - VIF memory unpacking now models masks and addition-decompression state
 - The Vita runtime can inspect the PS2 ELF `.vutext` and locate the `MSCAL 0x683` VU1 program
 - A native VU1 interpreter core now covers the main arithmetic/conversion/integer/memory/control operations and captures complete `XGKICK` GIF packets
-- The Vita diagnostic runtime now projects captured GIF geometry through `vita2d_draw_array` for an observable end-to-end model preview
+- The Vita runtime now traverses all validated CHR submeshes, executes each VIF/VU1 display list, converts GIF triangle/strip/fan/sprite output into Vita triangles, and renders the assembled model preview
+- The VIF decoder now honors the UNPACK mask bit, cycle-slot column filling, and PS2 row-addition/difference semantics
 - Android/Termux extraction requires no third-party Python package
 
 The original PS2 MIPS executable is **not** copied into the Vita build and is not
@@ -72,9 +73,9 @@ Press START to exit.
 
 1. ISO/P5CK pipeline — **working**
 2. Native P5CK reader — **working**
-3. Vita-side data probe — **implemented**
-4. Future Perfect VIF/VU1 ingestion — **in progress**
-5. Bring up a first 3D scene from the native VU/GIF path
+3. Vita-side data probe — **working**
+4. Future Perfect VIF/VU1 ingestion — **working for the validated CHR model path**
+5. Bring up a first 3D scene from the native VU/GIF path — **working model viewer**
 6. Implement camera, player/input, collision and level logic
 7. Add audio/video systems
 8. Reach a playable demo slice
