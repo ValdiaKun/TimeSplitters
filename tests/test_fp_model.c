@@ -8,6 +8,6 @@ int main(void){
  memcpy(d+0x40,&count,4); memcpy(d+0x40+36,&scale,4);
  assert(tsfp_model_probe(d,sizeof(d),&h)==0);
  assert(h.material_offset==0x20 && h.info_offset==0x40 && h.auxiliary_offset==0x60);
- assert(h.mesh_count==41 && h.scale>0.9f && h.scale<1.0f);
+ assert(h.mesh_count==41 && h.material_count==29 && h.lod_count==1);
  return 0;
 }
