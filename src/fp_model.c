@@ -13,7 +13,7 @@ int tsfp_model_probe(const uint8_t *data,size_t size,TsFpModelHeader *out){
  count=rd32(data+b); mats=rd32(data+b+4); lods=rd32(data+b+8); mesh_table=rd32(data+b+24); lod_table=rd32(data+b+28); scale=rf32(data+b+36);
  if(count==0||count>4096||mats>4096||lods>64||!isfinite(scale)||scale==0.0f)return -5;
  if(a > size - mats*16u)return -6;
- if(mesh_table && (mesh_table & 3u || mesh_table > size || count > (size - mesh_table)/16u))return -7;
+ if(mesh_table && (mesh_table & 3u || mesh_table > size || count > (size - mesh_table)/4u))return -7;
  if(lod_table && (lod_table & 3u || lod_table >= size))return -8;
  memset(out,0,sizeof(*out));
  out->material_offset=a; out->info_offset=b; out->auxiliary_offset=c;
