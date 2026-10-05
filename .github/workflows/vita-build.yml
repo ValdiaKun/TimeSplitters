@@ -25,6 +25,24 @@ jobs:
           test -s build/eboot.bin
           file build/eboot.bin
           ls -lh build/TimeSplitters.vpk build/eboot.bin
+      - name: Validate VPK package
+        run: |
+          python3 - <<'PY'
+          import zipfile
+          from pathlib import Path
+          vpk = Path("build/TimeSplitters.vpk")
+          with zipfile.ZipFile(vpk) as z:
+              names = set(z.namelist())
+              required = {"sce_sys/param.sfo", "eboot.bin"}
+              missing = required - names
+              if missing:
+                  raise SystemExit(f"VPK missing required entries: {sorted(missing)}")
+              if z.getinfo("eboot.bin").file_size == 0:
+                  raise SystemExit("VPK eboot.bin is empty")
+              if z.getinfo("sce_sys/param.sfo").file_size == 0:
+                  raise SystemExit("VPK param.sfo is empty")
+          print("VPK package validation passed")
+          PY
       - name: Upload VPK
         uses: actions/upload-artifact@v4
         with:
