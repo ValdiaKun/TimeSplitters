@@ -69,11 +69,11 @@ int main(void) {
         x=lower(0x10,0,0,0)|0x123u; memcpy(m+0,&x,4); x=0; memcpy(m+4,&x,4);
         x=lower(0x1c,0,0,4); memcpy(m+8,&x,4); x=0; memcpy(m+12,&x,4);
         x=0; memcpy(m+16,&x,4); x=0x40000000u; memcpy(m+20,&x,4);
-        TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif)); t.clip_flag=0x123u;
+        TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif)); t.clip_flag=0x123u; assert(t.vf[0][3]==u32(1.0f));
         assert(tsfp_vu_execute(m,sizeof(m),0,&t,16)==0);
         assert(t.vi[1]==1u);
         assert(t.vi[4]==0x123u);
-        assert(t.vf[0][3]==u32(1.0f));
+
     }
     {
         uint8_t m[64]={0}; uint32_t x;
