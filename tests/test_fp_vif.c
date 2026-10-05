@@ -49,5 +49,29 @@ int main(void) {
     assert(tsfp_vif_unpack_memory(d, sizeof(words), vu, sizeof(vu), &ms) == 0);
     assert(ms.unpack_commands == 5 && ms.mscal_address == 0x683);
     assert(ms.qwords_written == 8);
+
+    {
+        uint8_t m[128] = {0};
+        size_t p = 0;
+        uint32_t row[4] = {10,20,30,40};
+        uint32_t col[4] = {100,200,300,400};
+        uint32_t payload[4] = {1,2,3,4};
+        uint32_t mask = 0x000000e4u; /* x=row, y=col, z=protected, w=data */
+        uint32_t head[] = {
+            v(0x01,0,0x0404), v(0x30,0,0), row[0],row[1],row[2],row[3],
+            v(0x31,0,0), col[0],col[1],col[2],col[3],
+            v(0x20,0,0), mask,
+            v(0x05,0,1), v(0x6c,1,0)
+        };
+        memcpy(m+p,head,sizeof(head)); p+=sizeof(head);
+        memcpy(m+p,payload,sizeof(payload)); p+=sizeof(payload);
+        memset(&ms,0,sizeof(ms));
+        assert(tsfp_vif_unpack_memory(m,p,vu,sizeof(vu),&ms)==0);
+        assert(ms.unpack_commands==1 && ms.qwords_written==1);
+        assert(*(uint32_t*)&vu[0] == 11u);
+        assert(*(uint32_t*)&vu[4] == 200u);
+        assert(*(uint32_t*)&vu[8] == 0u);
+        assert(*(uint32_t*)&vu[12] == 4u);
+    }
     return 0;
 }
