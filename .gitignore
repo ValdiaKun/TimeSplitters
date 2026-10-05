@@ -10,9 +10,11 @@ build-*/
 *.iso
 *.bin
 *.pak
+*.p5ck
 *.c2n
 *.ps2
 *.zip
+game_data/
 
 # CMake
 CMakeFiles/
