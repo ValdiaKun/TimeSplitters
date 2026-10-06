@@ -109,44 +109,72 @@ int tsfp_vif_unpack_memory_ex(const uint8_t *data, size_t size,
             unsigned bytes=(bits+7u)/8u;
             if (!bits) return -4;
 
-            for(unsigned v=0;v<n;v++) {
-                unsigned consumed=(bytes+3u)&~3u;
-                if(p+consumed>size)return -5;
-                uint32_t q[4];
-                consumed=unpack_one(data+p,f,(imm&0x4000u)!=0,q);
-                p+=consumed;
+            /*
+             * STCYCL has two different data-consumption patterns:
+             *   WL <= CL: consume/write WL vectors, then skip CL-WL slots.
+             *   WL >  CL: consume CL vectors, then fill the remaining
+             *             WL-CL output slots with the last consumed vector.
+             * NUM counts output vectors, not source vectors, so the latter
+             * case must not consume payload for the fill slots.
+             */
+            unsigned cycle_len = wl > cl ? wl : cl;
+            unsigned source_per_cycle = wl > cl ? cl : wl;
+            unsigned source_count = (n / cycle_len) * source_per_cycle +
+                                    ((n % cycle_len) < source_per_cycle ? (n % cycle_len) : source_per_cycle);
+            (void)source_count;
 
-                size_t target=(size_t)addr;
-                for(unsigned i=0;i<4;i++) {
-                    unsigned cycle_slot=cycle_pos<4u?cycle_pos:3u;
-                    unsigned mask_index=cycle_slot*4u+i;
-                    unsigned m=((cmd&0x10u)!=0u)?((mask>>(mask_index*2u))&3u):0u;
-                    if(m==0u) {
-                        if(f==0xfu) { /* V4-5 ignores STMOD. */ }
-                        else if(mode==1u) q[i]+=row[i];
-                        else if(mode==2u) { q[i]+=row[i]; row[i]=q[i]; }
-                        else if(mode==3u) { row[i]=q[i]; }
-                    } else if(m==1u) {
-                        q[i]=row[i];
-                    } else if(m==2u) {
-                        q[i]=col[cycle_slot];
-                    }
-                    if(m!=3u) {
-                        if(target+4u>vu_size)return -6;
-                        wr32(vu_memory+target+i*4u,q[i]);
-                    }
+            uint32_t last_q[4]={0,0,0,0};
+            int have_last=0;
+            for(unsigned v=0;v<n;v++) {
+                unsigned slot=cycle_pos;
+                int consume=(wl>cl) ? (slot<cl) : (slot<wl);
+                uint32_t q[4];
+
+                if(consume) {
+                    unsigned consumed=(bytes+3u)&~3u;
+                    if(p+consumed>size)return -5;
+                    consumed=unpack_one(data+p,f,(imm&0x4000u)!=0,q);
+                    p+=consumed;
+                    memcpy(last_q,q,sizeof(q));
+                    have_last=1;
+                } else {
+                    if(!have_last)return -5;
+                    memcpy(q,last_q,sizeof(q));
                 }
 
-                if(target+16u>vu_size)return -6;
-                addr+=16u;
-                out->qwords_written++;
+                if(slot<wl) {
+                    size_t target=(size_t)addr;
+                    for(unsigned i=0;i<4;i++) {
+                        unsigned cycle_slot=slot<4u?slot:3u;
+                        unsigned mask_index=cycle_slot*4u+i;
+                        unsigned m=((cmd&0x10u)!=0u)?((mask>>(mask_index*2u))&3u):0u;
+                        if(m==0u) {
+                            if(f==0xfu) { /* V4-5 ignores STMOD. */ }
+                            else if(mode==1u) q[i]+=row[i];
+                            else if(mode==2u) { q[i]+=row[i]; row[i]=q[i]; }
+                            else if(mode==3u) { row[i]=q[i]; }
+                        } else if(m==1u) {
+                            q[i]=row[i];
+                        } else if(m==2u) {
+                            q[i]=col[cycle_slot];
+                        }
+                        if(m!=3u) {
+                            if(target+4u>vu_size)return -6;
+                            wr32(vu_memory+target+i*4u,q[i]);
+                        }
+                    }
+                    if(target+16u>vu_size)return -6;
+                    addr+=16u;
+                    out->qwords_written++;
+                }
+
                 cycle_pos++;
-                if(cycle_pos>=cl) cycle_pos=0;
-                if(cl>wl && cycle_pos==wl) {
-                    addr+=(size_t)(cl-wl)*16u;
+                if(cycle_pos>=cycle_len) {
                     cycle_pos=0;
+                    if(wl<cl) addr+=(size_t)(cl-wl)*16u;
                 }
             }
+            if(p>size)return -5;
             out->unpack_commands++;
             out->bytes_written=out->qwords_written*16u;
             continue;
