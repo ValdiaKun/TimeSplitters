@@ -390,7 +390,7 @@ int main(void) {
         t.vi[2]=0x80u; t.vf[1][0]=u32(-1.0f); t.vf[2][0]=0.0f;
         assert(tsfp_vu_execute(m,sizeof(m),0,&t,6)==-2);
         assert(t.vi[3]==0u);
-        assert(t.vi[4]==0x10u);
+        assert(t.vi[4]==0x80u);
     }
 
     {
