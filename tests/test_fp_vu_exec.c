@@ -398,7 +398,7 @@ int main(void) {
         uint8_t m[48]={0}; uint32_t x;
         x=lower(0x7c,14,1,2); memcpy(m,&x,4); x=0; memcpy(m+4,&x,4);
         /* WAITQ is special1 opcode 0x3b, encoded in the 0x3fb low-word slot. */
-        x=0x80000000u | 0x3fbu; memcpy(m+8,&x,4);
+        x=0x80000000u | 0x3bfu; memcpy(m+8,&x,4);
         x=upper(0x20,3,1,0,0x8); memcpy(m+12,&x,4);
         x=0; memcpy(m+16,&x,4); x=0x40000000u|upper(0x3f,11,0,0,0xf); memcpy(m+20,&x,4);
         TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
@@ -406,5 +406,23 @@ int main(void) {
         assert(tsfp_vu_execute(m,sizeof(m),0,&t,8)==0);
         assert(f32(t.vf[3][0])==9.0f);
     }
+    {
+        /* EFU/P path: ESIN writes P asynchronously, WAITP publishes it,
+           and MFP transfers the synchronized P value to a VF field. */
+        uint8_t m[40]={0}; uint32_t x;
+        uint32_t esin=0x80000000u | (31u<<6) | (1u<<11) | 0x3cu;
+        uint32_t waitp=0x80000000u | 0x7bfu;
+        uint32_t mfp=0x80000000u | (0xfu<<21) | (3u<<16) | 0x67cu;
+        x=0; memcpy(m,&x,4); x=esin; memcpy(m+4,&x,4);
+        x=waitp; memcpy(m+8,&x,4); x=0; memcpy(m+12,&x,4);
+        x=mfp; memcpy(m+16,&x,4); x=0; memcpy(m+20,&x,4);
+        x=0; memcpy(m+24,&x,4); x=0x40000000u|upper(0x3f,11,0,0,0xf); memcpy(m+28,&x,4);
+        TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
+        t.vf[1][0]=0.5f;
+        assert(tsfp_vu_execute(m,sizeof(m),0,&t,8)==0);
+        assert(fabsf(f32(t.vf[3][0])-sinf(0.5f))<1e-6f);
+        assert(t.p_pending==0u);
+    }
+
     return 0;
 }
