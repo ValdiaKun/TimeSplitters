@@ -45,7 +45,7 @@ static void mac3(TsFpVuState *s,unsigned fd,unsigned fs,unsigned ft,unsigned mas
         else if(op==2)r[i]=x*y;
         else if(op==3)r[i]=f32(s->acc[i])+x*y;
         else r[i]=f32(s->acc[i])-x*y;
-        if(acc){if(mask&(1u<<i))s->acc[i]=u32(r[i]);}
+        if(acc){if(mask_has(mask,i))s->acc[i]=u32(r[i]);}
     }
     if(!acc)write_mask(s,fd,mask,r);
 }
