@@ -579,7 +579,9 @@ int main(void) {
         t.status_flag=0xa5au; t.mac_flag=0x0f0fu; t.vi[6]=0x00ffu;
         assert(tsfp_vu_execute(m,sizeof(m),0,&t,13)==0);
         assert(t.vi[2]==0x50u && t.vi[3]==1u && t.vi[4]==0xa5fu);
-        assert(t.vi[5]==0x000fu);\n        assert(t.vi[7]==0u);\n        assert(t.vi[8]==0x0fffu);
+        assert(t.vi[5]==0x000fu);
+        assert(t.vi[7]==0u);
+        assert(t.vi[8]==0x0fffu);
         assert(t.vi[1]==1u && t.vi[9]==0x456u);
         assert(t.clip_flag==0x123456u && t.status_flag==0xc5au);
     }
