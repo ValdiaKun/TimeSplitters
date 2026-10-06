@@ -219,5 +219,33 @@ int main(void) {
         assert(t.vi[5]==0xbeefu);
         assert(rd32(mem+64+8)==0xbeefu);
     }
+    {
+        /* ILWR multi-bit fields use the VU's wired Y/Z lane-code priority;
+           an empty field also aliases W rather than performing no write. */
+        uint8_t m[80]={0}; uint32_t x;
+        uint32_t w=0x0000beefu; memcpy(mem+64+12,&w,4);
+        x=0x80000000u | (6u<<21) | (5u<<16) | (3u<<11) | 0x3feu; memcpy(m,&x,4);
+        x=0x80000000u | (0u<<21) | (6u<<16) | (3u<<11) | 0x3feu; memcpy(m+8,&x,4);
+        x=0; memcpy(m+16,&x,4); x=0x40000000u; memcpy(m+20,&x,4);
+        TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
+        t.vi[3]=4;
+        assert(tsfp_vu_execute(m,sizeof(m),0,&t,16)==0);
+        assert(t.vi[5]==0xbeefu && t.vi[6]==0xbeefu);
+    }
+    {
+        /* LQD/SQD decrement the address from VI0 but VI0 itself remains
+           hardwired to zero; the pre-decrement address wraps to quadword 1023. */
+        uint8_t m[32]={0}; uint8_t lmem[16384]={0}; uint8_t lgif[64]={0}; uint32_t x;
+        uint32_t src[4]={0x11u,0x22u,0x33u,0x44u};
+        memcpy(lmem+0x3ff0,src,sizeof(src));
+        x=0x80000000u | (15u<<21) | (1u<<16) | 0x37eu; memcpy(m,&x,4);
+        x=0; memcpy(m+4,&x,4); x=0; memcpy(m+8,&x,4); x=0x40000000u; memcpy(m+12,&x,4);
+        TsFpVuState t; tsfp_vu_state_init(&t,lmem,sizeof(lmem),lgif,sizeof(lgif));
+        assert(tsfp_vu_execute(m,sizeof(m),0,&t,8)==0);
+        assert(t.vi[0]==0);
+        assert(t.vf[1][0]==0x11u && t.vf[1][1]==0x22u &&
+               t.vf[1][2]==0x33u && t.vf[1][3]==0x44u);
+    }
     return 0;
+}    return 0;
 }
