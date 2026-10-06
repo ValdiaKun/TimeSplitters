@@ -75,15 +75,14 @@ static void update_status_from_mac(TsFpVuState *s){
 static void update_mac_flags(TsFpVuState *s,const float r[4],unsigned mask){
     uint32_t f=s->mac_flag&0xffffu;
     for(unsigned i=0;i<4;i++){
-        uint32_t lane=((uint32_t)1u<<i)|((uint32_t)1u<<(4u+i))|
-                      ((uint32_t)1u<<(8u+i))|((uint32_t)1u<<(12u+i));
-        f &= ~lane;
+        unsigned zbit=3u-i,sbit=7u-i,ubit=11u-i,obit=15u-i;
+        f &= ~((1u<<zbit)|(1u<<sbit)|(1u<<ubit)|(1u<<obit));
         if(mask_has(mask,i)){
             uint16_t cf=mac_component_flags(r[i]);
-            f |= ((uint32_t)cf&1u)<<i;
-            f |= ((uint32_t)(cf>>4)&1u)<<(4u+i);
-            f |= ((uint32_t)(cf>>8)&1u)<<(8u+i);
-            f |= ((uint32_t)(cf>>12)&1u)<<(12u+i);
+            if(cf&1u) f|=1u<<zbit;
+            if(cf&0x10u) f|=1u<<sbit;
+            if(cf&0x100u) f|=1u<<ubit;
+            if(cf&0x1000u) f|=1u<<obit;
         }
     }
     s->mac_flag=f;
