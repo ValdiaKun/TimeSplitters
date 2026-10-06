@@ -30,14 +30,23 @@ static void write_mask(TsFpVuState *s,unsigned fd,unsigned mask,const float r[4]
 static float fpmax(float a,float b){return a>b?a:b;}
 static float fpmin(float a,float b){return a<b?a:b;}
 
+static float fmac_condition(float x){
+    uint32_t raw=u32(x), exp=raw&0x7f800000u, frac=raw&0x007fffffu;
+    if(exp==0u){
+        if(frac!=0u) return f32(raw&0x80000000u); /* denormal -> signed zero */
+        return x;
+    }
+    if(exp==0x7f800000u) return f32((raw&0x80000000u)|0x7f7fffffu); /* overflow/NaN -> signed max */
+    return x;
+}
 static uint16_t mac_component_flags(float x){
     uint32_t raw=u32(x);
     uint16_t f=0;
-    /* MAC is 16 bits: O[15:12], U[11:8], S[7:4], Z[3:0]. */
-    if((raw&0x7f800000u)==0x7f800000u) f|=1u<<12; /* overflow */
-    if((raw&0x7f800000u)==0u && (raw&0x007fffffu)!=0u) f|=1u<<8; /* underflow */
-    if(raw&0x80000000u) f|=1u<<4; /* sign */
-    if((raw&0x7fffffffu)==0u) f|=1u; /* zero */
+    uint32_t exp=raw&0x7f800000u, frac=raw&0x007fffffu;
+    if(exp==0u && frac!=0u) f|=1u<<8;       /* U */
+    if(raw&0x80000000u) f|=1u<<4;           /* S */
+    if((raw&0x7fffffffu)==0u || (exp==0u&&frac!=0u)) f|=1u; /* Z */
+    if(exp==0x7f800000u) f|=1u<<12;         /* O */
     return f;
 }
 static void update_status_from_mac(TsFpVuState *s){
@@ -79,6 +88,7 @@ static void mac2(TsFpVuState *s,unsigned fd,unsigned fs,unsigned mask,
         else if(op==2)r[i]=x*b;
         else if(op==3)r[i]=f32(s->acc[i])+x*b;
         else r[i]=f32(s->acc[i])-x*b;
+        r[i]=fmac_condition(r[i]);
         if(acc){if(mask_has(mask,i))s->acc[i]=u32(r[i]);}
     }
     if(!acc){update_mac_flags(s,r,mask);write_mask(s,fd,mask,r);}
@@ -93,6 +103,7 @@ static void mac3(TsFpVuState *s,unsigned fd,unsigned fs,unsigned ft,unsigned mas
         else if(op==2)r[i]=x*y;
         else if(op==3)r[i]=f32(s->acc[i])+x*y;
         else r[i]=f32(s->acc[i])-x*y;
+        r[i]=fmac_condition(r[i]);
         if(acc){if(mask_has(mask,i))s->acc[i]=u32(r[i]);}
     }
     if(!acc){update_mac_flags(s,r,mask);write_mask(s,fd,mask,r);}
