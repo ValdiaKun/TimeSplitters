@@ -505,21 +505,23 @@ static void lower_exec(TsFpVuState *s,uint32_t lo,uint32_t next_pc){
        used by this interpreter (notably vi21 for the I-bit path) retain their
        established full-width representation. */
     #define VI_WRITE16(reg,val) do { if((reg)!=0u) s->vi[(reg)]=(uint32_t)(val); if((reg)<16u) s->vi[(reg)]&=0xffffu; } while(0)
+    #define VI_WRITE_ARITH(reg,val,wide) do { if((reg)!=0u) s->vi[(reg)]=(uint32_t)(val); if((reg)<16u && !(wide)) s->vi[(reg)]&=0xffffu; } while(0)
     if(op==0x08u||op==0x09u){
         uint32_t uimm=lo&0x7ffu;
-        if(it)VI_WRITE16(it,s->vi[is]+(op==0x08u?uimm:0u-uimm));
+        if(it)VI_WRITE_ARITH(it,s->vi[is]+(op==0x08u?uimm:0u-uimm),is==21u);
         return;
     }
-    if(op==0x30u){if(id)VI_WRITE16(id,s->vi[it]+s->vi[is]);return;}
-    if(op==0x31u){if(id)VI_WRITE16(id,s->vi[it]-s->vi[is]);return;}
+    if(op==0x30u){if(id)VI_WRITE_ARITH(id,s->vi[it]+s->vi[is],is==21u||it==21u);return;}
+    if(op==0x31u){if(id)VI_WRITE_ARITH(id,s->vi[it]-s->vi[is],is==21u||it==21u);return;}
     if(op==0x32u){
         int32_t imm5=(int32_t)((lo>>6)&0x1fu);
         if(imm5&0x10)imm5-=0x20;
-        if(it)VI_WRITE16(it,s->vi[is]+imm5);
+        if(it)VI_WRITE_ARITH(it,s->vi[is]+imm5,is==21u);
         return;
     }
-    if(op==0x34u){if(id)VI_WRITE16(id,s->vi[it]&s->vi[is]);return;}
-    if(op==0x35u){if(id)VI_WRITE16(id,s->vi[it]|s->vi[is]);return;}
+    if(op==0x34u){if(id)VI_WRITE_ARITH(id,s->vi[it]&s->vi[is],is==21u||it==21u);return;}
+    if(op==0x35u){if(id)VI_WRITE_ARITH(id,s->vi[it]|s->vi[is],is==21u||it==21u);return;}
+    #undef VI_WRITE_ARITH
     #undef VI_WRITE16
     /* VU1 lower branch opcodes follow the hardware table:
        B/BAL, JR/JALR, then IBEQ/IBNE/IBLTZ/IBGTZ/IBLEZ/IBGEZ. */
