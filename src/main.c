@@ -119,14 +119,16 @@ static int render_mscal(uint16_t address,uint8_t *vu_memory,size_t vu_size,
     TsFpVifRenderContext *ctx=(TsFpVifRenderContext*)user;
     TsFpGifSummary gif;
     size_t before;
-    if(!ctx||!ctx->vu||!ctx->micro||((size_t)address*8u)>=ctx->micro_size)return -1;
+    if(!ctx||!ctx->vu||!ctx->micro)return -1;
+    uint32_t start=(address==0xffffu)?ctx->vu->pc:address;
+    if(((size_t)start*8u)>=ctx->micro_size)return -1;
     ctx->vu->memory=vu_memory;
     ctx->vu->memory_size=vu_size;
     ctx->vu->top=top;
     ctx->vu->itop=itop;
     ctx->vu->branch_pending=0;
     before=ctx->vu->gif_used;
-    if(tsfp_vu_execute(ctx->micro,ctx->micro_size,address,ctx->vu,8192)!=0)return -2;
+    if(tsfp_vu_execute(ctx->micro,ctx->micro_size,start,ctx->vu,8192)!=0)return -2;
     if(ctx->vu->gif_used>before){
         memset(gif_local,0,sizeof(gif_local));
         if(tsfp_gif_parse(ctx->gif_memory+before,ctx->vu->gif_used-before,
