@@ -19,6 +19,10 @@ static uint32_t branch(uint8_t op, uint8_t is, uint8_t it, int imm) {
     return ((uint32_t)op<<25) | ((uint32_t)it<<16) | ((uint32_t)is<<11) |
            ((uint32_t)imm & 0x7ffu);
 }
+static uint32_t flag_imm(uint8_t op, uint8_t it, uint32_t imm) {
+    return ((uint32_t)op<<25) | ((uint32_t)it<<16) |
+           (imm&0x7ffu) | (((imm>>11)&1u)<<21);
+}
 int main(void) {
     uint8_t micro[64]={0}, mem[4096]={0}, gif[4096]={0};
     uint32_t w;
@@ -554,6 +558,30 @@ int main(void) {
         assert(t.r==0x3f8fa542u);
         assert(t.vf[2][0]==0x3f923456u && t.vf[2][2]==0x3f923456u);
         assert(t.vf[3][1]==0x3fa468adu);
+    }
+    {
+        /* Lower flag operations use the documented 0x10-0x1c dispatch slots. */
+        uint8_t m[96]={0}; uint32_t x;
+        x=flag_imm(0x16,2,0x0d0u); memcpy(m+0,&x,4); x=0; memcpy(m+4,&x,4); /* FSAND */
+        x=flag_imm(0x14,3,0xa5au); memcpy(m+8,&x,4); x=0; memcpy(m+12,&x,4); /* FSEQ */
+        x=flag_imm(0x17,4,5u); memcpy(m+16,&x,4); x=0; memcpy(m+20,&x,4); /* FSOR */
+        x=lower(0x34,5,6,0); memcpy(m+24,&x,4); /* IAND is not used; overwritten below */
+        x=flag_imm(0x1a,5,0); x|=(6u<<11); memcpy(m+24,&x,4); x=0; memcpy(m+28,&x,4); /* FMAND */
+        x=flag_imm(0x18,7,0); x|=(6u<<11); memcpy(m+32,&x,4); x=0; memcpy(m+36,&x,4); /* FMEQ */
+        x=flag_imm(0x1b,8,0); x|=(6u<<11); memcpy(m+40,&x,4); x=0; memcpy(m+44,&x,4); /* FMOR */
+        x=(0x11u<<25)|(0x123456u); memcpy(m+48,&x,4); x=0; memcpy(m+52,&x,4); /* FCSET */
+        x=(0x12u<<25)|(0x0000ffu); memcpy(m+56,&x,4); x=0; memcpy(m+60,&x,4); /* FCAND */
+        x=(0x10u<<25)|(0x123456u); memcpy(m+64,&x,4); x=0; memcpy(m+68,&x,4); /* FCEQ */
+        x=(0x13u<<25)|(0xedcba9u); memcpy(m+72,&x,4); x=0; memcpy(m+76,&x,4); /* FCOR */
+        x=flag_imm(0x1c,9,0); memcpy(m+80,&x,4); x=0; memcpy(m+84,&x,4); /* FCGET */
+        x=flag_imm(0x15,10,0xc40u); memcpy(m+88,&x,4); x=0x40000000u; memcpy(m+92,&x,4); /* FSSET + E */
+        TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
+        t.status_flag=0xa5au; t.mac_flag=0x0f0fu; t.vi[6]=0x00ffu;
+        assert(tsfp_vu_execute(m,sizeof(m),0,&t,13)==0);
+        assert(t.vi[2]==0x50u && t.vi[3]==1u && t.vi[4]==0xa5fu);
+        assert(t.vi[5]==0x000fu && t.vi[7]==0u && t.vi[8]==0x0fffu);
+        assert(t.vi[1]==1u && t.vi[9]==0x456u);
+        assert(t.clip_flag==0x123456u && t.status_flag==0xc5au);
     }
     {
         /* VU branch opcodes use JR/JALR at 0x24/0x25 and conditional
