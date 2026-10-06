@@ -40,7 +40,7 @@ def main():
             if total+size>a.max_total: break
             f.seek(off); data=f.read(size)
             inflated=False
-            if a.inflate_gzip and data.startswith(b"\\x1f\\x8b"):
+            if a.inflate_gzip and data.startswith(b"\x1f\x8b"):
                 data=gzip.decompress(data); inflated=True
             ss=strings(data[:65536])
             label=next((s for s in ss if "/" in s or "_" in s), f"entry_{i:04d}")
