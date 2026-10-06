@@ -3,7 +3,7 @@
 #include <math.h>
 #include <float.h>
 #include <stdint.h>
-#include <string.h>
+#include <string.h>\n#include <stdio.h>
 static uint32_t u32(float x){uint32_t v;memcpy(&v,&x,4);return v;}
 static float f32(uint32_t x){float v;memcpy(&v,&x,4);return v;}
 static uint32_t rd32(const uint8_t *p){return (uint32_t)p[0]|((uint32_t)p[1]<<8)|((uint32_t)p[2]<<16)|((uint32_t)p[3]<<24);}
@@ -581,7 +581,7 @@ int main(void) {
         assert(t.vi[2]==0x50u && t.vi[3]==1u && t.vi[4]==0xa5fu);
         assert(t.vi[5]==0x000fu);
         assert(t.vi[7]==0u);
-        assert(t.vi[8]==0x0fffu);
+        fprintf(stderr,"flag-debug mac=%04x vi6=%04x vi8=%04x\\n",t.mac_flag,t.vi[6],t.vi[8]);\n        assert(t.vi[8]==0x0fffu);
         assert(t.vi[1]==1u && t.vi[9]==0x456u);
         assert(t.clip_flag==0x123456u && t.status_flag==0xc5au);
     }
