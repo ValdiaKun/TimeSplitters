@@ -440,10 +440,11 @@ static void flush_flag_pipeline(TsFpVuState *s){
     unsigned base=s->flag_pipe_pos;
     for(unsigned n=0;n<4;n++){
         unsigned slot=(base+n)&3u;
-        if(s->flag_pipe_valid[slot]){
-            s->mac_flag=s->mac_pipe[slot];
-            s->status_flag=s->status_pipe[slot];
-            s->clip_flag=s->clip_pipe[slot];
+        {
+            uint8_t valid=s->flag_pipe_valid[slot];
+            if(valid&1u) s->mac_flag=s->mac_pipe[slot];
+            if(valid&2u) s->status_flag=s->status_pipe[slot];
+            if(valid&4u) s->clip_flag=s->clip_pipe[slot];
             s->flag_pipe_valid[slot]=0;
         }
     }
