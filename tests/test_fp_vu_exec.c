@@ -563,13 +563,12 @@ int main(void) {
     {
         /* Lower flag operations use the documented 0x10-0x1c dispatch slots. */
         uint8_t m[96]={0}; uint32_t x;
-        x=flag_imm(0x16,2,0x0d0u); memcpy(m+0,&x,4); x=0; memcpy(m+4,&x,4); /* FSAND */
-        x=flag_imm(0x14,3,0xa5au); memcpy(m+8,&x,4); x=0; memcpy(m+12,&x,4); /* FSEQ */
-        x=flag_imm(0x17,4,5u); memcpy(m+16,&x,4); x=0; memcpy(m+20,&x,4); /* FSOR */
-        x=lower(0x34,5,6,0); memcpy(m+24,&x,4); /* IAND is not used; overwritten below */
-        x=flag_imm(0x1a,5,0); x|=(6u<<11); memcpy(m+24,&x,4); x=0; memcpy(m+28,&x,4); /* FMAND */
-        x=flag_imm(0x18,7,0); x|=(6u<<11); memcpy(m+32,&x,4); x=0; memcpy(m+36,&x,4); /* FMEQ */
-        x=flag_imm(0x1b,8,0); x|=(6u<<11); memcpy(m+40,&x,4); x=0; memcpy(m+44,&x,4); /* FMOR */
+        x=flag_imm(0x1a,5,0); x|=(6u<<11); memcpy(m+0,&x,4); x=0; memcpy(m+4,&x,4); /* FMAND */
+        x=flag_imm(0x18,7,0); x|=(6u<<11); memcpy(m+8,&x,4); x=0; memcpy(m+12,&x,4); /* FMEQ */
+        x=flag_imm(0x1b,8,0); x|=(6u<<11); memcpy(m+16,&x,4); x=0; memcpy(m+20,&x,4); /* FMOR */
+        x=flag_imm(0x16,2,0x0d0u); memcpy(m+24,&x,4); x=0; memcpy(m+28,&x,4); /* FSAND */
+        x=flag_imm(0x14,3,0xa5au); memcpy(m+32,&x,4); x=0; memcpy(m+36,&x,4); /* FSEQ */
+        x=flag_imm(0x17,4,5u); memcpy(m+40,&x,4); x=0; memcpy(m+44,&x,4); /* FSOR */
         x=(0x11u<<25)|(0x123456u); memcpy(m+48,&x,4); x=0; memcpy(m+52,&x,4); /* FCSET */
         x=(0x12u<<25)|(0x0000ffu); memcpy(m+56,&x,4); x=0; memcpy(m+60,&x,4); /* FCAND */
         x=(0x10u<<25)|(0x123456u); memcpy(m+64,&x,4); x=0; memcpy(m+68,&x,4); /* FCEQ */
@@ -582,7 +581,6 @@ int main(void) {
         assert(t.vi[2]==0x50u && t.vi[3]==1u && t.vi[4]==0xa5fu);
         assert(t.vi[5]==0x000fu);
         assert(t.vi[7]==0u);
-        fprintf(stderr,"flag-debug mac=%04x vi6=%04x vi8=%04x\\n",t.mac_flag,t.vi[6],t.vi[8]);
         assert(t.vi[8]==0x0fffu);
         assert(t.vi[1]==1u && t.vi[9]==0x456u);
         assert(t.clip_flag==0x123456u && t.status_flag==0xc5au);
