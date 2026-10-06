@@ -397,7 +397,8 @@ int main(void) {
         /* WAITQ makes a pending DIV result visible before the following upper op. */
         uint8_t m[48]={0}; uint32_t x;
         x=lower(0x7c,14,1,2); memcpy(m,&x,4); x=0; memcpy(m+4,&x,4);
-        x=lower(0x7c,14,0,0)|3u; memcpy(m+8,&x,4);
+        /* WAITQ is special1 opcode 0x3b, encoded in the 0x3fb low-word slot. */
+        x=0x80000000u | 0x3fbu; memcpy(m+8,&x,4);
         x=upper(0x20,3,1,0,0x8); memcpy(m+12,&x,4);
         x=0; memcpy(m+16,&x,4); x=0x40000000u|upper(0x3f,11,0,0,0xf); memcpy(m+20,&x,4);
         TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
