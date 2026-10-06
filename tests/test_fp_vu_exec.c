@@ -419,13 +419,13 @@ int main(void) {
         x=0; memcpy(m+24,&x,4); x=0x40000000u|upper(0x3f,11,0,0,0xf); memcpy(m+28,&x,4);
         TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
         t.vf[1][0]=u32(0.5f);
-        assert(tsfp_vu_execute(m,sizeof(m),0,&t,1)==0);
+        assert(tsfp_vu_execute(m,sizeof(m),0,&t,1)==-2);
         assert(t.p_pending==1u);
         assert(fabsf(f32(t.p_pending_value)-sinf(0.5f))<1e-6f);
-        assert(tsfp_vu_execute(m,sizeof(m),1,&t,1)==0);
+        assert(tsfp_vu_execute(m,sizeof(m),1,&t,1)==-2);
         assert(t.p_pending==0u);
         assert(fabsf(f32(t.p)-sinf(0.5f))<1e-6f);
-        assert(tsfp_vu_execute(m,sizeof(m),2,&t,1)==0);
+        assert(tsfp_vu_execute(m,sizeof(m),2,&t,1)==-2);
         assert(fabsf(f32(t.vf[3][0])-sinf(0.5f))<1e-6f);
     }
 
