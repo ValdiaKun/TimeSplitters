@@ -84,6 +84,16 @@ static void special_upper(TsFpVuState *s,uint32_t up){
     case 42:mac3(s,0,fs,ft,mask,2,1);return;
     case 44:mac3(s,0,fs,ft,mask,1,1);return;
     case 45:mac3(s,0,fs,ft,mask,4,1);return;
+    case 63: { /* CLIPw.xyz: append six clipping-result bits. */
+        float w=fabsf(f32(s->vf[ft][3]));
+        uint32_t flags=0;
+        float x=f32(s->vf[fs][0]),y=f32(s->vf[fs][1]),z=f32(s->vf[fs][2]);
+        if(x>w) flags|=1u; else if(x<-w) flags|=2u;
+        if(y>w) flags|=4u; else if(y<-w) flags|=8u;
+        if(z>w) flags|=16u; else if(z<-w) flags|=32u;
+        s->clip_flag=((s->clip_flag<<6)&0x00ffffffu)|flags;
+        return;
+    }
     case 46:
         for(unsigned i=0;i<4;i++)if(mask_has(mask,i)){
             float r[4]={f32(s->vf[fs][1])*f32(s->vf[ft][2]),
