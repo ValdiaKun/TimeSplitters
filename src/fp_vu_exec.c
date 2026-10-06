@@ -22,6 +22,25 @@ static void write_mask(TsFpVuState *s,unsigned fd,unsigned mask,const float r[4]
 static float fpmax(float a,float b){return a>b?a:b;}
 static float fpmin(float a,float b){return a<b?a:b;}
 
+static uint32_t mac_result_flags(float x){
+    /* VU MAC flags are accumulated per component: sign, zero, and overflow.
+       Keep the compact 6-bit-per-component representation used by the
+       existing flag consumers; upper bits remain reserved for future detail. */
+    uint32_t f=0;
+    if(signbit(x)) f|=1u;
+    if(x==0.0f) f|=2u;
+    if(!isfinite(x)) f|=4u;
+    return f;
+}
+static void update_mac_flags(TsFpVuState *s,const float r[4],unsigned mask){
+    uint32_t f=s->mac_flag&0x3ffffu;
+    for(unsigned i=0;i<4;i++) if(mask_has(mask,i)){
+        uint32_t sh=i*3u;
+        f=(f&~(7u<<sh))|(mac_result_flags(r[i])<<sh);
+    }
+    s->mac_flag=f;
+}
+
 static void mac2(TsFpVuState *s,unsigned fd,unsigned fs,unsigned mask,
                   float b,int op,int acc){
     float r[4];
@@ -34,7 +53,8 @@ static void mac2(TsFpVuState *s,unsigned fd,unsigned fs,unsigned mask,
         else r[i]=f32(s->acc[i])-x*b;
         if(acc){if(mask_has(mask,i))s->acc[i]=u32(r[i]);}
     }
-    if(!acc)write_mask(s,fd,mask,r);
+    if(!acc){update_mac_flags(s,r,mask);write_mask(s,fd,mask,r);}
+    else update_mac_flags(s,r,mask);
 }
 static void mac3(TsFpVuState *s,unsigned fd,unsigned fs,unsigned ft,unsigned mask,int op,int acc){
     float r[4];
@@ -47,7 +67,8 @@ static void mac3(TsFpVuState *s,unsigned fd,unsigned fs,unsigned ft,unsigned mas
         else r[i]=f32(s->acc[i])-x*y;
         if(acc){if(mask_has(mask,i))s->acc[i]=u32(r[i]);}
     }
-    if(!acc)write_mask(s,fd,mask,r);
+    if(!acc){update_mac_flags(s,r,mask);write_mask(s,fd,mask,r);}
+    else update_mac_flags(s,r,mask);
 }
 
 static void special_upper(TsFpVuState *s,uint32_t up){
