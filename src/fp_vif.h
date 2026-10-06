@@ -44,7 +44,8 @@ typedef struct {
 } TsFpVifMemorySummary;
 
 typedef int (*TsFpVifMscalCallback)(uint16_t address, uint8_t *vu_memory,
-                                    size_t vu_size, void *user);
+                                    size_t vu_size, uint32_t top, uint32_t itop,
+                                    void *user);
 
 int tsfp_vif_unpack_memory_ex(const uint8_t *data, size_t size,
                               uint8_t *vu_memory, size_t vu_size,
