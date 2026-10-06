@@ -351,6 +351,10 @@ int main(void) {
         assert((t.status_flag&(1u<<4))!=0u && (t.status_flag&(1u<<10))!=0u);
         t.status_flag=0;
         t.vf[1][0]=1.0f; t.vf[2][0]=0.0f;
+        TsFpVuState d2; tsfp_vu_state_init(&d2,mem,sizeof(mem),gif,sizeof(gif));
+        d2.vf[1][0]=1.0f; d2.vf[2][0]=0.0f;
+        assert(tsfp_vu_execute(m,sizeof(m),0,&d2,1)==-2);
+        assert((d2.q_pending_status&(1u<<5))!=0u && (d2.q_pending_status&(1u<<11))!=0u);
         assert(tsfp_vu_execute(m,sizeof(m),0,&t,8)==0);
         assert((t.status_flag&(1u<<5))!=0u && (t.status_flag&(1u<<11))!=0u);
     }
