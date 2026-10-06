@@ -1,5 +1,6 @@
 #include "fp_vu.h"
 #include <assert.h>
+#include <math.h>
 #include <stdint.h>
 #include <string.h>
 static uint32_t u32(float x){uint32_t v;memcpy(&v,&x,4);return v;}
