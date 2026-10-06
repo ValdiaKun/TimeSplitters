@@ -501,12 +501,21 @@ static void lower_exec(TsFpVuState *s,uint32_t lo,uint32_t next_pc){
         if(op==4)s->vi[it]=rd32(s->memory+a)&0xffffu;else wr32(s->memory+a,s->vi[it]&0xffffu);
         return;
     }
-    if(op==0x08u||op==0x09u){if(it)s->vi[it]=(uint32_t)((int32_t)s->vi[is]+imm*(op==8?1:-1));return;}
-    if(op==0x30u){if(id)s->vi[id]=s->vi[it]+s->vi[is];return;}
-    if(op==0x31u){if(id)s->vi[id]=s->vi[it]-s->vi[is];return;}
-    if(op==0x32u){if(id)s->vi[id]=s->vi[it]+sx11(lo);return;}
-    if(op==0x34u){if(id)s->vi[id]=s->vi[it]&s->vi[is];return;}
-    if(op==0x35u){if(id)s->vi[id]=s->vi[it]|s->vi[is];return;}
+    if(op==0x08u||op==0x09u){
+        uint32_t uimm=lo&0x7ffu;
+        if(it)s->vi[it]=(uint32_t)((s->vi[is]+(op==0x08u?uimm:0u-uimm))&0xffffu);
+        return;
+    }
+    if(op==0x30u){if(id)s->vi[id]=(s->vi[it]+s->vi[is])&0xffffu;return;}
+    if(op==0x31u){if(id)s->vi[id]=(s->vi[it]-s->vi[is])&0xffffu;return;}
+    if(op==0x32u){
+        int32_t imm5=(int32_t)((lo>>6)&0x1fu);
+        if(imm5&0x10)imm5-=0x20;
+        if(it)s->vi[it]=(uint32_t)((s->vi[is]+imm5)&0xffffu);
+        return;
+    }
+    if(op==0x34u){if(id)s->vi[id]=(s->vi[it]&s->vi[is])&0xffffu;return;}
+    if(op==0x35u){if(id)s->vi[id]=(s->vi[it]|s->vi[is])&0xffffu;return;}
     /* VU1 lower branch opcodes follow the hardware table:
        B/BAL, JR/JALR, then IBEQ/IBNE/IBLTZ/IBGTZ/IBLEZ/IBGEZ. */
     if(op==0x20u){
@@ -526,7 +535,7 @@ static void lower_exec(TsFpVuState *s,uint32_t lo,uint32_t next_pc){
         return;
     }
     if(op==0x25u){
-        s->vi[15]=next_pc+1u;
+        if(it)s->vi[it]=next_pc+1u;
         s->branch_pending=1;
         s->branch_target=s->vi[is];
         return;
