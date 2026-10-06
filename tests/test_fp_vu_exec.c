@@ -317,7 +317,7 @@ int main(void) {
         assert(tsfp_vu_execute(m,sizeof(m),0,&t,8)==0);
         assert((t.mac_flag & 0x0001u)!=0u); /* Zx */
         assert((t.mac_flag & 0x0020u)!=0u); /* Sy */
-        assert((t.mac_flag & 0x0400u)!=0u); /* Uz */
+        assert((t.mac_flag & 0x0200u)!=0u); /* Uz */
         assert((t.mac_flag & 0x8000u)!=0u); /* Ow */
     }
 
