@@ -134,7 +134,8 @@ int main(void) {
            WL slots repeat the last source vector.  NUM still counts outputs. */
         uint8_t m[128]={0};
         uint32_t head[]={v(0x01,0,0x0201),v(0x6c,4,0x0000),
-                         0x11111111,0x22222222,0,0};
+                         0x11111111,0x11111111,0x11111111,0x11111111,
+                         0x22222222,0x22222222,0x22222222,0x22222222};
         memcpy(m,head,sizeof(head));
         memset(&ms,0,sizeof(ms));
         assert(tsfp_vif_unpack_memory(m,sizeof(head),vu,sizeof(vu),&ms)==0);
