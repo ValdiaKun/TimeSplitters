@@ -532,7 +532,7 @@ int main(void) {
         memcpy(data,vals,16);
         TsFpVuState t; tsfp_vu_state_init(&t,data,sizeof(data),gif,sizeof(gif));
         t.vf[2][0]=u32(9.0f); t.vf[2][1]=u32(9.0f); t.vf[2][2]=u32(9.0f); t.vf[2][3]=u32(9.0f);
-        assert(tsfp_vu_execute(m,sizeof(m),0,&t,2)==0);
+        assert(tsfp_vu_execute(m,sizeof(m),0,&t,3)==0);
         assert(f32(t.vf[2][0])==1.0f && f32(t.vf[2][1])==9.0f &&
                f32(t.vf[2][2])==3.0f && f32(t.vf[2][3])==9.0f);
         memset(m,0,sizeof(m));
@@ -541,7 +541,7 @@ int main(void) {
         uint8_t out[64]={0};
         TsFpVuState q; tsfp_vu_state_init(&q,out,sizeof(out),gif,sizeof(gif));
         q.vf[2][0]=u32(1.0f); q.vf[2][1]=u32(2.0f); q.vf[2][2]=u32(3.0f); q.vf[2][3]=u32(4.0f);
-        assert(tsfp_vu_execute(m,sizeof(m),0,&q,2)==0);
+        assert(tsfp_vu_execute(m,sizeof(m),0,&q,3)==0);
         assert(f32(rd32(out+0))==1.0f && f32(rd32(out+4))==0.0f &&
                f32(rd32(out+8))==3.0f && f32(rd32(out+12))==0.0f);
     }
