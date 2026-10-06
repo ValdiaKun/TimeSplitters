@@ -17,6 +17,10 @@ jobs:
           python-version: "3.x"
       - name: Compile Python tools
         run: python -m compileall -q tools
+      - name: Compile and test native P5CK parser and GZip payload reader
+        run: |
+          gcc -std=c11 -Wall -Wextra -Isrc tests/test_p5ck.c src/p5ck.c -lz -o /tmp/test_p5ck
+          /tmp/test_p5ck
       - name: Compile and test native Future Perfect resource parser
         run: |
           gcc -std=c11 -Wall -Wextra -Isrc -c src/fp_resource.c -o /tmp/fp_resource.o
