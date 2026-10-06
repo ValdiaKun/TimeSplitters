@@ -394,6 +394,35 @@ int main(void) {
     }
 
     {
+        /* EFU producers have 10-cycle throughput for the 11-cycle ESADD latency. */
+        uint8_t m[24]={0}; uint32_t x;
+        x=0; memcpy(m,&x,4); x=upper(0x3c,28,1,0,0xf); memcpy(m+4,&x,4);
+        x=0; memcpy(m+8,&x,4); x=upper(0x3c,29,1,0,0xf); memcpy(m+12,&x,4);
+        x=0; memcpy(m+16,&x,4); x=0x40000000u|upper(0x3f,11,0,0,0xf); memcpy(m+20,&x,4);
+        TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
+        t.vf[1][0]=u32(2.0f); t.vf[1][1]=u32(3.0f); t.vf[1][2]=u32(6.0f);
+        assert(tsfp_vu_execute(m,sizeof(m),0,&t,2)==-2);
+        assert(f32(t.p)==49.0f);
+        assert(t.p_pending==1u && t.p_pending_cycles==11u);
+    }
+    {
+        /* Ordinary LIWs advance EFU latency; MFP observes P once writeback has completed. */
+        uint8_t m[31u*8u]={0}; uint32_t x;
+        x=0; memcpy(m,&x,4); x=upper(0x3c,28,1,0,0xf); memcpy(m+4,&x,4); /* ESADD */
+        for(unsigned i=1;i<29;i++){
+            x=0; memcpy(m+i*8u,&x,4);
+            x=upper(0x3f,11,0,0,0xf); memcpy(m+i*8u+4,&x,4);
+        }
+        x=0x80000000u|(0xfu<<21)|(3u<<16)|0x67cu; memcpy(m+29u*8u,&x,4); /* MFP */
+        x=0; memcpy(m+29u*8u+4,&x,4);
+        TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
+        t.vf[1][0]=u32(2.0f); t.vf[1][1]=u32(3.0f); t.vf[1][2]=u32(6.0f);
+        assert(tsfp_vu_execute(m,sizeof(m),0,&t,30)==-2);
+        assert(t.p_pending==0u && f32(t.p)==49.0f);
+        assert(f32(t.vf[3][0])==49.0f);
+    }
+
+    {
         /* A second direct FDIV opcode must wait for the shared Q pipeline. */
         uint8_t m[24]={0}; uint32_t x;
         x=lower(0x7c,0,1,2); memcpy(m,&x,4); x=0; memcpy(m+4,&x,4);
