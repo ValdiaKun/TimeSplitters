@@ -634,7 +634,7 @@ int main(void) {
             x=lower(0x08,0,0,5)|13u; memcpy(m+24,&x,4); x=0x40000000u; memcpy(m+28,&x,4);
             TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
             t.vi[1]=3u;
-            assert(tsfp_vu_execute(m,sizeof(m),0,&t,4)==0);
+            assert(tsfp_vu_execute(m,sizeof(m),0,&t,5)==0);
             assert(t.vi[4]==9u && t.vi[5]==13u);
         }
         {
@@ -645,7 +645,7 @@ int main(void) {
             x=lower(0x08,0,0,5)|13u; memcpy(m+24,&x,4);
             TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
             t.vi[1]=3u;
-            assert(tsfp_vu_execute(m,sizeof(m),0,&t,4)==0);
+            assert(tsfp_vu_execute(m,sizeof(m),0,&t,5)==0);
             assert(t.vi[4]==9u && t.vi[5]==13u && t.vi[15]==2u);
         }
         {
@@ -655,7 +655,7 @@ int main(void) {
             x=lower(0x08,0,0,5)|7u; memcpy(m+16,&x,4);
             x=lower(0x08,0,0,5)|13u; memcpy(m+24,&x,4);
             TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
-            assert(tsfp_vu_execute(m,sizeof(m),0,&t,4)==0);
+            assert(tsfp_vu_execute(m,sizeof(m),0,&t,5)==0);
             assert(t.vi[4]==9u && t.vi[5]==13u && t.vi[15]==2u);
         }
     }
