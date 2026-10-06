@@ -152,6 +152,7 @@ static size_t gif_packet_size(const uint8_t *mem,size_t size,size_t start){
         if(flg==0)bytes=(size_t)nloop*nreg*16u;
         else if(flg==1)bytes=((size_t)nloop*nreg+1u)/2u*16u;
         else if(flg==2)bytes=(size_t)nloop*16u;
+        else if(flg==3)bytes=(size_t)nloop*16u; /* IMAGE mode */
         else bytes=0;
         if(p+16u+bytes>size)return 0;
         p+=16u+bytes;
