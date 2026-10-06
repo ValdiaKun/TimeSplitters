@@ -130,6 +130,21 @@ int main(void) {
         assert(got[0]==0x11u && got[1]==0x22u && got[2]==0x11u && got[3]==0x22u);
     }
     {
+        /* WL > CL: only CL source vectors are consumed per cycle; the remaining
+           WL slots repeat the last source vector.  NUM still counts outputs. */
+        uint8_t m[128]={0};
+        uint32_t head[]={v(0x01,0,0x0201),v(0x6c,4,0x0000),
+                         0x11111111,0x22222222,0,0};
+        memcpy(m,head,sizeof(head));
+        memset(&ms,0,sizeof(ms));
+        assert(tsfp_vif_unpack_memory(m,sizeof(head),vu,sizeof(vu),&ms)==0);
+        uint32_t got[16];
+        memcpy(got,vu,sizeof(got));
+        assert(got[0]==0x11111111u && got[4]==0x11111111u);
+        assert(got[8]==0x22222222u && got[12]==0x22222222u);
+        assert(ms.qwords_written==4);
+    }
+    {
         /* V4-5 is packed into one full 32-bit word even though it carries 20 bits.
            A truncated three-byte payload must be rejected before rd32 reads past it. */
         uint8_t m[32]={0};
