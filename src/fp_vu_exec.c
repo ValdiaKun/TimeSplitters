@@ -27,6 +27,23 @@ static void q_commit(TsFpVuState *s){
     s->q_pending=0;
     s->q_pending_cycles=0;
 }
+static void p_schedule(TsFpVuState *s,uint32_t value,uint32_t cycles){
+    s->p_pending_value=value;
+    s->p_pending_cycles=cycles;
+    s->p_pending=1;
+}
+static void p_commit(TsFpVuState *s){
+    if(!s->p_pending)return;
+    s->p=s->p_pending_value;
+    s->p_pending=0;
+    s->p_pending_cycles=0;
+}
+static void p_wait(TsFpVuState *s){
+    while(s->p_pending && s->p_pending_cycles){
+        s->p_pending_cycles--;
+        if(s->p_pending_cycles==0)p_commit(s);
+    }
+}
 static int is_waitq(uint32_t lo){
     return ((lo>>25)&0x7fu)==0x7cu &&
            (((lo&3u)|((lo>>4)&0x7cu))==0x3bu);
@@ -34,6 +51,14 @@ static int is_waitq(uint32_t lo){
 static int is_fdiv(uint32_t lo){
     unsigned op=(lo>>25)&0x7fu;
     return op>=0x7cu && op<=0x7fu;
+}
+static int is_waitp(uint32_t lo){
+    return ((lo>>25)&0x7fu)==0x7cu &&
+           (((lo&3u)|((lo>>4)&0x7cu))==0x7bu);
+}
+static int is_efu_upper(uint32_t up){
+    unsigned op=up&63u, sop=(up&3u)|(((up>>6)&31u)<<2);
+    return op>=0x3cu && sop>=112u && sop<=126u;
 }
 static void q_wait(TsFpVuState *s){
     while(s->q_pending && s->q_pending_cycles){
@@ -159,6 +184,31 @@ static void special_upper(TsFpVuState *s,uint32_t up){
     case 28:for(unsigned i=0;i<4;i++)if(mask_has(mask,i))s->acc[i]=u32(f32(s->vf[fs][i])*qf(s));return;
     case 29:if(ft)for(unsigned i=0;i<4;i++)if(mask_has(mask,i))s->vf[ft][i]=s->vf[fs][i]&0x7fffffffu;return;
     case 30:for(unsigned i=0;i<4;i++)if(mask_has(mask,i))s->acc[i]=u32(f32(s->vf[fs][i])*if_(s));return;
+    case 112: case 113: case 114: case 115:
+    case 116: case 117: case 118:
+    case 120: case 121: case 122:
+    case 124: case 125: case 126: {
+        float x=f32(s->vf[fs][0]), y=f32(s->vf[fs][1]), z=f32(s->vf[fs][2]), w=f32(s->vf[fs][3]);
+        float v=0.0f; uint32_t cycles=12u;
+        switch(sop){
+        case 112: v=sqrtf(x*x+y*y+z*z); cycles=11u; break; /* ESADD */
+        case 113: v=1.0f/sqrtf(x*x+y*y+z*z); cycles=18u; break; /* ERSADD */
+        case 114: v=sqrtf(x*x+y*y+z*z); cycles=18u; break; /* ELENG */
+        case 115: v=1.0f/sqrtf(x*x+y*y+z*z); cycles=24u; break; /* ERLENG */
+        case 116: v=atan2f(y,x); cycles=54u; break; /* EATANxy */
+        case 117: v=atan2f(z,x); cycles=54u; break; /* EATANxz */
+        case 118: v=x+y+z+w; cycles=12u; break; /* ESUM */
+        case 120: { unsigned sf=(up>>21)&3u; float a=f32(s->vf[fs][sf]); v=a>=0.0f?sqrtf(a):a; cycles=12u; break; } /* ESQRT */
+        case 121: { unsigned sf=(up>>21)&3u; float a=f32(s->vf[fs][sf]); v=a>=0.0f?(1.0f/sqrtf(a)):a; cycles=18u; break; } /* ERSQRT */
+        case 122: { unsigned sf=(up>>21)&3u; float a=f32(s->vf[fs][sf]); v=a!=0.0f?1.0f/a:a; cycles=12u; break; } /* ERCPR */
+        case 124: { unsigned sf=(up>>21)&3u; v=sinf(f32(s->vf[fs][sf])); cycles=29u; break; } /* ESIN */
+        case 125: { unsigned sf=(up>>21)&3u; v=atanf(f32(s->vf[fs][sf])); cycles=54u; break; } /* EATAN */
+        case 126: { unsigned sf=(up>>21)&3u; v=expf(-f32(s->vf[fs][sf])); cycles=44u; break; } /* EEXP */
+        default: break;
+        }
+        p_schedule(s,u32(v),cycles);
+        return;
+    }
     case 31: { /* CLIPw.xyz: append six clipping-result bits. */
         float w=fabsf(f32(s->vf[ft][3]));
         uint32_t flags=0;
@@ -449,6 +499,18 @@ static void lower_exec(TsFpVuState *s,uint32_t lo,uint32_t next_pc){
     if(op==0x1au){if(it)s->vi[it]=(s->mac_flag&s->vi[is])&0xffffu;return;}
     if(op==0x1bu){if(it)s->vi[it]=(s->mac_flag|s->vi[is])&0xffffu;return;}
     if(op==0x1cu){if(it)s->vi[it]=s->clip_flag&0xfffu;return;}
+    if((lo&0x80000000u) && (lo&0x3fu)>=0x3cu){
+        unsigned special=(lo&3u)|((lo>>4)&0x7cu);
+        if(special==100u){ /* MFP */
+            if(it)for(unsigned i=0;i<4;i++)if(mask_has(dest,i))s->vf[it][i]=s->p;
+            return;
+        }
+        if(special==123u){ /* WAITP */
+            p_wait(s);
+            return;
+        }
+    }
+
     if(op==0x7cu||op==0x7du||op==0x7eu||op==0x7fu){
         unsigned ftf=(lo>>23)&3u,fsf=(lo>>21)&3u;
         float num,den,qv; int invalid=0,divzero=0;
@@ -502,6 +564,7 @@ int tsfp_vu_execute(const uint8_t *micro,size_t size,uint32_t start,TsFpVuState 
     for(state->steps=0;state->steps<max_steps&&state->pc<size/8u;state->steps++){
         uint32_t pc=state->pc,lo=rd32(micro+pc*8u),up=rd32(micro+pc*8u+4u);
         uint32_t delayed=state->branch_pending, delayed_target=state->branch_target;
+        if(is_efu_upper(up) && state->p_pending) p_wait(state);
         /*
          * FDIV is a single shared resource. A second DIV/SQRT/RSQRT cannot
          * start while the previous result is in flight; hardware stalls the
