@@ -2,7 +2,6 @@
 #include <string.h>
 
 static uint64_t rd64(const uint8_t *p){uint64_t v=0;for(unsigned i=0;i<8;i++)v|=((uint64_t)p[i])<<(i*8);return v;}
-static uint32_t rd32(const uint8_t *p){return (uint32_t)p[0]|((uint32_t)p[1]<<8)|((uint32_t)p[2]<<16)|((uint32_t)p[3]<<24);}
 static float f32(uint32_t v){float f;memcpy(&f,&v,4);return f;}
 
 typedef struct {float s,t;uint8_t r,g,b,a;} GifState;
