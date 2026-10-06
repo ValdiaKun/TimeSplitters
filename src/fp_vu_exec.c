@@ -451,6 +451,12 @@ static void lower_exec(TsFpVuState *s,uint32_t lo,uint32_t next_pc){
             for(unsigned i=0;i<4;i++)if(mask_has(dest,i))wr32(s->memory+a+i*4u,v);
             return;
         }
+        case 100: /* MFP.dest VF[ft], P */
+            if(it)for(unsigned i=0;i<4;i++)if(mask_has(dest,i))s->vf[it][i]=s->p;
+            return;
+        case 123: /* WAITP */
+            p_wait(s);
+            return;
         default:
             s->unsupported++;
             return;
@@ -503,18 +509,6 @@ static void lower_exec(TsFpVuState *s,uint32_t lo,uint32_t next_pc){
     if(op==0x1au){if(it)s->vi[it]=(s->mac_flag&s->vi[is])&0xffffu;return;}
     if(op==0x1bu){if(it)s->vi[it]=(s->mac_flag|s->vi[is])&0xffffu;return;}
     if(op==0x1cu){if(it)s->vi[it]=s->clip_flag&0xfffu;return;}
-    if((lo&0x80000000u) && (lo&0x3fu)>=0x3cu){
-        unsigned special=(lo&3u)|((lo>>4)&0x7cu);
-        if(special==100u){ /* MFP */
-            if(it)for(unsigned i=0;i<4;i++)if(mask_has(dest,i))s->vf[it][i]=s->p;
-            return;
-        }
-        if(special==123u){ /* WAITP */
-            p_wait(s);
-            return;
-        }
-    }
-
     if(op==0x7cu||op==0x7du||op==0x7eu||op==0x7fu){
         unsigned ftf=(lo>>23)&3u,fsf=(lo>>21)&3u;
         float num,den,qv; int invalid=0,divzero=0;
