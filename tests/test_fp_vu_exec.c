@@ -451,6 +451,7 @@ int main(void) {
         x=0; memcpy(m+20,&x,4);
         x=0; memcpy(m+24,&x,4); x=0x40000000u|upper(0x3f,11,0,0,0xf); memcpy(m+28,&x,4);
         t.pc=0; t.p_pending=0; t.p=0; t.vf[3][0]=0;
+        t.vf[1][0]=u32(2.0f); t.vf[1][1]=u32(3.0f); t.vf[1][2]=u32(6.0f);
         assert(tsfp_vu_execute(m,sizeof(m),0,&t,16)==0);
         assert(f32(t.p)==49.0f && f32(t.vf[3][0])==49.0f);
     }
