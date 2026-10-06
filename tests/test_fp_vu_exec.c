@@ -341,6 +341,10 @@ int main(void) {
         x=lower(0x7c,14,1,2); memcpy(m,&x,4); x=0; memcpy(m+4,&x,4);
         x=lower(0x7c,14,0,0)|3u; memcpy(m+8,&x,4); x=upper(0x3f,11,0,0,0xf); memcpy(m+12,&x,4);
         x=0; memcpy(m+16,&x,4); x=0x40000000u|upper(0x3f,11,0,0,0xf); memcpy(m+20,&x,4);
+        TsFpVuState d; tsfp_vu_state_init(&d,mem,sizeof(mem),gif,sizeof(gif));
+        d.vf[1][0]=0.0f; d.vf[2][0]=0.0f;
+        assert(tsfp_vu_execute(m,sizeof(m),0,&d,1)==-2);
+        assert((d.q_pending_status&(1u<<4))!=0u && (d.q_pending_status&(1u<<10))!=0u);
         TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
         t.vf[1][0]=0.0f; t.vf[2][0]=0.0f;
         assert(tsfp_vu_execute(m,sizeof(m),0,&t,8)==0);
