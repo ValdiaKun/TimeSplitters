@@ -63,7 +63,7 @@ int main(void) {
         x=0x12345678u; memcpy(m+4,&x,4);
         x=0; memcpy(m+8,&x,4); x=0x40000000u; memcpy(m+12,&x,4);
         TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
-        t.vi[21]=2u;
+        t.vi[21]=u32(2.0f);
         t.vf[1][0]=u32(1.0f); t.vf[1][1]=u32(1.0f); t.vf[1][2]=u32(1.0f); t.vf[1][3]=u32(1.0f);
         assert(tsfp_vu_execute(m,sizeof(m),0,&t,8)==0);
         assert(f32(t.vf[3][0])==3.0f && t.vi[21]==0x12345678u);
