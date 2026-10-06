@@ -4,5 +4,12 @@
 #include <stdint.h>
 typedef struct { float x,y,z,s,t; uint8_t r,g,b,a; } TsFpGifVertex;
 typedef struct { uint32_t tags,loops,vertices; uint32_t primitive; uint8_t format,registers; size_t bytes_consumed; } TsFpGifSummary;
+typedef struct {
+    float s,t;
+    uint8_t r,g,b,a;
+    uint32_t primitive;
+} TsFpGifState;
+int tsfp_gif_parse_state(const uint8_t *data,size_t size,TsFpGifSummary *out,
+                         TsFpGifVertex *vertices,size_t vertex_capacity,TsFpGifState *state);
 int tsfp_gif_parse(const uint8_t *data,size_t size,TsFpGifSummary *out,TsFpGifVertex *vertices,size_t vertex_capacity);
 #endif
