@@ -10,7 +10,7 @@ static void reg64(uint8_t reg,uint64_t v,GifState *s,TsFpGifSummary *o,TsFpGifVe
  else if(reg==1){s->r=v;s->g=v>>8;s->b=v>>16;s->a=v>>24;}
  else if(reg==2){s->s=f32((uint32_t)v);s->t=f32((uint32_t)(v>>32));}
  else if(reg==3){s->s=(float)(v&0x3fffu)/16.0f;s->t=(float)((v>>16)&0x3fffu)/16.0f;}
- else else if(reg==4||reg==5){if(o->vertices<cap&&vs){TsFpGifVertex *x=&vs[o->vertices];x->x=(float)(int16_t)(v&0xffffu)/16.0f;x->y=(float)(int16_t)((v>>16)&0xffffu)/16.0f;x->z=(float)(uint32_t)((reg==4)?(v>>32)&0x00ffffffu:(v>>32));x->s=s->s;x->t=s->t;x->r=s->r;x->g=s->g;x->b=s->b;x->a=s->a;}o->vertices++;}
+ else if(reg==4||reg==5){if(o->vertices<cap&&vs){TsFpGifVertex *x=&vs[o->vertices];x->x=(float)(int16_t)(v&0xffffu)/16.0f;x->y=(float)(int16_t)((v>>16)&0xffffu)/16.0f;x->z=(float)(uint32_t)((reg==4)?(v>>32)&0x00ffffffu:(v>>32));x->s=s->s;x->t=s->t;x->r=s->r;x->g=s->g;x->b=s->b;x->a=s->a;}o->vertices++;}
 }
 
 int tsfp_gif_parse(const uint8_t *data,size_t size,TsFpGifSummary *out,TsFpGifVertex *vertices,size_t vertex_capacity){
