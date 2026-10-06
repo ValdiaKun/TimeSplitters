@@ -15,6 +15,10 @@ static uint32_t upper(uint8_t op, uint8_t fd, uint8_t fs, uint8_t ft, uint8_t ma
 static uint32_t lower(uint8_t op, uint8_t fd, uint8_t fs, uint8_t ft) {
     return ((uint32_t)op<<25) | ((uint32_t)fd<<6) | ((uint32_t)fs<<11) | ((uint32_t)ft<<16);
 }
+static uint32_t branch(uint8_t op, uint8_t is, uint8_t it, int imm) {
+    return ((uint32_t)op<<25) | ((uint32_t)it<<16) | ((uint32_t)is<<11) |
+           ((uint32_t)imm & 0x7ffu);
+}
 int main(void) {
     uint8_t micro[64]={0}, mem[4096]={0}, gif[4096]={0};
     uint32_t w;
@@ -497,6 +501,61 @@ int main(void) {
         t.vf[1][0]=u32(2.0f); t.vf[1][1]=u32(3.0f); t.vf[1][2]=u32(6.0f);
         assert(tsfp_vu_execute(m,sizeof(m),0,&t,16)==0);
         assert(f32(t.p)==49.0f && f32(t.vf[3][0])==49.0f);
+    }
+    {
+        /* VU branch opcodes use JR/JALR at 0x24/0x25 and conditional
+           branches at 0x28/0x29/0x2c-0x2f. Every branch has one delay LIW. */
+        const uint8_t cond_ops[]={0x28u,0x29u,0x2cu,0x2du,0x2eu,0x2fu};
+        const int expected_taken[]={1,1,1,1,1,1};
+        for(unsigned k=0;k<sizeof(cond_ops);k++){
+            uint8_t m[40]={0}; uint32_t x;
+            x=branch(cond_ops[k],1,2,2); memcpy(m,&x,4);
+            x=lower(0x08,0,0,4)|9u; memcpy(m+4,&x,4);
+            x=lower(0x08,0,0,5)|7u; memcpy(m+16, &x,4);
+            x=lower(0x08,0,0,5)|13u; memcpy(m+24, &x,4);
+            TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
+            t.vi[1]=(cond_ops[k]==0x28u||cond_ops[k]==0x29u)?5u:0xffffffffu;
+            t.vi[2]=(cond_ops[k]==0x28u||cond_ops[k]==0x29u)?5u:0u;
+            if(cond_ops[k]==0x2du) t.vi[1]=1u;
+            if(cond_ops[k]==0x2cu) t.vi[1]=(uint32_t)-1;
+            if(cond_ops[k]==0x2eu) t.vi[1]=(uint32_t)-1;
+            if(cond_ops[k]==0x2fu) t.vi[1]=1u;
+            assert(tsfp_vu_execute(m,sizeof(m),0,&t,4)==0);
+            assert(t.vi[4]==9u);
+            assert(t.vi[5]==(expected_taken[k]?13u:7u));
+        }
+        {
+            uint8_t m[40]={0}; uint32_t x;
+            x=branch(0x24u,1,0,0); memcpy(m,&x,4);
+            x=lower(0x08,0,0,4)|9u; memcpy(m+4,&x,4);
+            x=lower(0x08,0,0,5)|7u; memcpy(m+16,&x,4);
+            x=lower(0x08,0,0,5)|13u; memcpy(m+24,&x,4);
+            TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
+            t.vi[1]=3u;
+            assert(tsfp_vu_execute(m,sizeof(m),0,&t,4)==0);
+            assert(t.vi[4]==9u && t.vi[5]==13u);
+        }
+        {
+            uint8_t m[40]={0}; uint32_t x;
+            x=branch(0x25u,1,0,0); memcpy(m,&x,4);
+            x=lower(0x08,0,0,4)|9u; memcpy(m+4,&x,4);
+            x=lower(0x08,0,0,5)|7u; memcpy(m+16,&x,4);
+            x=lower(0x08,0,0,5)|13u; memcpy(m+24,&x,4);
+            TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
+            t.vi[1]=3u;
+            assert(tsfp_vu_execute(m,sizeof(m),0,&t,4)==0);
+            assert(t.vi[4]==9u && t.vi[5]==13u && t.vi[15]==2u);
+        }
+        {
+            uint8_t m[40]={0}; uint32_t x;
+            x=branch(0x21u,0,0,2); memcpy(m,&x,4);
+            x=lower(0x08,0,0,4)|9u; memcpy(m+4,&x,4);
+            x=lower(0x08,0,0,5)|7u; memcpy(m+16,&x,4);
+            x=lower(0x08,0,0,5)|13u; memcpy(m+24,&x,4);
+            TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
+            assert(tsfp_vu_execute(m,sizeof(m),0,&t,4)==0);
+            assert(t.vi[4]==9u && t.vi[5]==13u && t.vi[15]==2u);
+        }
     }
     return 0;
 }
