@@ -256,5 +256,20 @@ int main(void) {
         assert(t.vf[1][0]==0x11u && t.vf[1][1]==0x22u &&
                t.vf[1][2]==0x33u && t.vf[1][3]==0x44u);
     }
+
+    {
+        /* E-bit terminates after exactly one following LIW (the delay slot). */
+        uint8_t m[40]={0}; uint32_t x;
+        x=0; memcpy(m+0,&x,4); x=0x40000000u | upper(0x28,3,1,2,0xf); memcpy(m+4,&x,4);
+        x=0; memcpy(m+8,&x,4); x=upper(0x28,4,1,2,0xf); memcpy(m+12,&x,4);
+        x=0; memcpy(m+16,&x,4); x=upper(0x28,5,1,2,0xf); memcpy(m+20,&x,4);
+        TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
+        memcpy(t.vf[1],(float[4]){2,2,2,2},16); memcpy(t.vf[2],(float[4]){3,3,3,3},16);
+        assert(tsfp_vu_execute(m,sizeof(m),0,&t,8)==0);
+        assert(f32(t.vf[3][0])==5.0f);
+        assert(f32(t.vf[4][0])==5.0f);
+        assert(f32(t.vf[5][0])==0.0f);
+        assert(t.pc==2u);
+    }
     return 0;
 }
