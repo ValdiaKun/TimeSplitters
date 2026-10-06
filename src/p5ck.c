@@ -59,7 +59,9 @@ int ts_p5ck_read_payload(FILE *fp,const TsP5ckEntry *e,uint8_t **data,size_t *si
             inflateEnd(&zs);free(src);free(dst);return -9;
         }
         zlen=zs.total_out;
-        inflateEnd(&zs);free(src);
+        inflateEnd(&zs);
+        if(zlen!=(uLongf)e->length){free(src);free(dst);return -10;}
+        free(src);
         *data=dst;*size=(size_t)zlen;return 0;
     }
     *data=src;*size=stored;return 0;
