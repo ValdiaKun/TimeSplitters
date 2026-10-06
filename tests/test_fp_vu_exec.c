@@ -460,13 +460,13 @@ int main(void) {
            integer pipeline hazard window.  The immediately preceding IADDIU
            must therefore not make IBNE observe the new value. */
         uint8_t m[48]={0}; uint32_t x;
-        x=lower(0x32,5,0,0)|1u; memcpy(m,&x,4);
+        x=lower(0x32,0,0,5)|1u; memcpy(m,&x,4);
         x=0; memcpy(m+4,&x,4);
         x=lower(0x25,0,5,0)|2u; memcpy(m+8,&x,4); /* IBNE vi5,vi0,+2 */
         x=0; memcpy(m+12,&x,4);
-        x=lower(0x32,6,0,0)|2u; memcpy(m+16,&x,4);
+        x=lower(0x32,0,0,6)|2u; memcpy(m+16,&x,4);
         x=0; memcpy(m+20,&x,4);
-        x=lower(0x32,6,0,0)|3u; memcpy(m+24,&x,4);
+        x=lower(0x32,0,0,6)|3u; memcpy(m+24,&x,4);
         x=0; memcpy(m+28,&x,4);
         x=0; memcpy(m+32,&x,4); x=0x40000000u; memcpy(m+36,&x,4);
         TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
