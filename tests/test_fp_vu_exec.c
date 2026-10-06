@@ -316,10 +316,10 @@ int main(void) {
         t.vf[1][0]=0u; t.vf[1][1]=u32(-1.0f); t.vf[1][2]=0x000116c2u; t.vf[1][3]=u32(INFINITY);
         memcpy(t.vf[2],(float[4]){0,0,0,0},16);
         assert(tsfp_vu_execute(m,sizeof(m),0,&t,8)==0);
-        assert((t.mac_flag & 0x0001u)!=0u); /* Zx */
-        assert((t.mac_flag & 0x0020u)!=0u); /* Sy */
+        assert((t.mac_flag & 0x0008u)!=0u); /* Zx */
+        assert((t.mac_flag & 0x0040u)!=0u); /* Sy */
         assert((t.mac_flag & 0x0200u)!=0u); /* Uz */
-        assert((t.mac_flag & 0x8000u)!=0u); /* Ow */
+        assert((t.mac_flag & 0x1000u)!=0u); /* Ow */
     }
 
     {
@@ -359,12 +359,12 @@ int main(void) {
         t.vf[1][0]=0x000116c2u; t.vf[2][0]=0.0f;
         assert(tsfp_vu_execute(m,sizeof(m),0,&t,8)==0);
         assert(f32(t.vf[3][0])==0.0f);
-        assert((t.mac_flag&0x101u)==0x101u); /* Ux + Zx */
+        assert((t.mac_flag&0x108u)==0x108u); /* Ux + Zx */
         t.status_flag=0; t.mac_flag=0;
         t.vf[1][0]=FLT_MAX; t.vf[2][0]=FLT_MAX;
         assert(tsfp_vu_execute(m,sizeof(m),0,&t,8)==0);
         assert(f32(t.vf[3][0])==FLT_MAX);
-        assert((t.mac_flag&0x1001u)==0x1001u); /* Ox + Sx */
+        assert((t.mac_flag&0x1080u)==0x1080u); /* Ox + Sx */
     }
 
     {
@@ -378,7 +378,7 @@ int main(void) {
         }
         x=lower(0x1a,4,2,0); memcpy(m+40,&x,4); x=upper(0x3f,11,0,0,0xf); memcpy(m+44,&x,4);
         TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
-        t.vi[2]=0x10u; t.vf[1][0]=u32(-1.0f); t.vf[2][0]=0.0f;
+        t.vi[2]=0x80u; t.vf[1][0]=u32(-1.0f); t.vf[2][0]=0.0f;
         assert(tsfp_vu_execute(m,sizeof(m),0,&t,6)==-2);
         assert(t.vi[3]==0u);
         assert(t.vi[4]==0x10u);
