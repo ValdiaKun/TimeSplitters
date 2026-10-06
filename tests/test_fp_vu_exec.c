@@ -173,7 +173,7 @@ int main(void) {
         uint8_t m[32]={0}; uint8_t lmem[64]={0}; uint8_t lgif[64]={0}; uint32_t x;
         uint32_t src[4]={1u,2u,3u,4u}; memcpy(lmem,src,sizeof(src));
         x=0x80000000u | (15u<<21) | (0u<<16) | (0u<<11) | 0x37cu; memcpy(m,&x,4);
-        x=0; memcpy(m+4,&x,4); x=0; memcpy(m+8,&x,4); x=0x40000000u; memcpy(m+12,&x,4);
+        x=0; memcpy(m+4,&x,4); x=0; memcpy(m+8,&x,4); x=0x40000000u | upper(0x3f,0,0,0,0); memcpy(m+12,&x,4);
         TsFpVuState t; tsfp_vu_state_init(&t,lmem,sizeof(lmem),lgif,sizeof(lgif));
         assert(tsfp_vu_execute(m,sizeof(m),0,&t,8)==0);
         assert(t.vf[0][0]==0u && t.vf[0][1]==0u && t.vf[0][2]==0u && t.vf[0][3]==u32(1.0f));
