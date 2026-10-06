@@ -9,12 +9,23 @@ static uint32_t u32(float f){uint32_t v;memcpy(&v,&f,4);return v;}
 static int32_t sx11(uint32_t v){v&=0x7ffu;return (v&0x400u)?(int32_t)(v|0xfffff800u):(int32_t)v;}
 
 static float qf(const TsFpVuState *s){return f32(s->q);}
-static void set_div_flags(TsFpVuState *s,int invalid,int divzero){
-    uint32_t cur=s->status_flag&0x3fu;
-    cur=(cur&~0x30u)|((invalid?1u:0u)<<4)|((divzero?1u:0u)<<5);
-    s->status_flag=(s->status_flag&0xfc0u)|cur;
-    if(invalid)s->status_flag|=1u<<10;
-    if(divzero)s->status_flag|=1u<<11;
+static void q_schedule(TsFpVuState *s,uint32_t value,int invalid,int divzero,uint32_t cycles){
+    uint32_t st=s->status_flag & 0xfcfu;
+    st|=(invalid?1u:0u)<<4;
+    st|=(divzero?1u:0u)<<5;
+    if(invalid)st|=1u<<10;
+    if(divzero)st|=1u<<11;
+    s->q_pending_value=value;
+    s->q_pending_status=st;
+    s->q_pending_cycles=cycles;
+    s->q_pending=1;
+}
+static void q_commit(TsFpVuState *s){
+    if(!s->q_pending)return;
+    s->q=s->q_pending_value;
+    s->status_flag=(s->status_flag&0xfcfu)|(s->q_pending_status&0xc30u);
+    s->q_pending=0;
+    s->q_pending_cycles=0;
 }
 
 static float if_(const TsFpVuState *s){return f32(s->vi[21]);}
@@ -316,26 +327,34 @@ static void lower_exec(TsFpVuState *s,uint32_t lo,uint32_t next_pc){
             unsigned ftf=(lo>>23)&3u,fsf=(lo>>21)&3u;
             float num=f32(s->vf[is][fsf]),den=f32(s->vf[it][ftf]);
             int invalid=(num==0.0f&&den==0.0f), divzero=(den==0.0f&&!invalid);
-            set_div_flags(s,invalid,divzero);
-            s->q=u32(num/den);
+            float qv;
+            if(den==0.0f){
+                uint32_t sign=((u32(num)^u32(den))&0x80000000u);
+                qv=f32(sign|0x7f7fffffu);
+            } else qv=num/den;
+            q_schedule(s,u32(qv),invalid,divzero,7);
             return;
         }
         case 0x39: { /* SQRT Q, VF[ft]ftf */
             unsigned ftf=(lo>>23)&3u;
             float x=f32(s->vf[it][ftf]);
-            set_div_flags(s,x<0.0f,0);
-            s->q=u32(sqrtf(fabsf(x)));
+            q_schedule(s,u32(sqrtf(fabsf(x))),x<0.0f,0,7);
             return;
         }
         case 0x3a: { /* RSQRT Q, VF[fs]fsf / sqrt(abs(VF[ft]ftf)) */
             unsigned ftf=(lo>>23)&3u,fsf=(lo>>21)&3u;
             float num=f32(s->vf[is][fsf]),den=f32(s->vf[it][ftf]);
             int invalid=(den<0.0f), divzero=(den==0.0f&&num!=0.0f);
-            set_div_flags(s,invalid,divzero);
-            s->q=u32(num/sqrtf(fabsf(den)));
+            float qv;
+            if(den==0.0f){
+                uint32_t sign=((u32(num)^u32(den))&0x80000000u);
+                qv=f32(sign|0x7f7fffffu);
+            } else qv=num/sqrtf(fabsf(den));
+            q_schedule(s,u32(qv),invalid,divzero,13);
             return;
         }
-        case 0x3b: /* WAITQ: timing is not cycle-accurate here. */
+        case 0x3b: /* WAITQ: interlock until the pending Q result is visible. */
+            q_commit(s);
             return;
         case 0x3c: { /* MTIR VI[it], VF[fs]field */
             unsigned fsf=(lo>>21)&3u;
@@ -455,6 +474,10 @@ int tsfp_vu_execute(const uint8_t *micro,size_t size,uint32_t start,TsFpVuState 
     for(state->steps=0;state->steps<max_steps&&state->pc<size/8u;state->steps++){
         uint32_t pc=state->pc,lo=rd32(micro+pc*8u),up=rd32(micro+pc*8u+4u);
         uint32_t delayed=state->branch_pending, delayed_target=state->branch_target;
+        if(state->q_pending && state->q_pending_cycles){
+            state->q_pending_cycles--;
+            if(state->q_pending_cycles==0) q_commit(state);
+        }
         {
             unsigned slot=state->flag_pipe_pos;
             uint8_t valid=state->flag_pipe_valid[slot];
@@ -535,6 +558,7 @@ int tsfp_vu_execute(const uint8_t *micro,size_t size,uint32_t start,TsFpVuState 
         if(state->end_pending){
             state->end_pending=0;
             flush_flag_pipeline(state);
+            q_commit(state);
             return 0;
         }
         if(up&0x40000000u) state->end_pending=1;
