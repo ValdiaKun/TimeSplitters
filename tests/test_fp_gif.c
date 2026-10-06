@@ -25,6 +25,26 @@ int main(void){uint8_t d[80]={0};uint64_t tag=1ull|(1ull<<15)|(0ull<<58)|(3ull<<
         assert(ps.primitive==5u && ps.vertices==0);
     }
     {
+        /* GIF PRIM and vertex color are GS state. A later tag with PRE=0
+           must keep the state established by an earlier tag/XGKICK. */
+        uint8_t sdata[64]={0};
+        TsFpGifState st={0,0,255,255,255,255,0};
+        uint64_t first=1ull|(1ull<<15)|(1ull<<46)|(5ull<<47)|(1ull<<60);
+        w64(sdata,first); w64(sdata+8,1ull);
+        w64(sdata+16,0x04030201ull); w64(sdata+24,0);
+        TsFpGifSummary ss; TsFpGifVertex sv;
+        assert(tsfp_gif_parse_state(sdata,32,&ss,&sv,1,&st)==0);
+        assert(st.primitive==5u && st.r==1u && st.g==2u && st.b==3u && st.a==4u);
+
+        uint64_t second=1ull|(1ull<<15)|(0ull<<46)|(3ull<<47)|(1ull<<60);
+        w64(sdata+32,second); w64(sdata+40,4ull);
+        w64(sdata+48,0x0000000000200010ull); w64(sdata+56,0x0000000000000080ull);
+        assert(tsfp_gif_parse_state(sdata+32,32,&ss,&sv,1,&st)==0);
+        assert(ss.primitive==5u && ss.vertices==1u);
+        assert(sv.x==1.0f && sv.y==2.0f && sv.z==128.0f);
+        assert(sv.r==1u && sv.g==2u && sv.b==3u && sv.a==4u);
+    }
+    {
         /* PACKED A+D: low 64 bits are GS data, high 64 bits carry the
            destination GS register address. */
         uint8_t a[32]={0};
