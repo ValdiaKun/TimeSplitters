@@ -119,7 +119,7 @@ static int render_mscal(uint16_t address,uint8_t *vu_memory,size_t vu_size,
     TsFpVifRenderContext *ctx=(TsFpVifRenderContext*)user;
     TsFpGifSummary gif;
     size_t before;
-    if(!ctx||!ctx->vu||!ctx->micro||address!=0x0683u)return -1;
+    if(!ctx||!ctx->vu||!ctx->micro||((size_t)address*8u)>=ctx->micro_size)return -1;
     ctx->vu->memory=vu_memory;
     ctx->vu->memory_size=vu_size;
     ctx->vu->top=top;
