@@ -638,5 +638,25 @@ int main(void) {
             assert(t.vi[4]==9u && t.vi[5]==13u && t.vi[15]==2u);
         }
     }
+    {
+        /* Branch comparisons consume the low 16 bits of VI registers. */
+        uint8_t m[40]={0}; uint32_t x;
+        x=branch(0x2cu,1,0,2); memcpy(m,&x,4);
+        x=0; memcpy(m+4,&x,4);
+        x=lower(0x08,0,0,5)|7u; memcpy(m+16,&x,4);
+        x=lower(0x08,0,0,5)|13u; memcpy(m+24,&x,4); x=0x40000000u; memcpy(m+28,&x,4);
+        TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
+        t.vi[1]=0xffffu;
+        assert(tsfp_vu_execute(m,sizeof(m),0,&t,5)==0 && t.vi[5]==13u);
+
+        memset(m,0,sizeof(m));
+        x=branch(0x28u,1,2,2); memcpy(m,&x,4);
+        x=0; memcpy(m+4,&x,4);
+        x=lower(0x08,0,0,5)|7u; memcpy(m+16,&x,4);
+        x=lower(0x08,0,0,5)|13u; memcpy(m+24,&x,4); x=0x40000000u; memcpy(m+28,&x,4);
+        TsFpVuState e; tsfp_vu_state_init(&e,mem,sizeof(mem),gif,sizeof(gif));
+        e.vi[1]=0x00010001u; e.vi[2]=1u;
+        assert(tsfp_vu_execute(m,sizeof(m),0,&e,5)==0 && e.vi[5]==13u);
+    }
     return 0;
 }
