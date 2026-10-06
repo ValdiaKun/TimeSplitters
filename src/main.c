@@ -18,7 +18,7 @@
 #define DATA_PATH "ux0:data/TimeSplitters/PAK/CHR.PAK"
 #define BOOT_PATH "ux0:data/TimeSplitters/SLED_530.66"
 #define VU_MEMORY_SIZE (16u*1024u)
-#define GIF_MEMORY_SIZE (64u*1024u)
+#define GIF_MEMORY_SIZE (256u*1024u)
 #define PREVIEW_CAPACITY 8192u
 
 static vita2d_color_vertex preview[PREVIEW_CAPACITY];
@@ -232,10 +232,11 @@ static uint32_t probe_boot_vu(void){
     free(buf); return xg;
 }
 
-static void draw(int result,const TsP5ckInfo *info,const TsP5ckEntry *entry,const TsFpResourceSummary *resource,
+static void draw(int result,int preview_result,const TsP5ckInfo *info,const TsP5ckEntry *entry,const TsFpResourceSummary *resource,
                  const TsFpModelHeader *model,const TsFpGeometrySummary *geometry,const TsFpVifSummary *vif,uint32_t xgkick_pc){
     unsigned status=0xFFE03030;
-    if(result==0)status=0xFF20C060; else if(result==-10)status=0xFFE0A020;
+    if(result==0 && preview_result>=3)status=0xFF20C060;
+    else if(result==-10)status=0xFFE0A020;
     vita2d_clear_screen();
     vita2d_draw_rectangle(40,40,880,480,0xFF181818);
     vita2d_draw_rectangle(80,90,800,64,status);
@@ -266,13 +267,14 @@ int main(void){
     memset(&pad,0,sizeof(pad));memset(&info,0,sizeof(info));memset(&entry,0,sizeof(entry));
     memset(&resource,0,sizeof(resource));memset(&model,0,sizeof(model));memset(&geometry,0,sizeof(geometry));memset(&vif,0,sizeof(vif));
     int result=load_probe(&info,&entry,&resource,&model,&geometry,&vif);
+    int preview_result=-1;
     uint32_t xgkick_pc=probe_boot_vu();
-    if(result==0)build_model_preview();
+    if(result==0)preview_result=build_model_preview();
     vita2d_init();
     for(;;){
         sceCtrlPeekBufferPositive(0,&pad,1);if(pad.buttons&SCE_CTRL_START)break;
         update_camera(&pad);
-        vita2d_start_drawing();draw(result,&info,&entry,&resource,&model,&geometry,&vif,xgkick_pc);
+        vita2d_start_drawing();draw(result,preview_result,&info,&entry,&resource,&model,&geometry,&vif,xgkick_pc);
         vita2d_end_drawing();vita2d_swap_buffers();sceDisplayWaitVblankStart();
     }
     vita2d_fini();sceKernelExitProcess(0);return 0;
