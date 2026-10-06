@@ -27,6 +27,10 @@ static void q_commit(TsFpVuState *s){
     s->q_pending=0;
     s->q_pending_cycles=0;
 }
+static int is_waitq(uint32_t lo){
+    return ((lo>>25)&0x7fu)==0x7cu &&
+           (((lo&3u)|((lo>>4)&0x7cu))==0x3bu);
+}
 
 static float if_(const TsFpVuState *s){return f32(s->vi[21]);}
 static float bc(const TsFpVuState *s,unsigned ft,unsigned b){return f32(s->vf[ft][b&3u]);}
@@ -499,6 +503,11 @@ int tsfp_vu_execute(const uint8_t *micro,size_t size,uint32_t start,TsFpVuState 
          * loading VI21 before upper_exec would incorrectly make an ADDi/etc.
          * in the same LIW observe the newly loaded immediate.
          */
+        /*
+         * WAITQ interlocks the pair, so its upper instruction observes the
+         * completed Q result. This is the exposed VU synchronization rule.
+         */
+        if(is_waitq(lo)) q_commit(state);
         uint32_t vf_before[32][4];
         uint32_t vf_upper[32][4];
         uint16_t mac_before=(uint16_t)state->mac_flag;
