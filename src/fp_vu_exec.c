@@ -507,14 +507,53 @@ static void lower_exec(TsFpVuState *s,uint32_t lo,uint32_t next_pc){
     if(op==0x32u){if(id)s->vi[id]=s->vi[it]+sx11(lo);return;}
     if(op==0x34u){if(id)s->vi[id]=s->vi[it]&s->vi[is];return;}
     if(op==0x35u){if(id)s->vi[id]=s->vi[it]|s->vi[is];return;}
-    if(op==0x20u){s->branch_pending=1;s->branch_target=(uint32_t)((int32_t)next_pc+imm);return;}
-    if(op==0x21u){if(it)s->vi[it]=next_pc+1u;s->branch_pending=1;s->branch_target=(uint32_t)((int32_t)next_pc+imm);return;}
-    if(op==0x22u){s->branch_pending=1;s->branch_target=s->vi[is];return;}
-    if(op==0x23u){if(it)s->vi[it]=next_pc+1u;s->branch_pending=1;s->branch_target=s->vi[is];return;}
-    if(op>=0x24u&&op<=0x2bu){
-        int32_t a=(int32_t)s->vi[it],b=(int32_t)s->vi[is];int take=0;
-        switch(op){case 0x24:take=a==b;break;case 0x25:take=a!=b;break;case 0x28:take=a<0;break;case 0x29:take=a>0;break;case 0x2a:take=a<=0;break;case 0x2b:take=a>=0;break;default:break;}
-        if(take){s->branch_pending=1;s->branch_target=(uint32_t)((int32_t)next_pc+imm);}
+    /* VU1 lower branch opcodes follow the hardware table:
+       B/BAL, JR/JALR, then IBEQ/IBNE/IBLTZ/IBGTZ/IBLEZ/IBGEZ. */
+    if(op==0x20u){
+        s->branch_pending=1;
+        s->branch_target=(uint32_t)((int32_t)next_pc+imm);
+        return;
+    }
+    if(op==0x21u){
+        s->vi[15]=next_pc+1u;
+        s->branch_pending=1;
+        s->branch_target=(uint32_t)((int32_t)next_pc+imm);
+        return;
+    }
+    if(op==0x24u){
+        s->branch_pending=1;
+        s->branch_target=s->vi[is];
+        return;
+    }
+    if(op==0x25u){
+        s->vi[15]=next_pc+1u;
+        s->branch_pending=1;
+        s->branch_target=s->vi[is];
+        return;
+    }
+    if(op==0x28u||op==0x29u){
+        int32_t a=(int32_t)s->vi[is],b=(int32_t)s->vi[it];
+        int take=(op==0x28u)?(a==b):(a!=b);
+        if(take){
+            s->branch_pending=1;
+            s->branch_target=(uint32_t)((int32_t)next_pc+imm);
+        }
+        return;
+    }
+    if(op>=0x2cu&&op<=0x2fu){
+        int32_t a=(int32_t)s->vi[is];
+        int take=0;
+        switch(op){
+        case 0x2c:take=a<0;break;
+        case 0x2d:take=a>0;break;
+        case 0x2e:take=a<=0;break;
+        case 0x2f:take=a>=0;break;
+        default:break;
+        }
+        if(take){
+            s->branch_pending=1;
+            s->branch_target=(uint32_t)((int32_t)next_pc+imm);
+        }
         return;
     }
     /* FCEQ/FCAND/FCOR use a fixed VI01 destination; bits 23..0 are Imm24. */
