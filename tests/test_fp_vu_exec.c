@@ -63,7 +63,7 @@ int main(void) {
         uint8_t m[32]={0}; uint32_t x;
         x=0x12345678u; memcpy(m,&x,4);
         x=0x80000000u | upper(0x22,3,1,0,0xf); memcpy(m+4,&x,4);
-        x=0; memcpy(m+8,&x,4); x=0x40000000u; memcpy(m+12,&x,4);
+        x=0; memcpy(m+8,&x,4); x=0x40000000u | upper(0x3f,11,0,0,0xf); memcpy(m+12,&x,4);
         TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
         t.vi[21]=u32(2.0f);
         t.vf[1][0]=u32(1.0f); t.vf[1][1]=u32(1.0f); t.vf[1][2]=u32(1.0f); t.vf[1][3]=u32(1.0f);
@@ -77,7 +77,7 @@ int main(void) {
          */
         uint8_t m[32]={0}; uint32_t x;
         x=lower(0x01,0,0,3); memcpy(m,&x,4); x=upper(0x28,3,1,2,0xf); memcpy(m+4,&x,4);
-        x=0; memcpy(m+8,&x,4); x=0x40000000u; memcpy(m+12,&x,4);
+        x=0; memcpy(m+8,&x,4); x=0x40000000u | upper(0x3f,11,0,0,0xf); memcpy(m+12,&x,4);
         TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
         t.vf[1][0]=u32(2.0f); t.vf[1][1]=u32(2.0f); t.vf[1][2]=u32(2.0f); t.vf[1][3]=u32(2.0f);
         t.vf[2][0]=u32(3.0f); t.vf[2][1]=u32(3.0f); t.vf[2][2]=u32(3.0f); t.vf[2][3]=u32(3.0f);
@@ -94,7 +94,7 @@ int main(void) {
         /* I-bit loads VI21; lower instruction in the same LIW is ignored. */
         x=0x12345678u; memcpy(m+0,&x,4); x=0x80000000u; memcpy(m+4,&x,4);
         x=lower(0x08,0,21,2)|5u; memcpy(m+8,&x,4); x=0; memcpy(m+12,&x,4);
-        x=0; memcpy(m+16,&x,4); x=0x40000000u; memcpy(m+20,&x,4);
+        x=0; memcpy(m+16,&x,4); x=0x40000000u | upper(0x3f,11,0,0,0xf); memcpy(m+20,&x,4);
         TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
         assert(tsfp_vu_execute(m,sizeof(m),0,&t,8)==0);
         assert(t.vi[21]==0x12345678u && t.vi[2]==0x1234567du);
@@ -105,7 +105,7 @@ int main(void) {
         x=0; memcpy(m+8,&x,4);
         /* DIV Q, vf1.x, vf2.x uses lower special opcode 0x7c. */
         x=lower(0x7c,14,1,2); memcpy(m+16,&x,4); x=0; memcpy(m+20,&x,4);
-        x=0; memcpy(m+24,&x,4); x=0x40000000u; memcpy(m+28,&x,4);
+        x=0; memcpy(m+24,&x,4); x=0x40000000u | upper(0x3f,11,0,0,0xf); memcpy(m+28,&x,4);
         TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
         t.vf[1][0]=u32(6.0f); t.vf[2][0]=u32(2.0f);
         assert(tsfp_vu_execute(m,sizeof(m),0,&t,8)==0);
@@ -116,7 +116,7 @@ int main(void) {
         /* FCEQ VI01,0x123 and FCGET VI04. Destination VI01 is encoded explicitly. */
         x=lower(0x10,0,0,0)|0x123u; memcpy(m+0,&x,4); x=0; memcpy(m+4,&x,4);
         x=lower(0x1c,0,0,4); memcpy(m+8,&x,4); x=0; memcpy(m+12,&x,4);
-        x=0; memcpy(m+16,&x,4); x=0x40000000u; memcpy(m+20,&x,4);
+        x=0; memcpy(m+16,&x,4); x=0x40000000u | upper(0x3f,11,0,0,0xf); memcpy(m+20,&x,4);
         TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif)); t.clip_flag=0x123u; assert(t.vf[0][3]==u32(1.0f));
         assert(tsfp_vu_execute(m,sizeof(m),0,&t,16)==0);
         assert(t.vi[1]==1u);
@@ -129,7 +129,7 @@ int main(void) {
         x=lower(0x08,0,0,2)|0x55u; memcpy(m+0,&x,4); x=0; memcpy(m+4,&x,4);
         x=lower(0x18,0,2,3); memcpy(m+8,&x,4); x=0; memcpy(m+12,&x,4);
         x=lower(0x1a,0,2,0); memcpy(m+16,&x,4); x=0; memcpy(m+20,&x,4);
-        x=lower(0x1b,0,2,0); memcpy(m+24,&x,4); x=0x40000000u; memcpy(m+28,&x,4);
+        x=lower(0x1b,0,2,0); memcpy(m+24,&x,4); x=0x40000000u | upper(0x3f,11,0,0,0xf); memcpy(m+28,&x,4);
         TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
         t.vi[2]=0x55u; t.mac_flag=0x55u; assert(tsfp_vu_execute(m,sizeof(m),0,&t,16)==0);
         assert(t.vi[3]==1u);
@@ -144,7 +144,7 @@ int main(void) {
         memcpy(mem+64,src,16);
         memcpy(m+0,&lqi,4); x=0; memcpy(m+4,&x,4);
         memcpy(m+8,&sqi,4); x=0; memcpy(m+12,&x,4);
-        x=0; memcpy(m+16,&x,4); x=0x40000000u; memcpy(m+20,&x,4);
+        x=0; memcpy(m+16,&x,4); x=0x40000000u | upper(0x3f,11,0,0,0xf); memcpy(m+20,&x,4);
         TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
         t.vi[3]=4; t.vi[4]=6;
         assert(tsfp_vu_execute(m,sizeof(m),0,&t,16)==0);
@@ -160,7 +160,7 @@ int main(void) {
         uint32_t lqi=0x80000000u | (4u<<21) | (2u<<16) | (3u<<11) | 0x37cu;
         x=lqi; memcpy(m+0,&x,4);
         x=upper(0x28,4,1,2,0xf); memcpy(m+4,&x,4); /* ADD VF4,VF1,VF2 */
-        x=0; memcpy(m+8,&x,4); x=0x40000000u; memcpy(m+12,&x,4);
+        x=0; memcpy(m+8,&x,4); x=0x40000000u | upper(0x3f,11,0,0,0xf); memcpy(m+12,&x,4);
         float src[4]={7,8,9,10}; memcpy(mem+64,src,16);
         TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
         t.vi[3]=4;
@@ -187,7 +187,7 @@ int main(void) {
         uint32_t mfir=0x80000000u | (1u<<21) | (5u<<16) | (3u<<11) | 0x3fdu;
         memcpy(m+0,&mtir,4); x=0; memcpy(m+4,&x,4);
         memcpy(m+8,&mfir,4); x=0; memcpy(m+12,&x,4);
-        x=0; memcpy(m+16,&x,4); x=0x40000000u; memcpy(m+20,&x,4);
+        x=0; memcpy(m+16,&x,4); x=0x40000000u | upper(0x3f,11,0,0,0xf); memcpy(m+20,&x,4);
         TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
         t.vf[12][3]=0x1234abcd; t.vi[3]=0;
         assert(tsfp_vu_execute(m,sizeof(m),0,&t,16)==0);
@@ -198,7 +198,7 @@ int main(void) {
     {
         uint8_t m[32]={0}; uint32_t x=0;
         x=0; memcpy(m,&x,4); x=upper(0x2e,3,1,2,0xe); memcpy(m+4,&x,4);
-        x=0; memcpy(m+8,&x,4); x=0x40000000u; memcpy(m+12,&x,4);
+        x=0; memcpy(m+8,&x,4); x=0x40000000u | upper(0x3f,11,0,0,0xf); memcpy(m+12,&x,4);
         TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
         float a[4]={10,20,30,0}, b[4]={2,3,4,0};
         memcpy(t.acc,a,16); memcpy(t.vf[1],(float[4]){1,2,3,0},16); memcpy(t.vf[2],b,16);
@@ -211,7 +211,7 @@ int main(void) {
         uint8_t m[32]={0}; uint32_t x;
         x=0x80000000u | (15u<<21) | (6u<<16) | (5u<<11) | 0x33du; memcpy(m,&x,4);
         x=0; memcpy(m+4,&x,4);
-        x=0; memcpy(m+8,&x,4); x=0x40000000u; memcpy(m+12,&x,4);
+        x=0; memcpy(m+8,&x,4); x=0x40000000u | upper(0x3f,11,0,0,0xf); memcpy(m+12,&x,4);
         TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
         t.vf[5][0]=u32(1.0f); t.vf[5][1]=u32(2.0f); t.vf[5][2]=u32(3.0f); t.vf[5][3]=u32(4.0f);
         assert(tsfp_vu_execute(m,sizeof(m),0,&t,8)==0);
@@ -224,7 +224,7 @@ int main(void) {
         x=0x0000beefu; memcpy(mem+64+4,&x,4);
         x=0x80000000u | (4u<<21) | (5u<<16) | (3u<<11) | 0x3feu; memcpy(m,&x,4);
         x=0x80000000u | (2u<<21) | (5u<<16) | (4u<<11) | 0x3ffu; memcpy(m+8,&x,4);
-        x=0; memcpy(m+16,&x,4); x=0x40000000u; memcpy(m+20,&x,4);
+        x=0; memcpy(m+16,&x,4); x=0x40000000u | upper(0x3f,11,0,0,0xf); memcpy(m+20,&x,4);
         TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
         t.vi[3]=4; t.vi[4]=4;
         assert(tsfp_vu_execute(m,sizeof(m),0,&t,16)==0);
@@ -238,7 +238,7 @@ int main(void) {
         uint32_t w=0x0000beefu; memcpy(mem+64+12,&w,4);
         x=0x80000000u | (6u<<21) | (5u<<16) | (3u<<11) | 0x3feu; memcpy(m,&x,4);
         x=0x80000000u | (0u<<21) | (6u<<16) | (3u<<11) | 0x3feu; memcpy(m+8,&x,4);
-        x=0; memcpy(m+16,&x,4); x=0x40000000u; memcpy(m+20,&x,4);
+        x=0; memcpy(m+16,&x,4); x=0x40000000u | upper(0x3f,11,0,0,0xf); memcpy(m+20,&x,4);
         TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
         t.vi[3]=4;
         assert(tsfp_vu_execute(m,sizeof(m),0,&t,16)==0);
@@ -251,7 +251,7 @@ int main(void) {
         uint32_t src[4]={0x11u,0x22u,0x33u,0x44u};
         memcpy(lmem+0x3ff0,src,sizeof(src));
         x=0x80000000u | (15u<<21) | (1u<<16) | 0x37eu; memcpy(m,&x,4);
-        x=0; memcpy(m+4,&x,4); x=0; memcpy(m+8,&x,4); x=0x40000000u; memcpy(m+12,&x,4);
+        x=0; memcpy(m+4,&x,4); x=0; memcpy(m+8,&x,4); x=0x40000000u | upper(0x3f,11,0,0,0xf); memcpy(m+12,&x,4);
         TsFpVuState t; tsfp_vu_state_init(&t,lmem,sizeof(lmem),lgif,sizeof(lgif));
         assert(tsfp_vu_execute(m,sizeof(m),0,&t,8)==0);
         assert(t.vi[0]==0);
@@ -282,7 +282,7 @@ int main(void) {
         uint32_t lqi=0x80000000u | (0xeu<<21) | (3u<<16) | (4u<<11) | 0x37cu;
         x=lqi; memcpy(m+0,&x,4);
         x=upper(0x28,3,1,2,0x8); memcpy(m+4,&x,4);
-        x=0; memcpy(m+8,&x,4); x=0x40000000u; memcpy(m+12,&x,4);
+        x=0; memcpy(m+8,&x,4); x=0x40000000u | upper(0x3f,11,0,0,0xf); memcpy(m+12,&x,4);
         uint32_t src[4]={7u,8u,9u,10u}; memcpy(mem+64,src,sizeof(src));
         TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
         t.vi[4]=4;
@@ -298,7 +298,7 @@ int main(void) {
         /* CLIP appends one six-bit result for x/y/z against |VF[ft].w|. */
         uint8_t m[32]={0}; uint32_t x;
         x=0; memcpy(m,&x,4); x=upper(0x3f,7,1,2,0xe); memcpy(m+4,&x,4);
-        x=0; memcpy(m+8,&x,4); x=0x40000000u; memcpy(m+12,&x,4);
+        x=0; memcpy(m+8,&x,4); x=0x40000000u | upper(0x3f,11,0,0,0xf); memcpy(m+12,&x,4);
         TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
         memcpy(t.vf[1],(float[4]){3,-3,1,0},16);
         memcpy(t.vf[2],(float[4]){0,0,0,2},16);
@@ -310,7 +310,7 @@ int main(void) {
         /* MAC flags use four bits per component: Z/S/U/O. */
         uint8_t m[40]={0}; uint32_t x;
         x=0; memcpy(m,&x,4); x=upper(0x28,3,1,2,0xf); memcpy(m+4,&x,4);
-        x=0; memcpy(m+8,&x,4); x=0x40000000u; memcpy(m+12,&x,4);
+        x=0; memcpy(m+8,&x,4); x=0x40000000u | upper(0x3f,11,0,0,0xf); memcpy(m+12,&x,4);
         x=0; memcpy(m+16,&x,4); x=0; memcpy(m+20,&x,4);
         TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
         memcpy(t.vf[1],(float[4]){0.0f,-1.0f,1.0e-40f,INFINITY},16);
@@ -326,7 +326,7 @@ int main(void) {
         /* Status low bits summarize MAC Z/S/U/O; bits 6-9 are sticky. */
         uint8_t m[32]={0}; uint32_t x;
         x=0; memcpy(m,&x,4); x=upper(0x28,3,1,2,0xf); memcpy(m+4,&x,4);
-        x=0; memcpy(m+8,&x,4); x=0x40000000u; memcpy(m+12,&x,4);
+        x=0; memcpy(m+8,&x,4); x=0x40000000u | upper(0x3f,11,0,0,0xf); memcpy(m+12,&x,4);
         TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
         t.vf[1][0]=0u; t.vf[1][1]=u32(-1.0f); t.vf[1][2]=0x000116c2u; t.vf[1][3]=u32(INFINITY);
         memcpy(t.vf[2],(float[4]){0,0,0,0},16);
@@ -339,7 +339,7 @@ int main(void) {
         /* DIV/RSQRT/SQRT update invalid/divide-by-zero status bits. */
         uint8_t m[96]={0}; uint32_t x;
         x=lower(0x7c,14,1,2); memcpy(m,&x,4); x=0; memcpy(m+4,&x,4);
-        x=0; memcpy(m+8,&x,4); x=0x40000000u; memcpy(m+12,&x,4);
+        x=0; memcpy(m+8,&x,4); x=0x40000000u | upper(0x3f,11,0,0,0xf); memcpy(m+12,&x,4);
         TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
         t.vf[1][0]=0.0f; t.vf[2][0]=0.0f;
         assert(tsfp_vu_execute(m,sizeof(m),0,&t,1)==-2);
@@ -354,7 +354,7 @@ int main(void) {
         /* FMAC arithmetic conditions denormals to signed zero and overflow to max. */
         uint8_t m[32]={0}; uint32_t x;
         x=0; memcpy(m,&x,4); x=upper(0x28,3,1,2,0xf); memcpy(m+4,&x,4);
-        x=0; memcpy(m+8,&x,4); x=0x40000000u; memcpy(m+12,&x,4);
+        x=0; memcpy(m+8,&x,4); x=0x40000000u | upper(0x3f,11,0,0,0xf); memcpy(m+12,&x,4);
         TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
         t.vf[1][0]=0x000116c2u; t.vf[2][0]=0.0f;
         assert(tsfp_vu_execute(m,sizeof(m),0,&t,8)==0);
