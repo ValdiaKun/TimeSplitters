@@ -9,6 +9,10 @@ typedef struct {
     uint32_t vi[32];
     uint32_t acc[4];
     uint32_t q;
+    uint32_t q_pending_value;
+    uint32_t q_pending_status;
+    uint32_t q_pending_cycles;
+    uint32_t q_pending;
     uint32_t top;
     uint32_t itop;
     uint32_t mac_flag;
