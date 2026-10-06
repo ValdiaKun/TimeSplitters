@@ -58,11 +58,8 @@ static int read_first_chr_entry(uint8_t **out,size_t *size_out){
     memset(&info,0,sizeof(info)); memset(&entry,0,sizeof(entry));
     if(ts_p5ck_read_info(fp,&info)!=0 || info.entry_count==0 ||
        ts_p5ck_read_entry(fp,&info,0,&entry)!=0){fclose(fp);return -2;}
-    size=entry.compressed_length?entry.compressed_length:entry.length;
-    if(!size || size>64u*1024u*1024u || fseek(fp,(long)entry.offset,SEEK_SET)!=0){fclose(fp);return -3;}
-    buf=(uint8_t*)malloc(size); if(!buf){fclose(fp);return -4;}
-    n=fread(buf,1,size,fp); fclose(fp);
-    if(n!=size){free(buf);return -5;}
+    if(ts_p5ck_read_payload(fp,&entry,&buf,&size)!=0){fclose(fp);return -3;}
+    fclose(fp);
     *out=buf; *size_out=size; return 0;
 }
 
@@ -200,11 +197,8 @@ static int load_probe(TsP5ckInfo *info,TsP5ckEntry *entry,TsFpResourceSummary *r
     if(r==0 && info->entry_count==0)r=-11;
     if(r==0)r=ts_p5ck_read_entry(fp,info,0,entry);
     if(r==0){
-        uint32_t size=entry->compressed_length?entry->compressed_length:entry->length;
-        if(size==0 || size>64u*1024u*1024u)r=-12;
-        else if(fseek(fp,(long)entry->offset,SEEK_SET)!=0)r=-13;
-        else if(!(buf=(uint8_t*)malloc(size)))r=-14;
-        else if(fread(buf,1,size,fp)!=size)r=-15;
+        size_t size=0;
+        if(ts_p5ck_read_payload(fp,entry,&buf,&size)!=0)r=-12;
         else{
             r=tsfp_resource_probe(buf,size,resource);
             if(r!=0)r=tsfp_model_probe(buf,size,model);
