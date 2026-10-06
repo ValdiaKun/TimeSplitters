@@ -61,13 +61,14 @@ static void special_upper(TsFpVuState *s,uint32_t up){
     case 16:case 17:case 18:case 19:case 20:case 21:case 22:case 23:{
         unsigned sh=(sop==16||sop==20)?0:(sop==17||sop==21)?4:(sop==18||sop==22)?12:15;
         int toint=sop>=20;
+        if(ft==0)return;
         for(unsigned i=0;i<4;i++)if(mask_has(mask,i)){
             float x=f32(s->vf[fs][i]);
             s->vf[ft][i]=toint?(uint32_t)(int32_t)(x*(float)(1u<<sh)):u32((float)(int32_t)s->vf[fs][i]/(float)(1u<<sh));
         } return;}
     case 24:case 25:case 26:case 27: for(unsigned i=0;i<4;i++)if(mask_has(mask,i))s->acc[i]=u32(f32(s->vf[fs][i])*bc(s,ft,sop-24));return;
     case 28:for(unsigned i=0;i<4;i++)if(mask_has(mask,i))s->acc[i]=u32(f32(s->vf[fs][i])*qf(s));return;
-    case 29:for(unsigned i=0;i<4;i++)if(mask_has(mask,i))s->vf[ft][i]=s->vf[fs][i]&0x7fffffffu;return;
+    case 29:if(ft)for(unsigned i=0;i<4;i++)if(mask_has(mask,i))s->vf[ft][i]=s->vf[fs][i]&0x7fffffffu;return;
     case 30:for(unsigned i=0;i<4;i++)if(mask_has(mask,i))s->acc[i]=u32(f32(s->vf[fs][i])*if_(s));return;
     case 31:return;
     case 32:for(unsigned i=0;i<4;i++)if(mask_has(mask,i))s->acc[i]=u32(f32(s->vf[fs][i])+qf(s));return;
@@ -181,7 +182,7 @@ static void lower_exec(TsFpVuState *s,uint32_t lo,uint32_t next_pc){
         case 0x34: /* LQI VF[ft], (VI[is]++) */
             a=((size_t)s->vi[is]&0x3ffu)*16u;
             if(a+16>s->memory_size){s->unsupported++;return;}
-            for(unsigned i=0;i<4;i++)if(mask_has(dest,i))s->vf[it][i]=rd32(s->memory+a+i*4u);
+            if(it)for(unsigned i=0;i<4;i++)if(mask_has(dest,i))s->vf[it][i]=rd32(s->memory+a+i*4u);
             s->vi[is]=(s->vi[is]+1u)&0x3ffu;
             return;
         case 0x35: /* SQI VF[fs], (VI[it]++) */
