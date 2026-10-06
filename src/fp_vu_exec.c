@@ -456,12 +456,11 @@ int tsfp_vu_execute(const uint8_t *micro,size_t size,uint32_t start,TsFpVuState 
         uint32_t delayed=state->branch_pending, delayed_target=state->branch_target;
         {
             unsigned slot=state->flag_pipe_pos;
-            if(state->flag_pipe_valid[slot]){
-                state->mac_flag=state->mac_pipe[slot];
-                state->status_flag=state->status_pipe[slot];
-                state->clip_flag=state->clip_pipe[slot];
-                state->flag_pipe_valid[slot]=0;
-            }
+            uint8_t valid=state->flag_pipe_valid[slot];
+            if(valid&1u) state->mac_flag=state->mac_pipe[slot];
+            if(valid&2u) state->status_flag=state->status_pipe[slot];
+            if(valid&4u) state->clip_flag=state->clip_pipe[slot];
+            state->flag_pipe_valid[slot]=0;
         }
         state->branch_pending=0;
         state->pc=pc+1u;
@@ -513,15 +512,20 @@ int tsfp_vu_execute(const uint8_t *micro,size_t size,uint32_t start,TsFpVuState 
         {
             unsigned slot=state->flag_pipe_pos;
             unsigned lower_op=(lo>>25)&0x7fu;
-            int upper_flags=(mac_upper!=(uint16_t)mac_before) ||
-                            (status_upper!=status_before) ||
-                            (clip_upper!=clip_before);
-            if(upper_flags && lower_op!=0x15u && lower_op!=0x11u){
+            uint8_t valid=0;
+            if(mac_upper!=(uint16_t)mac_before){
                 state->mac_pipe[slot]=(uint16_t)mac_upper;
-                state->status_pipe[slot]=status_upper;
-                state->clip_pipe[slot]=clip_upper;
-                state->flag_pipe_valid[slot]=1;
+                valid|=1u;
             }
+            if(status_upper!=status_before && lower_op!=0x15u){
+                state->status_pipe[slot]=status_upper;
+                valid|=2u;
+            }
+            if(clip_upper!=clip_before && lower_op!=0x11u){
+                state->clip_pipe[slot]=clip_upper;
+                valid|=4u;
+            }
+            state->flag_pipe_valid[slot]=valid;
             state->flag_pipe_pos=(slot+1u)&3u;
         }
         if(delayed && !state->branch_pending) state->pc=delayed_target;
