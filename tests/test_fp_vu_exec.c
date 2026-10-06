@@ -581,7 +581,8 @@ int main(void) {
         assert(t.vi[2]==0x50u && t.vi[3]==1u && t.vi[4]==0xa5fu);
         assert(t.vi[5]==0x000fu);
         assert(t.vi[7]==0u);
-        fprintf(stderr,"flag-debug mac=%04x vi6=%04x vi8=%04x\\n",t.mac_flag,t.vi[6],t.vi[8]);\n        assert(t.vi[8]==0x0fffu);
+        fprintf(stderr,"flag-debug mac=%04x vi6=%04x vi8=%04x\\n",t.mac_flag,t.vi[6],t.vi[8]);
+        assert(t.vi[8]==0x0fffu);
         assert(t.vi[1]==1u && t.vi[9]==0x456u);
         assert(t.clip_flag==0x123456u && t.status_flag==0xc5au);
     }
