@@ -257,5 +257,4 @@ int main(void) {
                t.vf[1][2]==0x33u && t.vf[1][3]==0x44u);
     }
     return 0;
-}    return 0;
 }
