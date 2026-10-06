@@ -195,12 +195,12 @@ static void special_upper(TsFpVuState *s,uint32_t up){
         float x=f32(s->vf[fs][0]), y=f32(s->vf[fs][1]), z=f32(s->vf[fs][2]), w=f32(s->vf[fs][3]);
         float v=0.0f; uint32_t cycles=12u;
         switch(sop){
-        case 112: v=sqrtf(x*x+y*y+z*z); cycles=11u; break; /* ESADD */
-        case 113: v=1.0f/sqrtf(x*x+y*y+z*z); cycles=18u; break; /* ERSADD */
+        case 112: v=x*x+y*y+z*z; cycles=11u; break; /* ESADD */
+        case 113: { float q=x*x+y*y+z*z; v=q!=0.0f?1.0f/q:q; cycles=18u; break; } /* ERSADD */
         case 114: v=sqrtf(x*x+y*y+z*z); cycles=18u; break; /* ELENG */
-        case 115: v=1.0f/sqrtf(x*x+y*y+z*z); cycles=24u; break; /* ERLENG */
-        case 116: v=atan2f(y,x); cycles=54u; break; /* EATANxy */
-        case 117: v=atan2f(z,x); cycles=54u; break; /* EATANxz */
+        case 115: { float q=x*x+y*y+z*z; v=q>0.0f?1.0f/sqrtf(q):q; cycles=24u; break; } /* ERLENG */
+        case 116: v=x!=0.0f?atan2f(y,x):0.0f; cycles=54u; break; /* EATANxy */
+        case 117: v=x!=0.0f?atan2f(z,x):0.0f; cycles=54u; break; /* EATANxz */
         case 118: v=x+y+z+w; cycles=12u; break; /* ESUM */
         case 120: { unsigned sf=(up>>21)&3u; float a=f32(s->vf[fs][sf]); v=a>=0.0f?sqrtf(a):a; cycles=12u; break; } /* ESQRT */
         case 121: { unsigned sf=(up>>21)&3u; float a=f32(s->vf[fs][sf]); v=a>=0.0f?(1.0f/sqrtf(a)):a; cycles=18u; break; } /* ERSQRT */
