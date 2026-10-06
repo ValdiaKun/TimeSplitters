@@ -347,16 +347,20 @@ int tsfp_vu_execute(const uint8_t *micro,size_t size,uint32_t start,TsFpVuState 
         uint32_t vf_upper[32][4];
         memcpy(vf_before,state->vf,sizeof(vf_before));
         upper_exec(state,up);
+        memcpy(vf_upper,state->vf,sizeof(vf_upper));
         if(up&0x80000000u) {
-            memcpy(vf_upper,state->vf,sizeof(vf_upper));
             memcpy(state->vf,vf_before,sizeof(vf_before));
             state->vi[21]=lo;
+            memcpy(state->vf,vf_upper,sizeof(vf_upper));
         } else {
-            memcpy(vf_upper,state->vf,sizeof(vf_upper));
             memcpy(state->vf,vf_before,sizeof(vf_before));
             lower_exec(state,lo,state->pc);
+            /* Upper wins only for lanes it changed; preserve unrelated lower writes. */
+            for(unsigned r=1;r<32;r++)
+                for(unsigned lane=0;lane<4;lane++)
+                    if(vf_upper[r][lane]!=vf_before[r][lane])
+                        state->vf[r][lane]=vf_upper[r][lane];
         }
-        memcpy(state->vf,vf_upper,sizeof(vf_upper));
         if(delayed && !state->branch_pending) state->pc=delayed_target;
         if(up&0x40000000u)return 0;
     }
