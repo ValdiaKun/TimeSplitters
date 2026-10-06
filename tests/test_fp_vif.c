@@ -178,7 +178,7 @@ int main(void) {
         memset(&ms,0,sizeof(ms)); memset(vu,0,sizeof(vu));
         assert(tsfp_vif_unpack_memory_ex((const uint8_t*)words,sizeof(words),vu,sizeof(vu),
                                          &ms,mscnt_cb,&count)==0);
-        assert(count==1 && ms.mscal_address==0x683u);
+        assert(count==2 && ms.mscal_address==0x683u);
     }
     {
         /*
