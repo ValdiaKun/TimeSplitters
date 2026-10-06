@@ -165,6 +165,25 @@ static void lower_exec(TsFpVuState *s,uint32_t lo,uint32_t next_pc){
     unsigned dest=(lo>>21)&15u;
     int32_t imm=sx11(lo);
 
+    /*
+     * XGKICK is a lower-pipeline opcode (0x6c), not one of the
+     * special1 low-six-bit opcodes below.  Handle it before the
+     * special1 gate so GIF transfers cannot be silently counted as
+     * unsupported instructions.
+     */
+    if(op==0x6cu){
+        size_t a=((size_t)s->vi[is]&0x3ffu)*16u;
+        s->xgkick_pc=s->pc;
+        if(a<s->memory_size&&s->gif&&s->gif_used<s->gif_size){
+            size_t n=gif_packet_size(s->memory,s->memory_size,a);
+            if(!n)n=s->memory_size-a;
+            if(n>s->gif_size-s->gif_used)n=s->gif_size-s->gif_used;
+            memcpy(s->gif+s->gif_used,s->memory+a,n);
+            s->gif_used+=n;
+        }
+        return;
+    }
+
     /* Lower "special1" instructions are selected by bit 31 plus the
        low six-bit opcode.  The 4-bit destination mask is at bits 21..24. */
     if((lo&0x80000000u) && (lo&0x3fu)>=0x3cu){
@@ -250,18 +269,6 @@ static void lower_exec(TsFpVuState *s,uint32_t lo,uint32_t next_pc){
             if(a+16>s->memory_size){s->unsupported++;return;}
             uint32_t v=it?(s->vi[it]&0xffffu):0u;
             for(unsigned i=0;i<4;i++)if(mask_has(dest,i))wr32(s->memory+a+i*4u,v);
-            return;
-        }
-        case 0x6c: { /* XGKICK VI[is] */
-            a=((size_t)s->vi[is]&0x3ffu)*16u;
-            s->xgkick_pc=s->pc;
-            if(a<s->memory_size&&s->gif&&s->gif_used<s->gif_size){
-                size_t n=gif_packet_size(s->memory,s->memory_size,a);
-                if(!n)n=s->memory_size-a;
-                if(n>s->gif_size-s->gif_used)n=s->gif_size-s->gif_used;
-                memcpy(s->gif+s->gif_used,s->memory+a,n);
-                s->gif_used+=n;
-            }
             return;
         }
         default:
