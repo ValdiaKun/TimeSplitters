@@ -88,11 +88,13 @@ static void mac2(TsFpVuState *s,unsigned fd,unsigned fs,unsigned mask,
         else if(op==2)r[i]=x*b;
         else if(op==3)r[i]=f32(s->acc[i])+x*b;
         else r[i]=f32(s->acc[i])-x*b;
-        r[i]=fmac_condition(r[i]);
-        if(acc){if(mask_has(mask,i))s->acc[i]=u32(r[i]);}
+        if(acc){if(mask_has(mask,i))s->acc[i]=u32(fmac_condition(r[i]));}
     }
-    if(!acc){update_mac_flags(s,r,mask);write_mask(s,fd,mask,r);}
-    else update_mac_flags(s,r,mask);
+    update_mac_flags(s,r,mask);
+    if(!acc){
+        for(unsigned i=0;i<4;i++)r[i]=fmac_condition(r[i]);
+        write_mask(s,fd,mask,r);
+    }
 }
 static void mac3(TsFpVuState *s,unsigned fd,unsigned fs,unsigned ft,unsigned mask,int op,int acc){
     float r[4];
@@ -103,11 +105,13 @@ static void mac3(TsFpVuState *s,unsigned fd,unsigned fs,unsigned ft,unsigned mas
         else if(op==2)r[i]=x*y;
         else if(op==3)r[i]=f32(s->acc[i])+x*y;
         else r[i]=f32(s->acc[i])-x*y;
-        r[i]=fmac_condition(r[i]);
-        if(acc){if(mask_has(mask,i))s->acc[i]=u32(r[i]);}
+        if(acc){if(mask_has(mask,i))s->acc[i]=u32(fmac_condition(r[i]));}
     }
-    if(!acc){update_mac_flags(s,r,mask);write_mask(s,fd,mask,r);}
-    else update_mac_flags(s,r,mask);
+    update_mac_flags(s,r,mask);
+    if(!acc){
+        for(unsigned i=0;i<4;i++)r[i]=fmac_condition(r[i]);
+        write_mask(s,fd,mask,r);
+    }
 }
 
 static void special_upper(TsFpVuState *s,uint32_t up){
