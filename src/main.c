@@ -23,6 +23,19 @@
 
 static vita2d_color_vertex preview[PREVIEW_CAPACITY];
 static size_t preview_count=0;
+static float camera_x=0.0f, camera_y=0.0f, camera_zoom=1.0f;
+
+static void update_camera(const SceCtrlData *pad){
+    const float pan=5.0f, zoom_step=0.03f;
+    if(pad->buttons&SCE_CTRL_LEFT)  camera_x+=pan;
+    if(pad->buttons&SCE_CTRL_RIGHT) camera_x-=pan;
+    if(pad->buttons&SCE_CTRL_UP)    camera_y+=pan;
+    if(pad->buttons&SCE_CTRL_DOWN)  camera_y-=pan;
+    if(pad->buttons&SCE_CTRL_LTRIGGER) camera_zoom+=zoom_step;
+    if(pad->buttons&SCE_CTRL_RTRIGGER) camera_zoom-=zoom_step;
+    if(camera_zoom<0.25f) camera_zoom=0.25f;
+    if(camera_zoom>4.0f) camera_zoom=4.0f;
+}
 
 
 static int load_file(const char *path,uint8_t **out,size_t *size_out){
@@ -231,7 +244,18 @@ static void draw(int result,const TsP5ckInfo *info,const TsP5ckEntry *entry,cons
     if(model->material_count){float w=(float)(model->material_count>100?800:(model->material_count*800u)/100u);vita2d_draw_rectangle(80,420,w,20,0xFF40C080);}
     if(geometry->submesh_count){float w=(float)(geometry->submesh_count>256?800:(geometry->submesh_count*800u)/256u);vita2d_draw_rectangle(80,450,w,18,0xFF60A0E0);}
     if(vif->payload_bytes){float w=(float)(vif->payload_bytes>64?800:(vif->payload_bytes*800u)/64u);vita2d_draw_rectangle(80,470,w,12,0xFF80C060);}
-    if(preview_count>=3)vita2d_draw_array(SCE_GXM_PRIMITIVE_TRIANGLES,preview,preview_count-(preview_count%3));
+    if(preview_count>=3){
+        size_t n=preview_count-(preview_count%3);
+        vita2d_color_vertex transformed[PREVIEW_CAPACITY];
+        float cx=540.0f+camera_x, cy=320.0f+camera_y;
+        for(size_t i=0;i<n;i++){
+            float x=preview[i].x-540.0f, y=preview[i].y-320.0f;
+            transformed[i]=preview[i];
+            transformed[i].x=cx+x*camera_zoom;
+            transformed[i].y=cy+y*camera_zoom;
+        }
+        vita2d_draw_array(SCE_GXM_PRIMITIVE_TRIANGLES,transformed,n);
+    }
     if(xgkick_pc!=UINT32_MAX)vita2d_draw_rectangle(80,500,800,10,0xFFC08040);
 }
 
@@ -246,6 +270,7 @@ int main(void){
     vita2d_init();
     for(;;){
         sceCtrlPeekBufferPositive(0,&pad,1);if(pad.buttons&SCE_CTRL_START)break;
+        update_camera(&pad);
         vita2d_start_drawing();draw(result,&info,&entry,&resource,&model,&geometry,&vif,xgkick_pc);
         vita2d_end_drawing();vita2d_swap_buffers();sceDisplayWaitVblankStart();
     }
