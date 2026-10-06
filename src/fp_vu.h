@@ -13,6 +13,7 @@ typedef struct {
     uint32_t q_pending_status;
     uint32_t q_pending_cycles;
     uint32_t q_pending;
+    uint32_t r;
     uint32_t p;
     uint32_t p_pending_value;
     uint32_t p_pending_cycles;
