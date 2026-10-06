@@ -385,7 +385,13 @@ int tsfp_vu_execute(const uint8_t *micro,size_t size,uint32_t start,TsFpVuState 
            must not be able to leave a modified value behind. */
         state->vf[0][0]=0u; state->vf[0][1]=0u; state->vf[0][2]=0u; state->vf[0][3]=u32(1.0f);
         if(delayed && !state->branch_pending) state->pc=delayed_target;
-        if(up&0x40000000u)return 0;
+        /* E terminates after one delay-slot instruction. The E-bit
+           instruction itself completes before the slot executes. */
+        if(state->end_pending){
+            state->end_pending=0;
+            return 0;
+        }
+        if(up&0x40000000u) state->end_pending=1;
     }
     return state->steps>=max_steps?-2:0;
 }
