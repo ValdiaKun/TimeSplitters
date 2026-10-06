@@ -196,7 +196,7 @@ static void lower_exec(TsFpVuState *s,uint32_t lo,uint32_t next_pc){
             if(is)s->vi[is]=qaddr;
             a=(size_t)qaddr*16u;
             if(a+16>s->memory_size){s->unsupported++;return;}
-            for(unsigned i=0;i<4;i++)if(mask_has(dest,i))s->vf[it][i]=rd32(s->memory+a+i*4u);
+            if(it)for(unsigned i=0;i<4;i++)if(mask_has(dest,i))s->vf[it][i]=rd32(s->memory+a+i*4u);
             return;
         case 0x37: { /* SQD VF[fs], (--VI[it]) */
             uint32_t qaddr=(s->vi[it]-1u)&0x3ffu;
