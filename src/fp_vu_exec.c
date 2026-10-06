@@ -50,7 +50,11 @@ static int is_waitq(uint32_t lo){
 }
 static int is_fdiv(uint32_t lo){
     unsigned op=(lo>>25)&0x7fu;
-    return op>=0x7cu && op<=0x7fu;
+    if(op!=0x7cu)return 0;
+    {
+        unsigned special=(lo&3u)|((lo>>4)&0x7cu);
+        return special>=0x38u && special<=0x3au;
+    }
 }
 static int is_waitp(uint32_t lo){
     return ((lo>>25)&0x7fu)==0x7cu &&
