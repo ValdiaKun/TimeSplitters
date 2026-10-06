@@ -510,14 +510,14 @@ int main(void) {
         x=lower(0x08,0,1,3)|0x7ffu; memcpy(m+8,&x,4); x=0; memcpy(m+12,&x,4); /* IADDIU +2047 */
         x=lower(0x09,0,1,4)|0x7ffu; memcpy(m+16,&x,4); x=0; memcpy(m+20,&x,4); /* ISUBIU -2047 */
         x=lower(0x34,5,1,6); memcpy(m+24,&x,4); x=0; memcpy(m+28,&x,4);
-        x=lower(0x35,5,1,6); memcpy(m+32,&x,4); x=0x40000000u; memcpy(m+36,&x,4);
+        x=lower(0x35,7,1,6); memcpy(m+32,&x,4); x=0x40000000u; memcpy(m+36,&x,4);
         TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
         t.vi[1]=0xffffu; t.vi[6]=0x00f0u;
         assert(tsfp_vu_execute(m,sizeof(m),0,&t,6)==0);
         assert(t.vi[2]==0xfffeu);
         assert(t.vi[3]==0x07feu);
         assert(t.vi[4]==0xf800u);
-        assert(t.vi[5]==0x00f0u);
+        assert(t.vi[5]==0x00f0u && t.vi[7]==0xffffu);
     }
     {
         /* VU branch opcodes use JR/JALR at 0x24/0x25 and conditional
