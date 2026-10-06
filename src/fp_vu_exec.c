@@ -507,11 +507,12 @@ static void lower_exec(TsFpVuState *s,uint32_t lo,uint32_t next_pc){
     if(op==0x00u||op==0x01u){
         size_t a=mem_addr(s,is,imm);
         if(a+16>s->memory_size){s->unsupported++;return;}
+        unsigned dm=dest?dest:0xfu;
         if(op==0){
             uint32_t v[4]; for(unsigned i=0;i<4;i++)v[i]=rd32(s->memory+a+i*4u);
-            if(it)write_mask(s,it,dest,(float[4]){f32(v[0]),f32(v[1]),f32(v[2]),f32(v[3])});
+            if(it)write_mask(s,it,dm,(float[4]){f32(v[0]),f32(v[1]),f32(v[2]),f32(v[3])});
         }else{
-            for(unsigned i=0;i<4;i++)if(mask_has(dest,i))wr32(s->memory+a+i*4u,s->vf[it][i]);
+            for(unsigned i=0;i<4;i++)if(mask_has(dm,i))wr32(s->memory+a+i*4u,s->vf[it][i]);
         }
         return;
     }
