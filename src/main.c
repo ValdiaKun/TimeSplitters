@@ -212,6 +212,7 @@ static int load_probe(TsP5ckInfo *info,TsP5ckEntry *entry,TsFpResourceSummary *r
                       TsFpModelHeader *model,TsFpGeometrySummary *geometry,TsFpVifSummary *vif){
     FILE *fp=fopen(DATA_PATH,"rb"); uint8_t *buf=NULL; int r=0;
     if(!fp)return -10;
+    memset(resource,0,sizeof(*resource));
     r=ts_p5ck_read_info(fp,info);
     if(r==0 && info->entry_count==0)r=-11;
     if(r==0){
@@ -224,32 +225,22 @@ static int load_probe(TsP5ckInfo *info,TsP5ckEntry *entry,TsFpResourceSummary *r
             if(tsfp_model_probe(candidate_buf,candidate_size,model)==0){
                 *entry=candidate;
                 buf=candidate_buf;
-                r=0;
+                r=tsfp_geometry_probe(candidate_buf,candidate_size,model->mesh_table_offset,
+                                       model->mesh_count,geometry);
+                if(r==0 && geometry->submesh_count){
+                    TsFpSubmesh sm;
+                    if(tsfp_geometry_collect(candidate_buf,candidate_size,model->mesh_table_offset,
+                                             model->mesh_count,&sm,1)==1){
+                        uint32_t bytes=(uint32_t)sm.vertex_count*16u;
+                        if(sm.data_offset<=candidate_size && bytes<=candidate_size-sm.data_offset)
+                            r=tsfp_vif_scan(candidate_buf+sm.data_offset,bytes,vif);
+                    }
+                }
                 break;
             }
             free(candidate_buf);
         }
-        if(!buf)r=-12;
-    }
-    if(r==0){
-        size_t size=0;
-        fseek(fp,0,SEEK_CUR);
-        size=(size_t)entry->length;
-        if(tsfp_resource_probe(buf,size,resource)!=0)memset(resource,0,sizeof(*resource));
-        size_t payload_size=0;
-        if(ts_p5ck_read_payload(fp,entry,&buf,&payload_size)!=0)r=-12;
-        else{
-            size=payload_size;
-            r=tsfp_geometry_probe(buf,size,model->mesh_table_offset,model->mesh_count,geometry);
-            if(r==0 && geometry->submesh_count){
-                TsFpSubmesh sm;
-                if(tsfp_geometry_collect(buf,size,model->mesh_table_offset,model->mesh_count,&sm,1)==1){
-                    uint32_t bytes=(uint32_t)sm.vertex_count*16u;
-                    if(sm.data_offset<=size && bytes<=size-sm.data_offset)
-                        r=tsfp_vif_scan(buf+sm.data_offset,bytes,vif);
-                }
-            }
-        }
+        if(!buf && r==0)r=-12;
     }
     free(buf); fclose(fp); return r;
 }
