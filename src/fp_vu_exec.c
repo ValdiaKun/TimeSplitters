@@ -441,9 +441,24 @@ static void lower_exec(TsFpVuState *s,uint32_t lo,uint32_t next_pc){
     if(op==0x1cu){if(it)s->vi[it]=s->clip_flag&0xfffu;return;}
     if(op==0x7cu||op==0x7du||op==0x7eu||op==0x7fu){
         unsigned ftf=(lo>>23)&3u,fsf=(lo>>21)&3u;
-        if(op==0x7cu) s->q=u32(f32(s->vf[is][fsf])/f32(s->vf[it][ftf]));
-        else if(op==0x7du) s->q=u32(sqrtf(fabsf(f32(s->vf[it][ftf]))));
-        else if(op==0x7eu) s->q=u32(f32(s->vf[is][fsf])/sqrtf(fabsf(f32(s->vf[it][ftf]))));
+        float num,den,qv; int invalid=0,divzero=0;
+        if(op==0x7cu){
+            num=f32(s->vf[is][fsf]); den=f32(s->vf[it][ftf]);
+            invalid=(num==0.0f&&den==0.0f); divzero=(den==0.0f&&!invalid);
+            if(den==0.0f) qv=f32(((u32(num)^u32(den))&0x80000000u)|0x7f7fffffu);
+            else qv=num/den;
+            q_schedule(s,u32(qv),invalid,divzero,7);
+        } else if(op==0x7du){
+            den=f32(s->vf[it][ftf]);
+            q_schedule(s,u32(sqrtf(fabsf(den))),den<0.0f,0,7);
+        } else {
+            num=f32(s->vf[is][fsf]); den=f32(s->vf[it][ftf]);
+            invalid=(den<0.0f)||(den==0.0f&&num==0.0f);
+            divzero=(den==0.0f&&!invalid);
+            if(den==0.0f) qv=f32(((u32(num)^u32(den))&0x80000000u)|0x7f7fffffu);
+            else qv=num/sqrtf(fabsf(den));
+            q_schedule(s,u32(qv),invalid,divzero,13);
+        }
         return;
     }
     if(op==0x68u){if(it)s->vi[it]=s->top;return;}
