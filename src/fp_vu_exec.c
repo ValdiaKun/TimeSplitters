@@ -549,6 +549,24 @@ static void lower_exec(TsFpVuState *s,uint32_t lo,uint32_t next_pc){
     if(op==0x35u){if(id)VI_WRITE_ARITH(id,s->vi[it]|s->vi[is],is==21u||it==21u);return;}
     #undef VI_WRITE_ARITH
     #undef VI_WRITE16
+    if(op>=0x10u&&op<=0x1cu){
+        uint32_t imm12=(((lo>>21)&1u)<<11)|(lo&0x7ffu);
+        switch(op){
+        case 0x10u: s->vi[1]=((s->clip_flag&0x00ffffffu)==(lo&0x00ffffffu))?1u:0u; return; /* FCEQ */
+        case 0x11u: s->clip_flag=lo&0x00ffffffu; return; /* FCSET */
+        case 0x12u: s->vi[1]=((s->clip_flag&0x00ffffffu)&(lo&0x00ffffffu))?1u:0u; return; /* FCAND */
+        case 0x13u: s->vi[1]=(((s->clip_flag&0x00ffffffu)|(lo&0x00ffffffu))==0x00ffffffu)?1u:0u; return; /* FCOR */
+        case 0x14u: if(it)s->vi[it]=((s->status_flag&0xfffu)==imm12)?1u:0u; return; /* FSEQ */
+        case 0x15u: s->status_flag=(imm12&0xfc0u)|(s->status_flag&0x3fu); return; /* FSSET */
+        case 0x16u: if(it)s->vi[it]=(s->status_flag&0xfffu)&imm12; return; /* FSAND */
+        case 0x17u: if(it)s->vi[it]=(s->status_flag&0xfffu)|imm12; return; /* FSOR */
+        case 0x18u: if(it)s->vi[it]=((s->mac_flag&0xffffu)==(s->vi[is]&0xffffu))?1u:0u; return; /* FMEQ */
+        case 0x1au: if(it)s->vi[it]=(s->mac_flag&0xffffu)&(s->vi[is]&0xffffu); return; /* FMAND */
+        case 0x1bu: if(it)s->vi[it]=(s->mac_flag&0xffffu)|(s->vi[is]&0xffffu); return; /* FMOR */
+        case 0x1cu: if(it)s->vi[it]=s->clip_flag&0xfffu; return; /* FCGET */
+        default: return;
+        }
+    }
     /* VU1 lower branch opcodes follow the hardware table:
        B/BAL, JR/JALR, then IBEQ/IBNE/IBLTZ/IBGTZ/IBLEZ/IBGEZ. */
     if(op==0x20u){
