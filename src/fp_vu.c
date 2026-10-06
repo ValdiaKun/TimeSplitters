@@ -38,13 +38,16 @@ int tsfp_vu_probe(const uint8_t *micro, size_t size, uint32_t start, uint32_t *x
     size_t words = size / 8u;
     if (start >= words) return -2;
     *xgkick_pc = UINT32_MAX;
+    int end_pending = 0;
     for (size_t pc = start; pc < words; ++pc) {
         uint32_t lower = rd32(micro + pc * 8u);
         uint32_t upper = rd32(micro + pc * 8u + 4u);
         if (!(upper & 0x80000000u) && ((lower >> 25) & 0x7fu) == 0x6cu) {
             *xgkick_pc = (uint32_t)pc;
         }
-        if (upper & 0x40000000u) return 0;
+        /* E has a one-LIW delay slot; inspect that slot before stopping. */
+        if (end_pending) return 0;
+        if (upper & 0x40000000u) end_pending = 1;
     }
     return 0;
 }
