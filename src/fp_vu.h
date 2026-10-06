@@ -25,6 +25,11 @@ typedef struct {
     uint32_t branch_pending;
     uint32_t branch_target;
     uint32_t end_pending;
+    uint16_t mac_pipe[4];
+    uint16_t status_pipe[4];
+    uint32_t clip_pipe[4];
+    uint8_t flag_pipe_valid[4];
+    uint32_t flag_pipe_pos;
     uint32_t xgkick_pc;
 } TsFpVuState;
 
