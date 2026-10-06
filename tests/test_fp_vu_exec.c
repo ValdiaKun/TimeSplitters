@@ -383,5 +383,18 @@ int main(void) {
         assert(t.vi[3]==0u);
         assert(t.vi[4]==0x10u);
     }
+
+    {
+        /* WAITQ makes a pending DIV result visible before the following upper op. */
+        uint8_t m[48]={0}; uint32_t x;
+        x=lower(0x7c,14,1,2); memcpy(m,&x,4); x=0; memcpy(m+4,&x,4);
+        x=lower(0x7c,14,0,0)|3u; memcpy(m+8,&x,4);
+        x=upper(0x20,3,1,0,0x8); memcpy(m+12,&x,4);
+        x=0; memcpy(m+16,&x,4); x=0x40000000u|upper(0x3f,11,0,0,0xf); memcpy(m+20,&x,4);
+        TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
+        t.vf[1][0]=u32(6.0f); t.vf[2][0]=u32(2.0f);
+        assert(tsfp_vu_execute(m,sizeof(m),0,&t,8)==0);
+        assert(f32(t.vf[3][0])==9.0f);
+    }
     return 0;
 }
