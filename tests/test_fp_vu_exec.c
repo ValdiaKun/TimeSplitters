@@ -433,10 +433,10 @@ int main(void) {
         /* EFU vector semantics: ESADD/ERSADD operate on the squared-length
            sum; EATANxy/xz return zero when the x component is zero. */
         uint8_t m[96]={0}; uint32_t x;
-        x=0; memcpy(m,&x,4); x=(31u<<6)|(1u<<11)|0x70u; memcpy(m+4,&x,4); /* ESADD */
-        x=0; memcpy(m+8,&x,4); x=(31u<<6)|(1u<<11)|0x71u; memcpy(m+12,&x,4); /* ERSADD */
-        x=0; memcpy(m+16,&x,4); x=(31u<<6)|(1u<<11)|0x74u; memcpy(m+20,&x,4); /* EATANxy */
-        x=0; memcpy(m+24,&x,4); x=(31u<<6)|(1u<<11)|0x75u; memcpy(m+28,&x,4); /* EATANxz */
+        x=0; memcpy(m,&x,4); x=upper(0x3c,28,1,0,0xf); memcpy(m+4,&x,4); /* ESADD */
+        x=0; memcpy(m+8,&x,4); x=upper(0x3d,28,1,0,0xf); memcpy(m+12,&x,4); /* ERSADD */
+        x=0; memcpy(m+16,&x,4); x=upper(0x3c,29,1,0,0xf); memcpy(m+20,&x,4); /* EATANxy */
+        x=0; memcpy(m+24,&x,4); x=upper(0x3d,29,1,0,0xf); memcpy(m+28,&x,4); /* EATANxz */
         x=0; memcpy(m+32,&x,4); x=0x40000000u|upper(0x3f,11,0,0,0xf); memcpy(m+36,&x,4);
         TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
         t.vf[1][0]=u32(2.0f); t.vf[1][1]=u32(3.0f); t.vf[1][2]=u32(6.0f);
@@ -444,7 +444,7 @@ int main(void) {
         assert(f32(t.p)==0.0f);
         /* Synchronize a standalone ESADD result through WAITP/MFP. */
         memset(m,0,sizeof(m));
-        x=0; memcpy(m,&x,4); x=(31u<<6)|(1u<<11)|0x70u; memcpy(m+4,&x,4);
+        x=0; memcpy(m,&x,4); x=upper(0x3c,28,1,0,0xf); memcpy(m+4,&x,4);
         x=0x80000000u|0x7bfu; memcpy(m+8,&x,4);
         x=0; memcpy(m+12,&x,4);
         x=0x80000000u|(0xfu<<21)|(3u<<16)|0x67cu; memcpy(m+16,&x,4);
