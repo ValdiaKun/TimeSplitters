@@ -59,8 +59,8 @@ int main(void) {
          * committed after the upper instruction, so ADDi must see the old I.
          */
         uint8_t m[32]={0}; uint32_t x;
-        x=0x80000000u | upper(0x22,3,1,0,0xf); memcpy(m,&x,4);
-        x=0x12345678u; memcpy(m+4,&x,4);
+        x=0x12345678u; memcpy(m,&x,4);
+        x=0x80000000u | upper(0x22,3,1,0,0xf); memcpy(m+4,&x,4);
         x=0; memcpy(m+8,&x,4); x=0x40000000u; memcpy(m+12,&x,4);
         TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
         t.vi[21]=u32(2.0f);
