@@ -52,15 +52,34 @@ static int load_file(const char *path,uint8_t **out,size_t *size_out){
     *out=buf; *size_out=n; return 0;
 }
 
-static int read_first_chr_entry(uint8_t **out,size_t *size_out){
-    FILE *fp=fopen(DATA_PATH,"rb"); TsP5ckInfo info; TsP5ckEntry entry; uint8_t *buf=NULL; size_t size;
+static int read_first_model_entry(TsP5ckInfo *info,TsP5ckEntry *selected,uint8_t **out,size_t *size_out,TsFpModelHeader *model){
+    FILE *fp=fopen(DATA_PATH,"rb");
     if(!fp)return -1;
-    memset(&info,0,sizeof(info)); memset(&entry,0,sizeof(entry));
-    if(ts_p5ck_read_info(fp,&info)!=0 || info.entry_count==0 ||
-       ts_p5ck_read_entry(fp,&info,0,&entry)!=0){fclose(fp);return -2;}
-    if(ts_p5ck_read_payload(fp,&entry,&buf,&size)!=0){fclose(fp);return -3;}
+    if(ts_p5ck_read_info(fp,info)!=0){fclose(fp);return -2;}
+    for(uint32_t i=0;i<info->entry_count;i++){
+        TsP5ckEntry entry;
+        uint8_t *buf=NULL;
+        size_t size=0;
+        if(ts_p5ck_read_entry(fp,info,i,&entry)!=0)continue;
+        if(ts_p5ck_read_payload(fp,&entry,&buf,&size)!=0)continue;
+        if(tsfp_model_probe(buf,size,model)==0){
+            *selected=entry;
+            *out=buf;
+            *size_out=size;
+            fclose(fp);
+            return 0;
+        }
+        free(buf);
+    }
     fclose(fp);
-    *out=buf; *size_out=size; return 0;
+    return -3;
+}
+
+static int read_first_chr_entry(uint8_t **out,size_t *size_out){
+    TsP5ckInfo info;
+    TsP5ckEntry entry;
+    TsFpModelHeader model;
+    return read_first_model_entry(&info,&entry,out,size_out,&model);
 }
 
 static size_t append_triangles(TsFpGifVertex *dst,size_t cap,const TsFpGifVertex *src,size_t n,uint32_t prim){
@@ -195,14 +214,33 @@ static int load_probe(TsP5ckInfo *info,TsP5ckEntry *entry,TsFpResourceSummary *r
     if(!fp)return -10;
     r=ts_p5ck_read_info(fp,info);
     if(r==0 && info->entry_count==0)r=-11;
-    if(r==0)r=ts_p5ck_read_entry(fp,info,0,entry);
+    if(r==0){
+        for(uint32_t i=0;i<info->entry_count;i++){
+            TsP5ckEntry candidate;
+            uint8_t *candidate_buf=NULL;
+            size_t candidate_size=0;
+            if(ts_p5ck_read_entry(fp,info,i,&candidate)!=0)continue;
+            if(ts_p5ck_read_payload(fp,&candidate,&candidate_buf,&candidate_size)!=0)continue;
+            if(tsfp_model_probe(candidate_buf,candidate_size,model)==0){
+                *entry=candidate;
+                buf=candidate_buf;
+                r=0;
+                break;
+            }
+            free(candidate_buf);
+        }
+        if(!buf)r=-12;
+    }
     if(r==0){
         size_t size=0;
-        if(ts_p5ck_read_payload(fp,entry,&buf,&size)!=0)r=-12;
+        fseek(fp,0,SEEK_CUR);
+        size=(size_t)entry->length;
+        if(tsfp_resource_probe(buf,size,resource)!=0)memset(resource,0,sizeof(*resource));
+        size_t payload_size=0;
+        if(ts_p5ck_read_payload(fp,entry,&buf,&payload_size)!=0)r=-12;
         else{
-            r=tsfp_resource_probe(buf,size,resource);
-            if(r!=0)r=tsfp_model_probe(buf,size,model);
-            if(r==0)r=tsfp_geometry_probe(buf,size,model->mesh_table_offset,model->mesh_count,geometry);
+            size=payload_size;
+            r=tsfp_geometry_probe(buf,size,model->mesh_table_offset,model->mesh_count,geometry);
             if(r==0 && geometry->submesh_count){
                 TsFpSubmesh sm;
                 if(tsfp_geometry_collect(buf,size,model->mesh_table_offset,model->mesh_count,&sm,1)==1){
