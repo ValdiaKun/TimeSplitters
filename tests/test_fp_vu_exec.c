@@ -340,11 +340,11 @@ int main(void) {
         x=0; memcpy(m+8,&x,4); x=0x40000000u; memcpy(m+12,&x,4);
         TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
         t.vf[1][0]=0.0f; t.vf[2][0]=0.0f;
-        assert(tsfp_vu_execute(m,sizeof(m),0,&t,8)==0);
+        assert(tsfp_vu_execute(m,sizeof(m),0,&t,1)==-2);
         assert((t.status_flag&(1u<<4))!=0u && (t.status_flag&(1u<<10))!=0u);
         t.status_flag=0;
         t.vf[1][0]=1.0f; t.vf[2][0]=0.0f;
-        assert(tsfp_vu_execute(m,sizeof(m),0,&t,8)==0);
+        assert(tsfp_vu_execute(m,sizeof(m),0,&t,1)==-2);
         assert((t.status_flag&(1u<<5))!=0u && (t.status_flag&(1u<<11))!=0u);
     }
     return 0;
