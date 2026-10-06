@@ -32,6 +32,18 @@ static uint16_t mac_component_flags(float x){
     if((raw&0x7fffffffu)==0u) f|=1u; /* zero */
     return f;
 }
+static void update_status_from_mac(TsFpVuState *s){
+    uint32_t m=s->mac_flag&0xffffu;
+    uint32_t cur=0;
+    for(unsigned i=0;i<4;i++){
+        if(m&(1u<<i)) cur|=1u;          /* Z */
+        if(m&(1u<<(4u+i))) cur|=2u;     /* S */
+        if(m&(1u<<(8u+i))) cur|=4u;     /* U */
+        if(m&(1u<<(12u+i))) cur|=8u;    /* O */
+    }
+    s->status_flag=(s->status_flag&0xfc0u)|cur|
+                   ((s->status_flag|cur)&0xfu)<<6;
+}
 static void update_mac_flags(TsFpVuState *s,const float r[4],unsigned mask){
     uint32_t f=s->mac_flag&0xffffu;
     for(unsigned i=0;i<4;i++) if(mask_has(mask,i)){
@@ -46,6 +58,7 @@ static void update_mac_flags(TsFpVuState *s,const float r[4],unsigned mask){
         f |= ((uint32_t)(cf>>12)&1u)<<(12u+i);
     }
     s->mac_flag=f;
+    update_status_from_mac(s);
 }
 
 static void mac2(TsFpVuState *s,unsigned fd,unsigned fs,unsigned mask,
