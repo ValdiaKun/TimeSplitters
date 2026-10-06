@@ -548,10 +548,10 @@ int main(void) {
     {
         /* VU random-unit opcodes: RNEXT=0x40, RGET=0x41, RINIT=0x42, RXOR=0x43. */
         uint8_t m[40]={0}; uint32_t x;
-        x=0x80000402u|(1u<<11); memcpy(m,&x,4); x=0; memcpy(m+4,&x,4); /* RINIT.x */
-        x=0x80000401u|(0xau<<21)|(2u<<16); memcpy(m+8,&x,4); x=0; memcpy(m+12,&x,4); /* RGET xz */
-        x=0x80000400u|(4u<<21)|(3u<<16); memcpy(m+16,&x,4); x=0; memcpy(m+20,&x,4); /* RNEXT y */
-        x=0x80000403u|(1u<<11); memcpy(m+24,&x,4); x=0x40000000u; memcpy(m+28,&x,4); /* RXOR.x + E */
+        x=0x8000043eu|(1u<<11); memcpy(m,&x,4); x=0; memcpy(m+4,&x,4); /* RINIT.x */
+        x=0x8000043du|(0xau<<21)|(2u<<16); memcpy(m+8,&x,4); x=0; memcpy(m+12,&x,4); /* RGET xz */
+        x=0x8000043cu|(4u<<21)|(3u<<16); memcpy(m+16,&x,4); x=0; memcpy(m+20,&x,4); /* RNEXT y */
+        x=0x8000043fu|(1u<<11); memcpy(m+24,&x,4); x=0x40000000u; memcpy(m+28,&x,4); /* RXOR.x + E */
         TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
         t.vf[1][0]=0x00123456u;
         assert(tsfp_vu_execute(m,sizeof(m),0,&t,5)==0);
