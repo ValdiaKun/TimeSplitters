@@ -562,30 +562,45 @@ int main(void) {
     }
     {
         /* Lower flag operations use the documented 0x10-0x1c dispatch slots. */
-        uint8_t m[96]={0}; uint32_t x;
-        x=flag_imm(0x1a,5,0); x|=(6u<<11); memcpy(m+0,&x,4); x=0; memcpy(m+4,&x,4); /* FMAND */
-        x=flag_imm(0x18,7,0); x|=(6u<<11); memcpy(m+8,&x,4); x=0; memcpy(m+12,&x,4); /* FMEQ */
-        x=flag_imm(0x1b,8,0); x|=(6u<<11); memcpy(m+16,&x,4); x=0; memcpy(m+20,&x,4); /* FMOR */
-        x=flag_imm(0x16,2,0x0d0u); memcpy(m+24,&x,4); x=0; memcpy(m+28,&x,4); /* FSAND */
-        x=flag_imm(0x14,3,0xa5au); memcpy(m+32,&x,4); x=0; memcpy(m+36,&x,4); /* FSEQ */
-        x=flag_imm(0x17,4,5u); memcpy(m+40,&x,4); x=0; memcpy(m+44,&x,4); /* FSOR */
-        x=(0x11u<<25)|(0x123456u); memcpy(m+48,&x,4); x=0; memcpy(m+52,&x,4); /* FCSET */
-        x=(0x12u<<25)|(0x0000ffu); memcpy(m+56,&x,4); x=0; memcpy(m+60,&x,4); /* FCAND */
-        x=(0x10u<<25)|(0x123456u); memcpy(m+64,&x,4); x=0; memcpy(m+68,&x,4); /* FCEQ */
-        x=(0x13u<<25)|(0xedcba9u); memcpy(m+72,&x,4); x=0; memcpy(m+76,&x,4); /* FCOR */
-        x=flag_imm(0x1c,9,0); memcpy(m+80,&x,4); x=0; memcpy(m+84,&x,4); /* FCGET */
-        x=flag_imm(0x15,10,0xc40u); memcpy(m+88,&x,4); x=0x40000000u; memcpy(m+92,&x,4); /* FSSET + E */
-        TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
-        t.status_flag=0xa5au; t.mac_flag=0x0f0fu; t.vi[6]=0x00ffu;
-        assert(tsfp_vu_execute(m,sizeof(m),0,&t,13)==0);
-        assert(t.vi[2]==0x50u);
-        assert(t.vi[3]==1u);
-        assert(t.vi[4]==0xa5fu);
-        assert(t.vi[5]==0x000fu);
-        assert(t.vi[7]==0u);
-        assert(t.vi[8]==0x0fffu);
-        assert(t.vi[1]==1u && t.vi[9]==0x456u);
-        assert(t.clip_flag==0x123456u && t.status_flag==0xc5au);
+        {
+            uint8_t m[40]={0}; uint32_t x;
+            x=flag_imm(0x1a,5,0); x|=(6u<<11); memcpy(m,&x,4); x=0; memcpy(m+4,&x,4);
+            x=flag_imm(0x18,7,0); x|=(6u<<11); memcpy(m+8,&x,4); x=0; memcpy(m+12,&x,4);
+            x=flag_imm(0x1b,8,0); x|=(6u<<11); memcpy(m+16,&x,4); x=0x40000000u; memcpy(m+20,&x,4);
+            TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
+            t.mac_flag=0x0f0fu; t.vi[6]=0x00ffu;
+            assert(tsfp_vu_execute(m,sizeof(m),0,&t,4)==0);
+            assert(t.vi[5]==0x000fu && t.vi[7]==0u && t.vi[8]==0x0fffu);
+        }
+        {
+            uint8_t m[40]={0}; uint32_t x;
+            x=flag_imm(0x16,2,0x0d0u); memcpy(m,&x,4); x=0; memcpy(m+4,&x,4);
+            x=flag_imm(0x14,3,0xa5au); memcpy(m+8,&x,4); x=0; memcpy(m+12,&x,4);
+            x=flag_imm(0x17,4,5u); memcpy(m+16,&x,4); x=0x40000000u; memcpy(m+20,&x,4);
+            TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
+            t.status_flag=0xa5au;
+            assert(tsfp_vu_execute(m,sizeof(m),0,&t,4)==0);
+            assert(t.vi[2]==0x50u && t.vi[3]==1u && t.vi[4]==0xa5fu);
+        }
+        {
+            uint8_t m[48]={0}; uint32_t x;
+            x=(0x11u<<25)|0x123456u; memcpy(m,&x,4); x=0; memcpy(m+4,&x,4);
+            x=(0x12u<<25)|0x0000ffu; memcpy(m+8,&x,4); x=0; memcpy(m+12,&x,4);
+            x=(0x10u<<25)|0x123456u; memcpy(m+16,&x,4); x=0; memcpy(m+20,&x,4);
+            x=(0x13u<<25)|0xedcba9u; memcpy(m+24,&x,4); x=0; memcpy(m+28,&x,4);
+            x=flag_imm(0x1c,9,0); memcpy(m+32,&x,4); x=0x40000000u; memcpy(m+36,&x,4);
+            TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
+            assert(tsfp_vu_execute(m,sizeof(m),0,&t,6)==0);
+            assert(t.clip_flag==0x123456u && t.vi[1]==1u && t.vi[9]==0x456u);
+        }
+        {
+            uint8_t m[16]={0}; uint32_t x=flag_imm(0x15,10,0xc40u);
+            memcpy(m,&x,4); x=0x40000000u; memcpy(m+4,&x,4);
+            TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
+            t.status_flag=0xa5au;
+            assert(tsfp_vu_execute(m,sizeof(m),0,&t,3)==0);
+            assert(t.status_flag==0xc5au);
+        }
     }
     {
         /* VU branch opcodes use JR/JALR at 0x24/0x25 and conditional
