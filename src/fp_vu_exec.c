@@ -198,6 +198,7 @@ static void lower_exec(TsFpVuState *s,uint32_t lo,uint32_t next_pc){
             if(a+16>s->memory_size){s->unsupported++;return;}
             if(it)for(unsigned i=0;i<4;i++)if(mask_has(dest,i))s->vf[it][i]=rd32(s->memory+a+i*4u);
             return;
+        }
         case 0x37: { /* SQD VF[fs], (--VI[it]) */
             uint32_t qaddr=(s->vi[it]-1u)&0x3ffu;
             if(it)s->vi[it]=qaddr;
@@ -205,6 +206,7 @@ static void lower_exec(TsFpVuState *s,uint32_t lo,uint32_t next_pc){
             if(a+16>s->memory_size){s->unsupported++;return;}
             for(unsigned i=0;i<4;i++)if(mask_has(dest,i))wr32(s->memory+a+i*4u,s->vf[is][i]);
             return;
+        }
         case 0x38: { /* DIV Q, VF[fs]fsf, VF[ft]ftf */
             unsigned ftf=(lo>>23)&3u,fsf=(lo>>21)&3u;
             s->q=u32(f32(s->vf[is][fsf])/f32(s->vf[it][ftf]));
