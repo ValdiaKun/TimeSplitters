@@ -63,16 +63,17 @@ static void update_status_from_mac(TsFpVuState *s){
 }
 static void update_mac_flags(TsFpVuState *s,const float r[4],unsigned mask){
     uint32_t f=s->mac_flag&0xffffu;
-    for(unsigned i=0;i<4;i++) if(mask_has(mask,i)){
-        uint16_t cf=mac_component_flags(r[i]);
-        f &= ~((uint32_t)1u<<i);
-        f &= ~((uint32_t)1u<<(4u+i));
-        f &= ~((uint32_t)1u<<(8u+i));
-        f &= ~((uint32_t)1u<<(12u+i));
-        f |= ((uint32_t)cf&1u)<<i;
-        f |= ((uint32_t)(cf>>4)&1u)<<(4u+i);
-        f |= ((uint32_t)(cf>>8)&1u)<<(8u+i);
-        f |= ((uint32_t)(cf>>12)&1u)<<(12u+i);
+    for(unsigned i=0;i<4;i++){
+        uint32_t lane=((uint32_t)1u<<i)|((uint32_t)1u<<(4u+i))|
+                      ((uint32_t)1u<<(8u+i))|((uint32_t)1u<<(12u+i));
+        f &= ~lane;
+        if(mask_has(mask,i)){
+            uint16_t cf=mac_component_flags(r[i]);
+            f |= ((uint32_t)cf&1u)<<i;
+            f |= ((uint32_t)(cf>>4)&1u)<<(4u+i);
+            f |= ((uint32_t)(cf>>8)&1u)<<(8u+i);
+            f |= ((uint32_t)(cf>>12)&1u)<<(12u+i);
+        }
     }
     s->mac_flag=f;
     update_status_from_mac(s);
@@ -441,6 +442,15 @@ int tsfp_vu_execute(const uint8_t *micro,size_t size,uint32_t start,TsFpVuState 
     for(state->steps=0;state->steps<max_steps&&state->pc<size/8u;state->steps++){
         uint32_t pc=state->pc,lo=rd32(micro+pc*8u),up=rd32(micro+pc*8u+4u);
         uint32_t delayed=state->branch_pending, delayed_target=state->branch_target;
+        {
+            unsigned slot=state->flag_pipe_pos;
+            if(state->flag_pipe_valid[slot]){
+                state->mac_flag=state->mac_pipe[slot];
+                state->status_flag=state->status_pipe[slot];
+                state->clip_flag=state->clip_pipe[slot];
+                state->flag_pipe_valid[slot]=0;
+            }
+        }
         state->branch_pending=0;
         state->pc=pc+1u;
         /*
@@ -457,9 +467,19 @@ int tsfp_vu_execute(const uint8_t *micro,size_t size,uint32_t start,TsFpVuState 
          */
         uint32_t vf_before[32][4];
         uint32_t vf_upper[32][4];
+        uint16_t mac_before=(uint16_t)state->mac_flag;
+        uint16_t mac_upper;
+        uint32_t status_before=state->status_flag, status_upper;
+        uint32_t clip_before=state->clip_flag, clip_upper;
         memcpy(vf_before,state->vf,sizeof(vf_before));
         upper_exec(state,up);
+        mac_upper=(uint16_t)state->mac_flag;
+        status_upper=state->status_flag;
+        clip_upper=state->clip_flag;
         memcpy(vf_upper,state->vf,sizeof(vf_upper));
+        state->mac_flag=mac_before;
+        state->status_flag=status_before;
+        state->clip_flag=clip_before;
         if(up&0x80000000u) {
             memcpy(state->vf,vf_before,sizeof(vf_before));
             state->vi[21]=lo;
@@ -478,6 +498,20 @@ int tsfp_vu_execute(const uint8_t *micro,size_t size,uint32_t start,TsFpVuState 
         /* VF0 is hardwired to (0,0,0,1) on the VU; direct opcode paths
            must not be able to leave a modified value behind. */
         state->vf[0][0]=0u; state->vf[0][1]=0u; state->vf[0][2]=0u; state->vf[0][3]=u32(1.0f);
+        {
+            unsigned slot=state->flag_pipe_pos;
+            unsigned lower_op=(lo>>25)&0x7fu;
+            int upper_flags=(mac_upper!=(uint16_t)mac_before) ||
+                            (status_upper!=status_before) ||
+                            (clip_upper!=clip_before);
+            if(upper_flags && lower_op!=0x15u && lower_op!=0x11u){
+                state->mac_pipe[slot]=(uint16_t)mac_upper;
+                state->status_pipe[slot]=status_upper;
+                state->clip_pipe[slot]=clip_upper;
+                state->flag_pipe_valid[slot]=1;
+            }
+            state->flag_pipe_pos=(slot+1u)&3u;
+        }
         if(delayed && !state->branch_pending) state->pc=delayed_target;
         /* E terminates after one delay-slot instruction. The E-bit
            instruction itself completes before the slot executes. */
