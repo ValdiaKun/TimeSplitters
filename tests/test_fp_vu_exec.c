@@ -303,5 +303,20 @@ int main(void) {
         assert(tsfp_vu_execute(m,sizeof(m),0,&t,8)==0);
         assert(t.clip_flag==0x9u); /* x+ (bit0) + y- (bit3) */
     }
+
+    {
+        /* MAC flags use four bits per component: Z/S/U/O. */
+        uint8_t m[32]={0}; uint32_t x;
+        x=0; memcpy(m,&x,4); x=upper(0x28,3,1,2,0xf); memcpy(m+4,&x,4);
+        x=0; memcpy(m+8,&x,4); x=0x40000000u; memcpy(m+12,&x,4);
+        TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
+        memcpy(t.vf[1],(float[4]){0.0f,-1.0f,1.0e-40f,INFINITY},16);
+        memcpy(t.vf[2],(float[4]){0,0,0,0},16);
+        assert(tsfp_vu_execute(m,sizeof(m),0,&t,8)==0);
+        assert((t.mac_flag & 0x0001u)!=0u); /* Zx */
+        assert((t.mac_flag & 0x0020u)!=0u); /* Sy */
+        assert((t.mac_flag & 0x0400u)!=0u); /* Uz */
+        assert((t.mac_flag & 0x8000u)!=0u); /* Ow */
+    }
     return 0;
 }
