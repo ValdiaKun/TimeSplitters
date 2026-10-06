@@ -16,6 +16,15 @@ int main(void){uint8_t d[80]={0};uint64_t tag=1ull|(1ull<<15)|(0ull<<58)|(3ull<<
         assert(rv.x==1.0f&&rv.y==2.0f&&rv.z==128.0f);
     }
     {
+        /* Direct PACKED PRIM writes update the active primitive state. */
+        uint8_t p[32]={0};
+        uint64_t ptag=1ull|(1ull<<15)|(0ull<<58)|(1ull<<60);
+        w64(p,ptag); w64(p+8,0x0ull); w64(p+16,5ull); w64(p+24,0ull);
+        TsFpGifSummary ps; TsFpGifVertex pv;
+        assert(tsfp_gif_parse(p,sizeof(p),&ps,&pv,1)==0);
+        assert(ps.primitive==5u && ps.vertices==0);
+    }
+    {
         /* PACKED A+D: low 64 bits are GS data, high 64 bits carry the
            destination GS register address. */
         uint8_t a[32]={0};
