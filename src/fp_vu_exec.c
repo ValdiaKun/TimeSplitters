@@ -373,6 +373,9 @@ int tsfp_vu_execute(const uint8_t *micro,size_t size,uint32_t start,TsFpVuState 
                     if(vf_upper[r][lane]!=vf_before[r][lane])
                         state->vf[r][lane]=vf_upper[r][lane];
         }
+        /* VF0 is hardwired to (0,0,0,1) on the VU; direct opcode paths
+           must not be able to leave a modified value behind. */
+        state->vf[0][0]=0u; state->vf[0][1]=0u; state->vf[0][2]=0u; state->vf[0][3]=u32(1.0f);
         if(delayed && !state->branch_pending) state->pc=delayed_target;
         if(up&0x40000000u)return 0;
     }
