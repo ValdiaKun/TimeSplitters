@@ -54,6 +54,39 @@ int main(void) {
         assert(lgot[0]==9.0f && lgot[1]==10.0f && lgot[2]==11.0f && lgot[3]==12.0f);
     }
     {
+        /*
+         * Upper/lower halves execute in parallel.  The I-bit immediate is
+         * committed after the upper instruction, so ADDi must see the old I.
+         */
+        uint8_t m[32]={0}; uint32_t x;
+        x=0x80000000u | upper(0x22,3,1,0,0xf); memcpy(m,&x,4);
+        x=0x12345678u; memcpy(m+4,&x,4);
+        x=0; memcpy(m+8,&x,4); x=0x40000000u; memcpy(m+12,&x,4);
+        TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
+        t.vi[21]=2u;
+        t.vf[1][0]=u32(1.0f); t.vf[1][1]=u32(1.0f); t.vf[1][2]=u32(1.0f); t.vf[1][3]=u32(1.0f);
+        assert(tsfp_vu_execute(m,sizeof(m),0,&t,8)==0);
+        assert(f32(t.vf[3][0])==3.0f && t.vi[21]==0x12345678u);
+    }
+    {
+        /*
+         * A lower store paired with an upper VF write must read the VF value
+         * from the beginning of the cycle, not the upper result.
+         */
+        uint8_t m[32]={0}; uint32_t x;
+        x=lower(0x01,0,0,3); memcpy(m,&x,4); x=upper(0x28,3,1,2,0xf); memcpy(m+4,&x,4);
+        x=0; memcpy(m+8,&x,4); x=0x40000000u; memcpy(m+12,&x,4);
+        TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
+        t.vf[1][0]=u32(2.0f); t.vf[1][1]=u32(2.0f); t.vf[1][2]=u32(2.0f); t.vf[1][3]=u32(2.0f);
+        t.vf[2][0]=u32(3.0f); t.vf[2][1]=u32(3.0f); t.vf[2][2]=u32(3.0f); t.vf[2][3]=u32(3.0f);
+        t.vf[3][0]=u32(9.0f); t.vf[3][1]=u32(9.0f); t.vf[3][2]=u32(9.0f); t.vf[3][3]=u32(9.0f);
+        assert(tsfp_vu_execute(m,sizeof(m),0,&t,8)==0);
+        float stored[4]; memcpy(stored,mem,sizeof(stored));
+        assert(stored[0]==9.0f && stored[1]==9.0f && stored[2]==9.0f && stored[3]==9.0f);
+        assert(f32(t.vf[3][0])==5.0f && f32(t.vf[3][1])==5.0f &&
+               f32(t.vf[3][2])==5.0f && f32(t.vf[3][3])==5.0f);
+    }
+    {
         uint8_t m[64]={0};
         uint32_t x;
         /* I-bit loads VI21; lower instruction in the same LIW is ignored. */
