@@ -410,7 +410,7 @@ int main(void) {
         /* EFU/P path: ESIN writes P asynchronously, WAITP publishes it,
            and MFP transfers the synchronized P value to a VF field. */
         uint8_t m[40]={0}; uint32_t x;
-        uint32_t esin=0x80000000u | (31u<<6) | (1u<<11) | 0x3cu;
+        uint32_t esin=(31u<<6) | (1u<<11) | 0x3cu;
         uint32_t waitp=0x80000000u | 0x7bfu;
         uint32_t mfp=0x80000000u | (0xfu<<21) | (3u<<16) | 0x67cu;
         x=0; memcpy(m,&x,4); x=esin; memcpy(m+4,&x,4);
