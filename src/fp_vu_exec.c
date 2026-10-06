@@ -96,6 +96,17 @@ static void special_upper(TsFpVuState *s,uint32_t up){
     default:s->unsupported++;return;
     }
 }
+static unsigned upper_vf_dest(uint32_t up){
+    unsigned op=up&63u,fd=(up>>6)&31u,ft=(up>>16)&31u;
+    if(op<0x30u)return fd;
+    if(op<0x3cu)return 0u;
+    {
+        unsigned sop=(up&3u)|(fd<<2);
+        if((sop>=16u&&sop<=23u)||sop==29u)return ft;
+    }
+    return 0u;
+}
+
 static void upper_exec(TsFpVuState *s,uint32_t up){
     unsigned ft=(up>>16)&31u,fs=(up>>11)&31u,fd=(up>>6)&31u,mask=(up>>21)&15u,op=up&63u;
     if(op>=0x3cu){special_upper(s,up);return;}
@@ -375,11 +386,13 @@ int tsfp_vu_execute(const uint8_t *micro,size_t size,uint32_t start,TsFpVuState 
         } else {
             memcpy(state->vf,vf_before,sizeof(vf_before));
             lower_exec(state,lo,state->pc);
-            /* Upper wins only for lanes it changed; preserve unrelated lower writes. */
-            for(unsigned r=1;r<32;r++)
-                for(unsigned lane=0;lane<4;lane++)
-                    if(vf_upper[r][lane]!=vf_before[r][lane])
-                        state->vf[r][lane]=vf_upper[r][lane];
+            /* Register-level write priority: if the upper pipeline writes
+               a VF register, the lower result for that whole register is
+               discarded, even when the destination fields differ. */
+            {
+                unsigned upper_dest=upper_vf_dest(up);
+                if(upper_dest) memcpy(state->vf[upper_dest],vf_upper[upper_dest],16);
+            }
         }
         /* VF0 is hardwired to (0,0,0,1) on the VU; direct opcode paths
            must not be able to leave a modified value behind. */
