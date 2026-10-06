@@ -87,7 +87,14 @@ int tsfp_vif_unpack_memory_ex(const uint8_t *data, size_t size,
         if (cmd==0x03) { base=(uint32_t)(imm&0x3ffu); continue; }
         if (cmd==0x04) { itops=(uint32_t)(imm&0x3ffu); continue; }
         if (cmd==0x05) { mode=(uint8_t)(imm&3u); continue; }
-        if (cmd==0x06 || cmd==0x07 || cmd==0x10 || cmd==0x11 || cmd==0x13 || cmd==0x17) continue;
+        if (cmd==0x06 || cmd==0x07 || cmd==0x10 || cmd==0x11 || cmd==0x13) continue;
+        if (cmd==0x17) {
+            /* MSCNT resumes at the VU PC left by the previous microprogram.
+               0xffff is outside the 16 KB micro-memory address range and is
+               used only as an internal callback sentinel. */
+            if (mscal && mscal(0xffffu,vu_memory,vu_size,tops,itops,user)!=0) return -11;
+            continue;
+        }
         if (cmd==0x14 || cmd==0x15) {
             uint32_t top=tops;
             out->mscal_address=imm;
