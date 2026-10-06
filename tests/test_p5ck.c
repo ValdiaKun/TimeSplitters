@@ -28,6 +28,10 @@ int main(void) {
     assert(size == sizeof(expected) - 1);
     assert(memcmp(out, expected, size) == 0);
     free(out);
+    e.length++;
+    out=NULL; size=0;
+    assert(ts_p5ck_read_payload(fp, &e, &out, &size) != 0);
+    assert(out==NULL && size==0);
     fclose(fp);
     return 0;
 }
