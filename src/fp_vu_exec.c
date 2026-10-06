@@ -553,6 +553,7 @@ int tsfp_vu_execute(const uint8_t *micro,size_t size,uint32_t start,TsFpVuState 
                 if(upper_dest) memcpy(state->vf[upper_dest],vf_upper[upper_dest],16);
             }
         }
+        if(is_waitq(lo)) q_commit(state);
         /* VF0 is hardwired to (0,0,0,1) on the VU; direct opcode paths
            must not be able to leave a modified value behind. */
         state->vf[0][0]=0u; state->vf[0][1]=0u; state->vf[0][2]=0u; state->vf[0][3]=u32(1.0f);
