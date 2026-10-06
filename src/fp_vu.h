@@ -24,6 +24,7 @@ typedef struct {
     uint32_t unsupported;
     uint32_t branch_pending;
     uint32_t branch_target;
+    uint32_t end_pending;
     uint32_t xgkick_pc;
 } TsFpVuState;
 
