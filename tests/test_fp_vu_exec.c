@@ -578,7 +578,7 @@ int main(void) {
         TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
         t.status_flag=0xa5au; t.mac_flag=0x0f0fu; t.vi[6]=0x00ffu;
         assert(tsfp_vu_execute(m,sizeof(m),0,&t,13)==0);
-        assert(t.vi[2]==0x50u && t.vi[3]==1u && t.vi[4]==0xa5fu);
+        assert(t.vi[2]==0x50u);\n        assert(t.vi[3]==1u);\n        assert(t.vi[4]==0xa5fu);
         assert(t.vi[5]==0x000fu);
         assert(t.vi[7]==0u);
         assert(t.vi[8]==0x0fffu);
