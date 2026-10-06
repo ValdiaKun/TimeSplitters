@@ -53,7 +53,7 @@ def scan(pak, sample):
             n=min(stored_length,sample)
             f.seek(off); data=f.read(n)
             ss=strings(data)
-            is_gzip=data.startswith(b"\\x1f\\x8b")
+            is_gzip=data.startswith(b"\x1f\x8b")
             out.append({
                 "entry":i,"crc":f"{crc:08x}","offset":off,"length":length,"stored":stored,
                 "stored_length":stored_length,"compressed":bool(stored),"gzip":is_gzip,
