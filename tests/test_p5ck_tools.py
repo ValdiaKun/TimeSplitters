@@ -36,7 +36,7 @@ def main():
     with tempfile.TemporaryDirectory() as td:
         root = Path(td)
         pak = root / "TEST.PAK"
-        make_pak(pak, b"c4\x6e\x8e\x40TEST_RESOURCE", True)
+        make_pak(pak, bytes.fromhex("c4 6e 8e 40") + b"TEST_RESOURCE", True)
         rows = analyzer.scan(pak, 65536)
         assert len(rows) == 1
         assert rows[0]["class"] == "GZIP"
@@ -50,7 +50,7 @@ def main():
         )
         files = list(out.iterdir())
         assert len(files) == 1
-        assert files[0].read_bytes().startswith(b"c4\x6e\x8e\x40")
+        assert files[0].read_bytes().startswith(bytes.fromhex("c4 6e 8e 40"))
         assert ".inflated.bin" in files[0].name
 
 if __name__ == "__main__":
