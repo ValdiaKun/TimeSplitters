@@ -24,6 +24,7 @@
 static vita2d_color_vertex preview[PREVIEW_CAPACITY];
 static vita2d_color_vertex transformed_preview[PREVIEW_CAPACITY];
 static size_t preview_count=0;
+static TsFpGifVertex gif_local[1024];
 static float camera_x=0.0f, camera_y=0.0f, camera_zoom=1.0f;
 
 static void update_camera(const SceCtrlData *pad){
@@ -100,7 +101,6 @@ typedef struct {
 static int render_mscal(uint16_t address,uint8_t *vu_memory,size_t vu_size,void *user){
     TsFpVifRenderContext *ctx=(TsFpVifRenderContext*)user;
     TsFpGifSummary gif;
-    TsFpGifVertex local[1024];
     size_t before;
     if(!ctx||!ctx->vu||!ctx->micro||address!=0x0683u)return -1;
     ctx->vu->memory=vu_memory;
@@ -109,13 +109,13 @@ static int render_mscal(uint16_t address,uint8_t *vu_memory,size_t vu_size,void 
     before=ctx->vu->gif_used;
     if(tsfp_vu_execute(ctx->micro,ctx->micro_size,address,ctx->vu,8192)!=0)return -2;
     if(ctx->vu->gif_used>before){
-        memset(local,0,sizeof(local));
+        memset(gif_local,0,sizeof(gif_local));
         if(tsfp_gif_parse(ctx->gif_memory+before,ctx->vu->gif_used-before,
-                          &gif,local,1024)!=0)return -3;
+                          &gif,gif_local,1024)!=0)return -3;
         if(ctx->triangle_count && *ctx->triangle_count<ctx->triangle_capacity){
             size_t room=ctx->triangle_capacity-*ctx->triangle_count;
             size_t wrote=append_triangles(ctx->triangles+*ctx->triangle_count,room,
-                                          local,gif.vertices,gif.primitive&7u);
+                                          gif_local,gif.vertices,gif.primitive&7u);
             *ctx->triangle_count+=wrote;
         }
     }
