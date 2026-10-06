@@ -370,7 +370,7 @@ int main(void) {
         assert(f32(t.vf[3][0])==0.0f);
         assert((t.mac_flag&0x808u)==0x808u); /* Ux + Zx */
         t.status_flag=0; t.mac_flag=0;
-        t.vf[1][0]=FLT_MAX; t.vf[2][0]=FLT_MAX;
+        t.vf[1][0]=u32(INFINITY); t.vf[2][0]=0u;
         assert(tsfp_vu_execute(m,sizeof(m),0,&t,8)==0);
         assert(f32(t.vf[3][0])==FLT_MAX);
         assert((t.mac_flag&0x8080u)==0x8080u); /* Ox + Sx */
