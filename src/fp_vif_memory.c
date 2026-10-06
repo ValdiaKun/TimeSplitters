@@ -54,7 +54,7 @@ int tsfp_vif_unpack_memory_ex(const uint8_t *data, size_t size,
                               TsFpVifMscalCallback mscal,
                               void *user) {
     size_t p=0;
-    uint32_t addr=0, tops=0, base=0, offset=0, itops=0;
+    uint32_t addr=0, tops=0, base=0, offset=0, itops=0, dbf=0;
     uint32_t row[4]={0,0,0,0}, col[4]={0,0,0,0};
     uint32_t mask=0;
     uint16_t cl=1, wl=1; uint8_t mode=0;
@@ -78,14 +78,25 @@ int tsfp_vif_unpack_memory_ex(const uint8_t *data, size_t size,
             cycle_pos=0;
             continue;
         }
-        if (cmd==0x02) { offset=(uint32_t)(imm&0x3ffu)*16u; continue; }
-        if (cmd==0x03) { base=(uint32_t)(imm&0x3ffu)*16u; continue; }
+        if (cmd==0x02) {
+            offset=(uint32_t)(imm&0x3ffu);
+            base=tops;
+            dbf=0;
+            continue;
+        }
+        if (cmd==0x03) { base=(uint32_t)(imm&0x3ffu); continue; }
         if (cmd==0x04) { itops=(uint32_t)(imm&0x3ffu); continue; }
         if (cmd==0x05) { mode=(uint8_t)(imm&3u); continue; }
         if (cmd==0x06 || cmd==0x07 || cmd==0x10 || cmd==0x11 || cmd==0x13 || cmd==0x17) continue;
         if (cmd==0x14 || cmd==0x15) {
+            uint32_t top=tops;
             out->mscal_address=imm;
-            if (mscal && mscal(imm,vu_memory,vu_size,user)!=0) return -11;
+            /* VIF1 MSCAL/MSCALF exposes the old TOPS as TOP to the VU,
+               then toggles TOPS between BASE and BASE+OFFSET for the
+               following double-buffered UNPACK stream. */
+            tops=dbf ? base : (base+offset)&0x3ffu;
+            dbf^=1u;
+            if (mscal && mscal(imm,vu_memory,vu_size,top,itops,user)!=0) return -11;
             continue;
         }
         if (cmd==0x20) {
@@ -103,7 +114,7 @@ int tsfp_vif_unpack_memory_ex(const uint8_t *data, size_t size,
         if ((cmd&0xe0u)==0x60u) {
             uint8_t f=cmd&0x0fu;
             addr=(size_t)(imm&0x03ffu)*16u;
-            if(imm&0x8000u) addr+=(size_t)tops*16u;
+            if(imm&0x8000u) addr+=(size_t)(tops&0x3ffu)*16u;
             unsigned n=num ? num : 256;
             unsigned bits=(f==0xfu)?20u:(32u>>vl(f))*vn(f);
             unsigned bytes=(bits+7u)/8u;
