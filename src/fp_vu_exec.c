@@ -44,6 +44,21 @@ static void p_wait(TsFpVuState *s){
         if(s->p_pending_cycles==0)p_commit(s);
     }
 }
+static void p_wait_producer(TsFpVuState *s){
+    /*
+     * EFU throughput is one cycle shorter than result latency.  A producer
+     * may start one cycle before P writeback because no instruction can
+     * consume that just-finishing result in the same cycle.
+     */
+    while(s->p_pending && s->p_pending_cycles>2u)
+        s->p_pending_cycles--;
+    if(s->p_pending && s->p_pending_cycles<=2u)p_commit(s);
+}
+static void p_tick(TsFpVuState *s){
+    if(!s->p_pending || !s->p_pending_cycles)return;
+    s->p_pending_cycles--;
+    if(s->p_pending_cycles==0)p_commit(s);
+}
 static int is_waitq(uint32_t lo){
     return ((lo>>25)&0x7fu)==0x40u &&
            (((lo&3u)|((lo>>4)&0x7cu))==0x3bu);
@@ -568,7 +583,8 @@ int tsfp_vu_execute(const uint8_t *micro,size_t size,uint32_t start,TsFpVuState 
     for(state->steps=0;state->steps<max_steps&&state->pc<size/8u;state->steps++){
         uint32_t pc=state->pc,lo=rd32(micro+pc*8u),up=rd32(micro+pc*8u+4u);
         uint32_t delayed=state->branch_pending, delayed_target=state->branch_target;
-        if(is_efu_upper(up) && state->p_pending) p_wait(state);
+        if(is_efu_upper(up) && state->p_pending) p_wait_producer(state);
+        else p_tick(state);
         /*
          * FDIV is a single shared resource. A second DIV/SQRT/RSQRT cannot
          * start while the previous result is in flight; hardware stalls the
