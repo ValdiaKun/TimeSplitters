@@ -324,6 +324,20 @@ static size_t gif_packet_size(const uint8_t *mem,size_t size,size_t start){
     return 0;
 }
 
+static uint32_t branch_vi_value(const TsFpVuState *s,unsigned reg){
+    if(reg<16u && s->vi_branch_age[reg]) return s->vi_branch_old[reg];
+    return s->vi[reg];
+}
+static void update_vi_branch_history(TsFpVuState *s,const uint32_t *before){
+    for(unsigned i=0;i<16u;i++){
+        if(s->vi_branch_age[i]) s->vi_branch_age[i]--;
+        if(s->vi[i]!=before[i] && i!=0u){
+            if(!s->vi_branch_age[i]) s->vi_branch_old[i]=(uint16_t)before[i];
+            s->vi_branch_age[i]=4u;
+        }
+    }
+}
+
 static void lower_exec(TsFpVuState *s,uint32_t lo,uint32_t next_pc){
     unsigned op=(lo>>25)&0x7fu,it=(lo>>16)&31u,is=(lo>>11)&31u,id=(lo>>6)&31u;
     unsigned dest=(lo>>21)&15u;
@@ -491,7 +505,7 @@ static void lower_exec(TsFpVuState *s,uint32_t lo,uint32_t next_pc){
     if(op==0x22u){s->branch_pending=1;s->branch_target=s->vi[is];return;}
     if(op==0x23u){if(it)s->vi[it]=next_pc+1u;s->branch_pending=1;s->branch_target=s->vi[is];return;}
     if(op>=0x24u&&op<=0x2bu){
-        int32_t a=(int32_t)s->vi[it],b=(int32_t)s->vi[is];int take=0;
+        int32_t a=(int32_t)branch_vi_value(s,it),b=(int32_t)branch_vi_value(s,is);int take=0;
         switch(op){case 0x24:take=a==b;break;case 0x25:take=a!=b;break;case 0x28:take=a<0;break;case 0x29:take=a>0;break;case 0x2a:take=a<=0;break;case 0x2b:take=a>=0;break;default:break;}
         if(take){s->branch_pending=1;s->branch_target=(uint32_t)((int32_t)next_pc+imm);}
         return;
@@ -561,6 +575,8 @@ int tsfp_vu_execute(const uint8_t *micro,size_t size,uint32_t start,TsFpVuState 
     state->pc=start;
     for(state->steps=0;state->steps<max_steps&&state->pc<size/8u;state->steps++){
         uint32_t pc=state->pc,lo=rd32(micro+pc*8u),up=rd32(micro+pc*8u+4u);
+        uint32_t vi_before[16];
+        memcpy(vi_before,state->vi,sizeof(vi_before));
         uint32_t delayed=state->branch_pending, delayed_target=state->branch_target;
         if(is_efu_upper(up) && state->p_pending) p_wait(state);
         /*
@@ -633,6 +649,7 @@ int tsfp_vu_execute(const uint8_t *micro,size_t size,uint32_t start,TsFpVuState 
             }
         }
         if(is_waitq(lo)) q_commit(state);
+        update_vi_branch_history(state,vi_before);
         /* VF0 is hardwired to (0,0,0,1) on the VU; direct opcode paths
            must not be able to leave a modified value behind. */
         state->vf[0][0]=0u; state->vf[0][1]=0u; state->vf[0][2]=0u; state->vf[0][3]=u32(1.0f);
