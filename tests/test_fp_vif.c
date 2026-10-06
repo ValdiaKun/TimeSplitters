@@ -20,9 +20,11 @@ typedef struct {
 } MscalState;
 static int mscnt_cb(uint16_t address,uint8_t *vu,size_t size,
                     uint32_t top,uint32_t itop,void *user) {
+    unsigned *count=(unsigned*)user;
     (void)vu; (void)size; (void)top; (void)itop;
-    assert(address==0xffffu);
-    (*(unsigned*)user)++;
+    if(*count==0) assert(address==0x683u);
+    else assert(address==0xffffu);
+    (*count)++;
     return 0;
 }
 static int mscal_state_cb(uint16_t address,uint8_t *vu,size_t size,
