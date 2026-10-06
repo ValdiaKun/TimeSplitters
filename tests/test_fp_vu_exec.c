@@ -271,5 +271,25 @@ int main(void) {
         assert(f32(t.vf[5][0])==0.0f);
         assert(t.pc==2u);
     }
+
+    {
+        /* Upper writes to VF3.x while lower LQI writes VF3.y/z.  Hardware
+           resolves this at register granularity, so the entire lower write
+           is discarded and VF3.y/z keep their pre-cycle values. */
+        uint8_t m[32]={0}; uint32_t x;
+        uint32_t lqi=0x80000000u | (0xeu<<21) | (3u<<16) | (4u<<11) | 0x37cu;
+        x=lqi; memcpy(m+0,&x,4);
+        x=upper(0x28,3,1,2,0x8); memcpy(m+4,&x,4);
+        x=0; memcpy(m+8,&x,4); x=0x40000000u; memcpy(m+12,&x,4);
+        uint32_t src[4]={7u,8u,9u,10u}; memcpy(mem+64,src,sizeof(src));
+        TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
+        t.vi[4]=4;
+        memcpy(t.vf[1],(float[4]){1,1,1,1},16);
+        memcpy(t.vf[2],(float[4]){2,2,2,2},16);
+        memcpy(t.vf[3],(float[4]){9,9,9,9},16);
+        assert(tsfp_vu_execute(m,sizeof(m),0,&t,8)==0);
+        assert(f32(t.vf[3][0])==3.0f && f32(t.vf[3][1])==9.0f &&
+               f32(t.vf[3][2])==9.0f && f32(t.vf[3][3])==9.0f);
+    }
     return 0;
 }
