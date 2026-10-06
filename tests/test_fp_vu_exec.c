@@ -328,7 +328,7 @@ int main(void) {
         x=0; memcpy(m,&x,4); x=upper(0x28,3,1,2,0xf); memcpy(m+4,&x,4);
         x=0; memcpy(m+8,&x,4); x=0x40000000u; memcpy(m+12,&x,4);
         TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
-        memcpy(t.vf[1],(float[4]){0,-1,1.0e-40f,INFINITY},16);
+        t.vf[1][0]=0u; t.vf[1][1]=u32(-1.0f); t.vf[1][2]=0x000116c2u; t.vf[1][3]=u32(INFINITY);
         memcpy(t.vf[2],(float[4]){0,0,0,0},16);
         assert(tsfp_vu_execute(m,sizeof(m),0,&t,8)==0);
         assert((t.status_flag&0x0fu)==0x0fu);
