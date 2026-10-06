@@ -190,15 +190,17 @@ static void lower_exec(TsFpVuState *s,uint32_t lo,uint32_t next_pc){
             for(unsigned i=0;i<4;i++)if(mask_has(dest,i))wr32(s->memory+a+i*4u,s->vf[is][i]);
             s->vi[it]=(s->vi[it]+1u)&0x3ffu;
             return;
-        case 0x36: /* LQD VF[ft], (--VI[is]) */
-            s->vi[is]=(s->vi[is]-1u)&0x3ffu;
-            a=(size_t)s->vi[is]*16u;
+        case 0x36: { /* LQD VF[ft], (--VI[is]) */
+            uint32_t qaddr=(s->vi[is]-1u)&0x3ffu;
+            if(is)s->vi[is]=qaddr;
+            a=(size_t)qaddr*16u;
             if(a+16>s->memory_size){s->unsupported++;return;}
             for(unsigned i=0;i<4;i++)if(mask_has(dest,i))s->vf[it][i]=rd32(s->memory+a+i*4u);
             return;
-        case 0x37: /* SQD VF[fs], (--VI[it]) */
-            s->vi[it]=(s->vi[it]-1u)&0x3ffu;
-            a=(size_t)s->vi[it]*16u;
+        case 0x37: { /* SQD VF[fs], (--VI[it]) */
+            uint32_t qaddr=(s->vi[it]-1u)&0x3ffu;
+            if(it)s->vi[it]=qaddr;
+            a=(size_t)qaddr*16u;
             if(a+16>s->memory_size){s->unsupported++;return;}
             for(unsigned i=0;i<4;i++)if(mask_has(dest,i))wr32(s->memory+a+i*4u,s->vf[is][i]);
             return;
@@ -230,10 +232,12 @@ static void lower_exec(TsFpVuState *s,uint32_t lo,uint32_t next_pc){
             return;
         }
         case 0x3e: { /* ILWR VI[it], (VI[is])field */
-            unsigned field=0; int found=0;
-            for(unsigned i=0;i<4;i++)if(mask_has(dest,i)){field=i;found=1;break;}
-            if(!found){s->unsupported++;return;}
-            a=((size_t)s->vi[is]&0x3ffu)*16u+field*4u;
+            unsigned field;
+            if(dest&2u) field=2u;
+            else if(dest&4u) field=1u;
+            else if(dest&8u) field=0u;
+            else field=3u;
+            a=((size_t)s->vi[is]&0x3ffu)*16u+(size_t)field*4u;
             if(a+4>s->memory_size){s->unsupported++;return;}
             if(it)s->vi[it]=rd32(s->memory+a)&0xffffu;
             return;
@@ -270,7 +274,12 @@ static void lower_exec(TsFpVuState *s,uint32_t lo,uint32_t next_pc){
         return;
     }
     if(op==0x04u||op==0x05u){
-        size_t a=mem_addr(s,is,imm)+(id&3u)*4u;
+        unsigned field;
+        if(dest&2u) field=2u;       /* Z */
+        else if(dest&4u) field=1u;  /* Y */
+        else if(dest&8u) field=0u;  /* X */
+        else field=3u;              /* W, including an empty field */
+        size_t a=mem_addr(s,is,imm)+(size_t)field*4u;
         if(a+4>s->memory_size){s->unsupported++;return;}
         if(op==4)s->vi[it]=rd32(s->memory+a)&0xffffu;else wr32(s->memory+a,s->vi[it]&0xffffu);
         return;
