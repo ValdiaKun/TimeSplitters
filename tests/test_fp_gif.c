@@ -16,6 +16,19 @@ int main(void){uint8_t d[80]={0};uint64_t tag=1ull|(1ull<<15)|(0ull<<58)|(3ull<<
         assert(rv.x==1.0f&&rv.y==2.0f&&rv.z==128.0f);
     }
     {
+        /* PACKED A+D: low 64 bits are GS data, high 64 bits carry the
+           destination GS register address. */
+        uint8_t a[32]={0};
+        uint64_t atag=1ull|(1ull<<15)|(0ull<<58)|(1ull<<60);
+        w64(a,atag); w64(a+8,0x0eull);
+        w64(a+16,((uint64_t)128u<<32)|((uint64_t)32u<<16)|16u);
+        w64(a+24,5ull);
+        TsFpGifSummary as; TsFpGifVertex av;
+        assert(tsfp_gif_parse(a,sizeof(a),&as,&av,1)==0);
+        assert(as.tags==1 && as.vertices==1 && as.loops==1);
+        assert(av.x==1.0f && av.y==2.0f && av.z==128.0f);
+    }
+    {
         /* XYZF2 (GIF register 0x04) is a vertex-kick register like XYZ2,
            with a 24-bit Z and an 8-bit fog field. */
         uint8_t f[32]={0};
