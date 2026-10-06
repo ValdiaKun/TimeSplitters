@@ -6,10 +6,27 @@
 static uint32_t v(uint8_t cmd, uint8_t num, uint16_t imm) {
     return ((uint32_t)cmd << 24) | ((uint32_t)num << 16) | imm;
 }
-static int mscal_count_cb(uint16_t address,uint8_t *vu,size_t size,void *user) {
-    (void)vu; (void)size;
+static int mscal_count_cb(uint16_t address,uint8_t *vu,size_t size,
+                           uint32_t top,uint32_t itop,void *user) {
+    (void)vu; (void)size; (void)top; (void)itop;
     assert(address==0x683u);
     (*(unsigned*)user)++;
+    return 0;
+}
+typedef struct {
+    unsigned count;
+    uint32_t top[4];
+    uint32_t itop[4];
+} MscalState;
+static int mscal_state_cb(uint16_t address,uint8_t *vu,size_t size,
+                          uint32_t top,uint32_t itop,void *user) {
+    MscalState *s=(MscalState*)user;
+    (void)vu; (void)size;
+    assert(address==0x683u);
+    assert(s->count<4);
+    s->top[s->count]=top;
+    s->itop[s->count]=itop;
+    s->count++;
     return 0;
 }
 
@@ -159,7 +176,7 @@ int main(void) {
             v(0x14,0,0x0683)
         };
         memcpy(m,head,sizeof(head));
-        MscalState st={{0},{0},{0}};
+        MscalState st={0};
         memset(&ms,0,sizeof(ms)); memset(vu,0,sizeof(vu));
         assert(tsfp_vif_unpack_memory_ex(m,sizeof(head),vu,sizeof(vu),&ms,mscal_state_cb,&st)==0);
         assert(st.count==2);
