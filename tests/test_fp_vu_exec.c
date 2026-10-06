@@ -622,7 +622,7 @@ int main(void) {
             if(cond_ops[k]==0x2cu) t.vi[1]=(uint32_t)-1;
             if(cond_ops[k]==0x2eu) t.vi[1]=(uint32_t)-1;
             if(cond_ops[k]==0x2fu) t.vi[1]=1u;
-            assert(tsfp_vu_execute(m,sizeof(m),0,&t,4)==0);
+            assert(tsfp_vu_execute(m,sizeof(m),0,&t,5)==0);
             assert(t.vi[4]==9u);
             assert(t.vi[5]==(expected_taken[k]?13u:7u));
         }
