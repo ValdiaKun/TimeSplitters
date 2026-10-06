@@ -9,6 +9,14 @@ static uint32_t u32(float f){uint32_t v;memcpy(&v,&f,4);return v;}
 static int32_t sx11(uint32_t v){v&=0x7ffu;return (v&0x400u)?(int32_t)(v|0xfffff800u):(int32_t)v;}
 
 static float qf(const TsFpVuState *s){return f32(s->q);}
+static void set_div_flags(TsFpVuState *s,int invalid,int divzero){
+    uint32_t cur=s->status_flag&0x3fu;
+    cur=(cur&~0x30u)|((invalid?1u:0u)<<4)|((divzero?1u:0u)<<5);
+    s->status_flag=(s->status_flag&0xfc0u)|cur;
+    if(invalid)s->status_flag|=1u<<10;
+    if(divzero)s->status_flag|=1u<<11;
+}
+
 static float if_(const TsFpVuState *s){return f32(s->vi[21]);}
 static float bc(const TsFpVuState *s,unsigned ft,unsigned b){return f32(s->vf[ft][b&3u]);}
 static int mask_has(unsigned mask,unsigned component){
@@ -290,17 +298,25 @@ static void lower_exec(TsFpVuState *s,uint32_t lo,uint32_t next_pc){
         }
         case 0x38: { /* DIV Q, VF[fs]fsf, VF[ft]ftf */
             unsigned ftf=(lo>>23)&3u,fsf=(lo>>21)&3u;
-            s->q=u32(f32(s->vf[is][fsf])/f32(s->vf[it][ftf]));
+            float num=f32(s->vf[is][fsf]),den=f32(s->vf[it][ftf]);
+            int invalid=(num==0.0f&&den==0.0f), divzero=(den==0.0f&&!invalid);
+            set_div_flags(s,invalid,divzero);
+            s->q=u32(num/den);
             return;
         }
         case 0x39: { /* SQRT Q, VF[ft]ftf */
             unsigned ftf=(lo>>23)&3u;
-            s->q=u32(sqrtf(fabsf(f32(s->vf[it][ftf]))));
+            float x=f32(s->vf[it][ftf]);
+            set_div_flags(s,x<0.0f,0);
+            s->q=u32(sqrtf(fabsf(x)));
             return;
         }
         case 0x3a: { /* RSQRT Q, VF[fs]fsf / sqrt(abs(VF[ft]ftf)) */
             unsigned ftf=(lo>>23)&3u,fsf=(lo>>21)&3u;
-            s->q=u32(f32(s->vf[is][fsf])/sqrtf(fabsf(f32(s->vf[it][ftf]))));
+            float num=f32(s->vf[is][fsf]),den=f32(s->vf[it][ftf]);
+            int invalid=(den<0.0f), divzero=(den==0.0f&&num!=0.0f);
+            set_div_flags(s,invalid,divzero);
+            s->q=u32(num/sqrtf(fabsf(den)));
             return;
         }
         case 0x3b: /* WAITQ: timing is not cycle-accurate here. */
