@@ -32,8 +32,6 @@ typedef struct {
     uint32_t unsupported;
     uint32_t branch_pending;
     uint32_t branch_target;
-    uint16_t vi_branch_old[16];
-    uint8_t vi_branch_age[16];
     uint32_t end_pending;
     uint16_t mac_pipe[4];
     uint16_t status_pipe[4];
