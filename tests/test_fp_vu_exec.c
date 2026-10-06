@@ -594,8 +594,10 @@ int main(void) {
             assert(t.clip_flag==0x123456u && t.vi[1]==1u && t.vi[9]==0x456u);
         }
         {
-            uint8_t m[16]={0}; uint32_t x=flag_imm(0x15,10,0xc40u);
-            memcpy(m,&x,4); x=0x40000000u; memcpy(m+4,&x,4);
+            uint8_t m[24]={0}; uint32_t x=flag_imm(0x15,10,0xc40u);
+            memcpy(m,&x,4); x=0; memcpy(m+4,&x,4);
+            memcpy(m+8,&x,0); x=flag_imm(0x15,10,0xc40u); memcpy(m+8,&x,4); x=0x40000000u; memcpy(m+12,&x,4);
+            x=flag_imm(0x15,10,0xc40u); memcpy(m+16,&x,4); x=0; memcpy(m+20,&x,4);
             TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
             t.status_flag=0xa5au;
             assert(tsfp_vu_execute(m,sizeof(m),0,&t,3)==0);
