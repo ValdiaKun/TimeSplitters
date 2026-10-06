@@ -420,8 +420,9 @@ int main(void) {
         TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
         t.vf[1][0]=0.5f;
         assert(tsfp_vu_execute(m,sizeof(m),0,&t,8)==0);
-        assert(fabsf(f32(t.vf[3][0])-sinf(0.5f))<1e-6f);
         assert(t.p_pending==0u);
+        assert(fabsf(f32(t.p)-sinf(0.5f))<1e-6f);
+        assert(fabsf(f32(t.vf[3][0])-sinf(0.5f))<1e-6f);
     }
 
     return 0;
