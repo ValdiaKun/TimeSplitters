@@ -436,6 +436,18 @@ void tsfp_vu_state_init(TsFpVuState *state,uint8_t *memory,size_t memory_size,ui
     state->vf[0][3]=u32(1.0f);
     state->gif=gif; state->gif_size=gif_size; state->xgkick_pc=UINT32_MAX;
 }
+static void flush_flag_pipeline(TsFpVuState *s){
+    unsigned base=s->flag_pipe_pos;
+    for(unsigned n=0;n<4;n++){
+        unsigned slot=(base+n)&3u;
+        if(s->flag_pipe_valid[slot]){
+            s->mac_flag=s->mac_pipe[slot];
+            s->status_flag=s->status_pipe[slot];
+            s->clip_flag=s->clip_pipe[slot];
+            s->flag_pipe_valid[slot]=0;
+        }
+    }
+}
 int tsfp_vu_execute(const uint8_t *micro,size_t size,uint32_t start,TsFpVuState *state,uint32_t max_steps){
     if(!micro||!state||(size&7u)||start>=size/8u)return -1;
     state->pc=start;
@@ -517,6 +529,7 @@ int tsfp_vu_execute(const uint8_t *micro,size_t size,uint32_t start,TsFpVuState 
            instruction itself completes before the slot executes. */
         if(state->end_pending){
             state->end_pending=0;
+            flush_flag_pipeline(state);
             return 0;
         }
         if(up&0x40000000u) state->end_pending=1;
