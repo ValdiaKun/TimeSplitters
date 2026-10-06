@@ -31,6 +31,16 @@ static int is_waitq(uint32_t lo){
     return ((lo>>25)&0x7fu)==0x7cu &&
            (((lo&3u)|((lo>>4)&0x7cu))==0x3bu);
 }
+static int is_fdiv(uint32_t lo){
+    unsigned op=(lo>>25)&0x7fu;
+    return op>=0x7cu && op<=0x7fu;
+}
+static void q_wait(TsFpVuState *s){
+    while(s->q_pending && s->q_pending_cycles){
+        s->q_pending_cycles--;
+        if(s->q_pending_cycles==0) q_commit(s);
+    }
+}
 
 static float if_(const TsFpVuState *s){return f32(s->vi[21]);}
 static float bc(const TsFpVuState *s,unsigned ft,unsigned b){return f32(s->vf[ft][b&3u]);}
@@ -492,7 +502,14 @@ int tsfp_vu_execute(const uint8_t *micro,size_t size,uint32_t start,TsFpVuState 
     for(state->steps=0;state->steps<max_steps&&state->pc<size/8u;state->steps++){
         uint32_t pc=state->pc,lo=rd32(micro+pc*8u),up=rd32(micro+pc*8u+4u);
         uint32_t delayed=state->branch_pending, delayed_target=state->branch_target;
-        if(state->q_pending && state->q_pending_cycles){
+        /*
+         * FDIV is a single shared resource. A second DIV/SQRT/RSQRT cannot
+         * start while the previous result is in flight; hardware stalls the
+         * instruction stream instead of replacing the pending result.
+         */
+        if(is_fdiv(lo) && !is_waitq(lo) && state->q_pending){
+            q_wait(state);
+        } else if(state->q_pending && state->q_pending_cycles){
             state->q_pending_cycles--;
             if(state->q_pending_cycles==0) q_commit(state);
         }
@@ -522,7 +539,7 @@ int tsfp_vu_execute(const uint8_t *micro,size_t size,uint32_t start,TsFpVuState 
          * WAITQ interlocks the pair, so its upper instruction observes the
          * completed Q result. This is the exposed VU synchronization rule.
          */
-        if(is_waitq(lo)) q_commit(state);
+        if(is_waitq(lo) && state->q_pending) q_wait(state);
         uint32_t vf_before[32][4];
         uint32_t vf_upper[32][4];
         uint16_t mac_before=(uint16_t)state->mac_flag;
