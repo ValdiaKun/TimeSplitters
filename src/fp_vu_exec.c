@@ -472,6 +472,26 @@ static void lower_exec(TsFpVuState *s,uint32_t lo,uint32_t next_pc){
             for(unsigned i=0;i<4;i++)if(mask_has(dest,i))wr32(s->memory+a+i*4u,v);
             return;
         }
+        case 0x40: /* RGET.dest VF[ft], R */
+            if(it)for(unsigned i=0;i<4;i++)if(mask_has(dest,i))s->vf[it][i]=s->r;
+            return;
+        case 0x41: /* RNEXT.dest VF[ft], R */
+            if(it){
+                uint32_t x=(s->r>>4)&1u, y=(s->r>>22)&1u;
+                s->r=0x3f800000u|(((s->r<<1)^(x^y))&0x007fffffu);
+                for(unsigned i=0;i<4;i++)if(mask_has(dest,i))s->vf[it][i]=s->r;
+            }
+            return;
+        case 0x42: { /* RINIT R, VF[fs]field */
+            unsigned fsf=(lo>>21)&3u;
+            s->r=0x3f800000u|(s->vf[is][fsf]&0x007fffffu);
+            return;
+        }
+        case 0x43: { /* RXOR R, VF[fs]field */
+            unsigned fsf=(lo>>21)&3u;
+            s->r=0x3f800000u|((s->r^s->vf[is][fsf])&0x007fffffu);
+            return;
+        }
         case 100: /* MFP.dest VF[ft], P */
             if(it)for(unsigned i=0;i<4;i++)if(mask_has(dest,i))s->vf[it][i]=s->p;
             return;
