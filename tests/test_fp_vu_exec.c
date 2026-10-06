@@ -157,7 +157,7 @@ int main(void) {
         uint8_t m[64]={0}; uint32_t x;
         uint32_t lqi=0x80000000u | (4u<<21) | (2u<<16) | (3u<<11) | 0x37cu;
         x=lqi; memcpy(m+0,&x,4);
-        x=upper(0x28,3,1,4,0xf); memcpy(m+4,&x,4); /* ADD VF4,VF1,VF2 */
+        x=upper(0x28,4,1,2,0xf); memcpy(m+4,&x,4); /* ADD VF4,VF1,VF2 */
         x=0; memcpy(m+8,&x,4); x=0x40000000u; memcpy(m+12,&x,4);
         float src[4]={7,8,9,10}; memcpy(mem+64,src,16);
         TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
