@@ -532,7 +532,7 @@ int main(void) {
         assert(f32(t.vf[2][0])==1.0f && f32(t.vf[2][1])==9.0f &&
                f32(t.vf[2][2])==3.0f && f32(t.vf[2][3])==9.0f);
         memset(m,0,sizeof(m));
-        x=lower(0x01,0,0,2)|(0x5u<<21); memcpy(m,&x,4); x=0; memcpy(m+4,&x,4);
+        x=lower(0x01,0,0,2)|(0xau<<21); memcpy(m,&x,4); x=0; memcpy(m+4,&x,4);
         x=0; memcpy(m+8,&x,4); x=0x40000000u; memcpy(m+12,&x,4);
         uint8_t out[64]={0};
         TsFpVuState q; tsfp_vu_state_init(&q,out,sizeof(out),gif,sizeof(gif));
