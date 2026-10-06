@@ -153,6 +153,22 @@ int main(void) {
         assert(got[0]==0.0f && got[1]==8.0f && got[2]==0.0f && got[3]==0.0f);
     }
     {
+        /* A lower LQI write to VF2 must survive an unrelated upper VF3 write. */
+        uint8_t m[64]={0}; uint32_t x;
+        uint32_t lqi=0x80000000u | (4u<<21) | (2u<<16) | (3u<<11) | 0x37cu;
+        x=lqi; memcpy(m+0,&x,4);
+        x=upper(0x28,3,1,4,0xf); memcpy(m+4,&x,4); /* ADD VF4,VF1,VF2 */
+        x=0; memcpy(m+8,&x,4); x=0x40000000u; memcpy(m+12,&x,4);
+        float src[4]={7,8,9,10}; memcpy(mem+64,src,16);
+        TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
+        t.vi[3]=4;
+        memcpy(t.vf[1],(float[4]){1,1,1,1},16);
+        memcpy(t.vf[2],(float[4]){2,2,2,2},16);
+        assert(tsfp_vu_execute(m,sizeof(m),0,&t,8)==0);
+        assert(f32(t.vf[2][0])==7.0f && f32(t.vf[2][1])==8.0f);
+        assert(f32(t.vf[4][0])==3.0f && f32(t.vf[4][1])==3.0f);
+    }
+    {
         /* MTIR/MFIR transfer only the selected field / 16-bit integer value. */
         uint8_t m[80]={0}; uint32_t x;
         uint32_t mtir=0x80000000u | (3u<<21) | (3u<<16) | (12u<<11) | 0x3fcu;
