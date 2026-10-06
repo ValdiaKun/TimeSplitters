@@ -313,12 +313,12 @@ int main(void) {
         x=0; memcpy(m+8,&x,4); x=0x40000000u | upper(0x3f,11,0,0,0xf); memcpy(m+12,&x,4);
         x=0; memcpy(m+16,&x,4); x=0; memcpy(m+20,&x,4);
         TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
-        memcpy(t.vf[1],(float[4]){0.0f,-1.0f,1.0e-40f,INFINITY},16);
+        t.vf[1][0]=0u; t.vf[1][1]=u32(-1.0f); t.vf[1][2]=0x000116c2u; t.vf[1][3]=u32(INFINITY);
         memcpy(t.vf[2],(float[4]){0,0,0,0},16);
         assert(tsfp_vu_execute(m,sizeof(m),0,&t,8)==0);
         assert((t.mac_flag & 0x0001u)!=0u); /* Zx */
         assert((t.mac_flag & 0x0020u)!=0u); /* Sy */
-        assert((t.mac_flag & 0x0100u)!=0u); /* Ux */
+        assert((t.mac_flag & 0x0200u)!=0u); /* Uz */
         assert((t.mac_flag & 0x8000u)!=0u); /* Ow */
     }
 
