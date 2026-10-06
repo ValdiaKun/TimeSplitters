@@ -114,13 +114,16 @@ typedef struct {
     size_t *triangle_count;
 } TsFpVifRenderContext;
 
-static int render_mscal(uint16_t address,uint8_t *vu_memory,size_t vu_size,void *user){
+static int render_mscal(uint16_t address,uint8_t *vu_memory,size_t vu_size,
+                        uint32_t top,uint32_t itop,void *user){
     TsFpVifRenderContext *ctx=(TsFpVifRenderContext*)user;
     TsFpGifSummary gif;
     size_t before;
     if(!ctx||!ctx->vu||!ctx->micro||address!=0x0683u)return -1;
     ctx->vu->memory=vu_memory;
     ctx->vu->memory_size=vu_size;
+    ctx->vu->top=top;
+    ctx->vu->itop=itop;
     ctx->vu->branch_pending=0;
     before=ctx->vu->gif_used;
     if(tsfp_vu_execute(ctx->micro,ctx->micro_size,address,ctx->vu,8192)!=0)return -2;
