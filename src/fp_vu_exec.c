@@ -331,8 +331,32 @@ int tsfp_vu_execute(const uint8_t *micro,size_t size,uint32_t start,TsFpVuState 
         uint32_t delayed=state->branch_pending, delayed_target=state->branch_target;
         state->branch_pending=0;
         state->pc=pc+1u;
-        if(up&0x80000000u) state->vi[21]=lo; else lower_exec(state,lo,state->pc);
+        /*
+         * The two halves of a VU instruction execute in parallel.  The upper
+         * half must see the state from the beginning of the cycle, and the
+         * lower half must not see a VF value produced by the upper half in
+         * that same cycle.  Preserve the upper result while executing lower,
+         * then commit it back.  This also makes an upper/lower write collision
+         * deterministic in favor of the upper pipeline, matching hardware.
+         *
+         * The I bit is likewise latched after the upper instruction executes;
+         * loading VI21 before upper_exec would incorrectly make an ADDi/etc.
+         * in the same LIW observe the newly loaded immediate.
+         */
+        uint32_t vf_before[32][4];
+        uint32_t vf_upper[32][4];
+        memcpy(vf_before,state->vf,sizeof(vf_before));
         upper_exec(state,up);
+        if(up&0x80000000u) {
+            memcpy(vf_upper,state->vf,sizeof(vf_upper));
+            memcpy(state->vf,vf_before,sizeof(vf_before));
+            state->vi[21]=lo;
+        } else {
+            memcpy(vf_upper,state->vf,sizeof(vf_upper));
+            memcpy(state->vf,vf_before,sizeof(vf_before));
+            lower_exec(state,lo,state->pc);
+        }
+        memcpy(state->vf,vf_upper,sizeof(vf_upper));
         if(delayed && !state->branch_pending) state->pc=delayed_target;
         if(up&0x40000000u)return 0;
     }
