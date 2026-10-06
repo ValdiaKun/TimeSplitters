@@ -114,8 +114,9 @@ static int render_mscal(uint16_t address,uint8_t *vu_memory,size_t vu_size,void 
                           &gif,gif_local,1024)!=0)return -3;
         if(ctx->triangle_count && *ctx->triangle_count<ctx->triangle_capacity){
             size_t room=ctx->triangle_capacity-*ctx->triangle_count;
+            size_t local_vertices=gif.vertices<1024u?gif.vertices:1024u;
             size_t wrote=append_triangles(ctx->triangles+*ctx->triangle_count,room,
-                                          gif_local,gif.vertices,gif.primitive&7u);
+                                          gif_local,local_vertices,gif.primitive&7u);
             *ctx->triangle_count+=wrote;
         }
     }
