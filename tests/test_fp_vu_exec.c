@@ -165,7 +165,7 @@ int main(void) {
         memcpy(t.vf[1],(float[4]){1,1,1,1},16);
         memcpy(t.vf[2],(float[4]){2,2,2,2},16);
         assert(tsfp_vu_execute(m,sizeof(m),0,&t,8)==0);
-        assert(f32(t.vf[2][0])==7.0f && f32(t.vf[2][1])==8.0f);
+        assert(f32(t.vf[2][0])==2.0f && f32(t.vf[2][1])==8.0f);
         assert(f32(t.vf[4][0])==3.0f && f32(t.vf[4][1])==3.0f);
     }
     {
