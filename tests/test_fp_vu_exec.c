@@ -308,9 +308,10 @@ int main(void) {
 
     {
         /* MAC flags use four bits per component: Z/S/U/O. */
-        uint8_t m[32]={0}; uint32_t x;
+        uint8_t m[40]={0}; uint32_t x;
         x=0; memcpy(m,&x,4); x=upper(0x28,3,1,2,0xf); memcpy(m+4,&x,4);
         x=0; memcpy(m+8,&x,4); x=0x40000000u; memcpy(m+12,&x,4);
+        x=0; memcpy(m+16,&x,4); x=0; memcpy(m+20,&x,4);
         TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
         memcpy(t.vf[1],(float[4]){0.0f,-1.0f,1.0e-40f,INFINITY},16);
         memcpy(t.vf[2],(float[4]){0,0,0,0},16);
@@ -356,12 +357,12 @@ int main(void) {
         x=0; memcpy(m+8,&x,4); x=0x40000000u; memcpy(m+12,&x,4);
         TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
         t.vf[1][0]=0x000116c2u; t.vf[2][0]=0.0f;
-        assert(tsfp_vu_execute(m,sizeof(m),0,&t,1)==-2);
+        assert(tsfp_vu_execute(m,sizeof(m),0,&t,8)==0);
         assert(f32(t.vf[3][0])==0.0f);
         assert((t.mac_flag&0x101u)==0x101u); /* Ux + Zx */
         t.status_flag=0; t.mac_flag=0;
         t.vf[1][0]=FLT_MAX; t.vf[2][0]=FLT_MAX;
-        assert(tsfp_vu_execute(m,sizeof(m),0,&t,1)==-2);
+        assert(tsfp_vu_execute(m,sizeof(m),0,&t,8)==0);
         assert(f32(t.vf[3][0])==FLT_MAX);
         assert((t.mac_flag&0x1001u)==0x1001u); /* Ox + Sx */
     }
