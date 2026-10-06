@@ -15,4 +15,15 @@ int main(void){uint8_t d[80]={0};uint64_t tag=1ull|(1ull<<15)|(0ull<<58)|(3ull<<
         assert(rs.tags==1&&rs.vertices==1&&rs.loops==1);
         assert(rv.x==1.0f&&rv.y==2.0f&&rv.z==128.0f);
     }
+    {
+        /* XYZF2 (GIF register 0x04) is a vertex-kick register like XYZ2,
+           with a 24-bit Z and an 8-bit fog field. */
+        uint8_t f[32]={0};
+        uint64_t ftag=1ull|(1ull<<15)|(0ull<<58)|(1ull<<60);
+        w64(f,ftag); w64(f+8,4ull);
+        w64(f+16,((uint64_t)0x12abcdefu<<32)|((uint64_t)0x0020u<<16)|0x0010u);
+        TsFpGifSummary fs; TsFpGifVertex fv;
+        assert(tsfp_gif_parse(f,sizeof(f),&fs,&fv,1)==0);
+        assert(fs.vertices==1 && fv.x==1.0f && fv.y==2.0f && fv.z==0xabcdefu);
+    }
     return 0;}
