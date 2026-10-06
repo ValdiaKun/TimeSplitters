@@ -22,6 +22,7 @@
 #define PREVIEW_CAPACITY 8192u
 
 static vita2d_color_vertex preview[PREVIEW_CAPACITY];
+static vita2d_color_vertex transformed_preview[PREVIEW_CAPACITY];
 static size_t preview_count=0;
 static float camera_x=0.0f, camera_y=0.0f, camera_zoom=1.0f;
 
@@ -246,15 +247,14 @@ static void draw(int result,const TsP5ckInfo *info,const TsP5ckEntry *entry,cons
     if(vif->payload_bytes){float w=(float)(vif->payload_bytes>64?800:(vif->payload_bytes*800u)/64u);vita2d_draw_rectangle(80,470,w,12,0xFF80C060);}
     if(preview_count>=3){
         size_t n=preview_count-(preview_count%3);
-        vita2d_color_vertex transformed[PREVIEW_CAPACITY];
         float cx=540.0f+camera_x, cy=320.0f+camera_y;
         for(size_t i=0;i<n;i++){
             float x=preview[i].x-540.0f, y=preview[i].y-320.0f;
-            transformed[i]=preview[i];
-            transformed[i].x=cx+x*camera_zoom;
-            transformed[i].y=cy+y*camera_zoom;
+            transformed_preview[i]=preview[i];
+            transformed_preview[i].x=cx+x*camera_zoom;
+            transformed_preview[i].y=cy+y*camera_zoom;
         }
-        vita2d_draw_array(SCE_GXM_PRIMITIVE_TRIANGLES,transformed,n);
+        vita2d_draw_array(SCE_GXM_PRIMITIVE_TRIANGLES,transformed_preview,n);
     }
     if(xgkick_pc!=UINT32_MAX)vita2d_draw_rectangle(80,500,800,10,0xFFC08040);
 }
