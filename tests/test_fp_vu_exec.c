@@ -554,7 +554,7 @@ int main(void) {
         }
         {
             uint8_t m[40]={0}; uint32_t x;
-            x=branch(0x25u,1,0,0); memcpy(m,&x,4);
+            x=branch(0x25u,1,15,0); memcpy(m,&x,4);
             x=lower(0x08,0,0,4)|9u; memcpy(m+4,&x,4);
             x=lower(0x08,0,0,5)|7u; memcpy(m+16,&x,4);
             x=lower(0x08,0,0,5)|13u; memcpy(m+24,&x,4);
