@@ -146,6 +146,29 @@ int main(void) {
         assert(ms.qwords_written==4);
     }
     {
+        /*
+         * VIF1 double buffering: MSCAL exposes the current TOPS as TOP,
+         * then toggles TOPS between BASE and BASE+OFFSET.  TOP-relative
+         * UNPACKs after the first MSCAL must therefore land in the other
+         * buffer, and the VU must see ITOP as well.
+         */
+        uint8_t m[128]={0}; uint32_t head[]={
+            v(0x02,0,0x0004), v(0x04,0,0x0007),
+            v(0x14,0,0x0683),
+            v(0x60,1,0x8000), 0xdeadbeefu,
+            v(0x14,0,0x0683)
+        };
+        memcpy(m,head,sizeof(head));
+        MscalState st={{0},{0},{0}};
+        memset(&ms,0,sizeof(ms)); memset(vu,0,sizeof(vu));
+        assert(tsfp_vif_unpack_memory_ex(m,sizeof(head),vu,sizeof(vu),&ms,mscal_state_cb,&st)==0);
+        assert(st.count==2);
+        assert(st.top[0]==0u && st.itop[0]==7u);
+        assert(st.top[1]==4u && st.itop[1]==7u);
+        uint32_t got=0; memcpy(&got,vu+0x40,4);
+        assert(got==0xdeadbeefu);
+    }
+    {
         /* V4-5 is packed into one full 32-bit word even though it carries 20 bits.
            A truncated three-byte payload must be rejected before rd32 reads past it. */
         uint8_t m[32]={0};
