@@ -439,7 +439,7 @@ int main(void) {
         x=0; memcpy(m+24,&x,4); x=upper(0x3d,29,1,0,0xf); memcpy(m+28,&x,4); /* EATANxz */
         x=0; memcpy(m+32,&x,4); x=0x40000000u|upper(0x3f,11,0,0,0xf); memcpy(m+36,&x,4);
         TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
-        t.vf[1][0]=u32(2.0f); t.vf[1][1]=u32(3.0f); t.vf[1][2]=u32(6.0f);
+        t.vf[1][0]=u32(0.0f); t.vf[1][1]=u32(3.0f); t.vf[1][2]=u32(6.0f);
         assert(tsfp_vu_execute(m,sizeof(m),0,&t,32)==0);
         assert(f32(t.p)==0.0f);
         /* Synchronize a standalone ESADD result through WAITP/MFP. */
