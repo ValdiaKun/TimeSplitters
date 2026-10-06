@@ -397,7 +397,7 @@ int main(void) {
         /* EFU producers have 10-cycle throughput for the 11-cycle ESADD latency. */
         uint8_t m[24]={0}; uint32_t x;
         x=0; memcpy(m,&x,4); x=upper(0x3c,28,1,0,0xf); memcpy(m+4,&x,4);
-        x=0; memcpy(m+8,&x,4); x=upper(0x3c,29,1,0,0xf); memcpy(m+12,&x,4);
+        x=0; memcpy(m+8,&x,4); x=upper(0x3c,28,1,0,0xf); memcpy(m+12,&x,4);
         x=0; memcpy(m+16,&x,4); x=0x40000000u|upper(0x3f,11,0,0,0xf); memcpy(m+20,&x,4);
         TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
         t.vf[1][0]=u32(2.0f); t.vf[1][1]=u32(3.0f); t.vf[1][2]=u32(6.0f);
