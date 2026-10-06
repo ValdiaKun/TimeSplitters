@@ -53,7 +53,7 @@ static int load_file(const char *path,uint8_t **out,size_t *size_out){
 }
 
 static int read_first_chr_entry(uint8_t **out,size_t *size_out){
-    FILE *fp=fopen(DATA_PATH,"rb"); TsP5ckInfo info; TsP5ckEntry entry; uint8_t *buf=NULL; size_t size,n;
+    FILE *fp=fopen(DATA_PATH,"rb"); TsP5ckInfo info; TsP5ckEntry entry; uint8_t *buf=NULL; size_t size;
     if(!fp)return -1;
     memset(&info,0,sizeof(info)); memset(&entry,0,sizeof(entry));
     if(ts_p5ck_read_info(fp,&info)!=0 || info.entry_count==0 ||
@@ -191,7 +191,7 @@ done:
 
 static int load_probe(TsP5ckInfo *info,TsP5ckEntry *entry,TsFpResourceSummary *resource,
                       TsFpModelHeader *model,TsFpGeometrySummary *geometry,TsFpVifSummary *vif){
-    FILE *fp=fopen(DATA_PATH,"rb"); uint8_t *buf=NULL; size_t n; int r=0;
+    FILE *fp=fopen(DATA_PATH,"rb"); uint8_t *buf=NULL; int r=0;
     if(!fp)return -10;
     r=ts_p5ck_read_info(fp,info);
     if(r==0 && info->entry_count==0)r=-11;
