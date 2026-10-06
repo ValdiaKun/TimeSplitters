@@ -520,6 +520,28 @@ int main(void) {
         assert(t.vi[5]==0x00f0u && t.vi[7]==0xffffu);
     }
     {
+        /* LQ/SQ honor the per-lane destination/source mask. */
+        uint8_t m[32]={0}; uint32_t x;
+        x=lower(0x00,0,0,2)|(0xau<<21); memcpy(m,&x,4); x=0; memcpy(m+4,&x,4);
+        x=0; memcpy(m+8,&x,4); x=0x40000000u; memcpy(m+12,&x,4);
+        uint8_t data[64]={0}; uint32_t vals[4]={u32(1.0f),u32(2.0f),u32(3.0f),u32(4.0f)};
+        memcpy(data,vals,16);
+        TsFpVuState t; tsfp_vu_state_init(&t,data,sizeof(data),gif,sizeof(gif));
+        t.vf[2][0]=u32(9.0f); t.vf[2][1]=u32(9.0f); t.vf[2][2]=u32(9.0f); t.vf[2][3]=u32(9.0f);
+        assert(tsfp_vu_execute(m,sizeof(m),0,&t,2)==0);
+        assert(f32(t.vf[2][0])==1.0f && f32(t.vf[2][1])==9.0f &&
+               f32(t.vf[2][2])==3.0f && f32(t.vf[2][3])==9.0f);
+        memset(m,0,sizeof(m));
+        x=lower(0x01,0,0,2)|(0x5u<<21); memcpy(m,&x,4); x=0; memcpy(m+4,&x,4);
+        x=0; memcpy(m+8,&x,4); x=0x40000000u; memcpy(m+12,&x,4);
+        uint8_t out[64]={0};
+        TsFpVuState q; tsfp_vu_state_init(&q,out,sizeof(out),gif,sizeof(gif));
+        q.vf[2][0]=u32(1.0f); q.vf[2][1]=u32(2.0f); q.vf[2][2]=u32(3.0f); q.vf[2][3]=u32(4.0f);
+        assert(tsfp_vu_execute(m,sizeof(m),0,&q,2)==0);
+        assert(f32(rd32(out+0))==1.0f && f32(rd32(out+4))==0.0f &&
+               f32(rd32(out+8))==3.0f && f32(rd32(out+12))==0.0f);
+    }
+    {
         /* VU branch opcodes use JR/JALR at 0x24/0x25 and conditional
            branches at 0x28/0x29/0x2c-0x2f. Every branch has one delay LIW. */
         const uint8_t cond_ops[]={0x28u,0x29u,0x2cu,0x2du,0x2eu,0x2fu};
