@@ -347,5 +347,22 @@ int main(void) {
         assert(tsfp_vu_execute(m,sizeof(m),0,&t,1)==-2);
         assert((t.status_flag&(1u<<5))!=0u && (t.status_flag&(1u<<11))!=0u);
     }
+
+    {
+        /* FMAC arithmetic conditions denormals to signed zero and overflow to max. */
+        uint8_t m[32]={0}; uint32_t x;
+        x=0; memcpy(m,&x,4); x=upper(0x28,3,1,2,0xf); memcpy(m+4,&x,4);
+        x=0; memcpy(m+8,&x,4); x=0x40000000u; memcpy(m+12,&x,4);
+        TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
+        t.vf[1][0]=1.0e-40f; t.vf[2][0]=0.0f;
+        assert(tsfp_vu_execute(m,sizeof(m),0,&t,1)==-2);
+        assert(f32(t.vf[3][0])==0.0f);
+        assert((t.mac_flag&0x101u)==0x101u); /* Ux + Zx */
+        t.status_flag=0; t.mac_flag=0;
+        t.vf[1][0]=FLT_MAX; t.vf[2][0]=FLT_MAX;
+        assert(tsfp_vu_execute(m,sizeof(m),0,&t,1)==-2);
+        assert(f32(t.vf[3][0])==FLT_MAX);
+        assert((t.mac_flag&0x1001u)==0x1001u); /* Ox + Sx */
+    }
     return 0;
 }
