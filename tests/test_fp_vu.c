@@ -21,6 +21,19 @@ int main(void) {
     uint32_t pc = UINT32_MAX;
     assert(tsfp_vu_probe(micro, sizeof(micro), 0, &pc) == 0);
     assert(pc == 1);
+
+    {
+        /* The probe must inspect the one-instruction E-bit delay slot. */
+        uint8_t delayed[24]={0}; uint32_t lo=0,up=0;
+        uint32_t e=0x40000000u;
+        uint32_t xg=(0x6cu<<25)|(3u<<11);
+        memcpy(delayed+0,&lo,4); memcpy(delayed+4,&up,4);
+        memcpy(delayed+8,&lo,4); memcpy(delayed+12,&e,4);
+        memcpy(delayed+16,&xg,4); memcpy(delayed+20,&up,4);
+        pc=UINT32_MAX;
+        assert(tsfp_vu_probe(delayed,sizeof(delayed),0,&pc)==0);
+        assert(pc==2u);
+    }
     {
         uint8_t elf[0x120];
         memset(elf,0,sizeof(elf));
