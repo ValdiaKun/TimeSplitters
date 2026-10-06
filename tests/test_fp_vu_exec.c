@@ -291,5 +291,17 @@ int main(void) {
         assert(f32(t.vf[3][0])==3.0f && f32(t.vf[3][1])==9.0f &&
                f32(t.vf[3][2])==9.0f && f32(t.vf[3][3])==9.0f);
     }
+
+    {
+        /* CLIP appends one six-bit result for x/y/z against |VF[ft].w|. */
+        uint8_t m[32]={0}; uint32_t x;
+        x=0; memcpy(m,&x,4); x=upper(0x3f,31,1,2,0xe); memcpy(m+4,&x,4);
+        x=0; memcpy(m+8,&x,4); x=0x40000000u; memcpy(m+12,&x,4);
+        TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
+        memcpy(t.vf[1],(float[4]){3,-3,1,0},16);
+        memcpy(t.vf[2],(float[4]){0,0,0,2},16);
+        assert(tsfp_vu_execute(m,sizeof(m),0,&t,8)==0);
+        assert(t.clip_flag==0x9u); /* x+ (bit0) + y- (bit3) */
+    }
     return 0;
 }
