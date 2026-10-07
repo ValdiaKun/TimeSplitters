@@ -466,11 +466,12 @@ static void lower_exec(TsFpVuState *s,uint32_t lo,uint32_t next_pc){
         case 0x3a: { /* RSQRT Q, VF[fs]fsf / sqrt(abs(VF[ft]ftf)) */
             unsigned ftf=(lo>>23)&3u,fsf=(lo>>21)&3u;
             float num=f32(s->vf[is][fsf]),den=f32(s->vf[it][ftf]);
-            int invalid=(den<0.0f), divzero=(den==0.0f&&num!=0.0f);
+            int invalid=(den<0.0f)||(den==0.0f&&num==0.0f);
+            int divzero=(den==0.0f);
             float qv;
             if(den==0.0f){
                 uint32_t sign=((u32(num)^u32(den))&0x80000000u);
-                qv=f32(sign|0x7f7fffffu);
+                qv=(num==0.0f)?f32(sign):f32(sign|0x7f7fffffu);
             } else qv=num/sqrtf(fabsf(den));
             q_schedule(s,u32(qv),invalid,divzero,13);
             return;
@@ -678,9 +679,11 @@ static void lower_exec(TsFpVuState *s,uint32_t lo,uint32_t next_pc){
         } else {
             num=f32(s->vf[is][fsf]); den=f32(s->vf[it][ftf]);
             invalid=(den<0.0f)||(den==0.0f&&num==0.0f);
-            divzero=(den==0.0f&&!invalid);
-            if(den==0.0f) qv=f32(((u32(num)^u32(den))&0x80000000u)|0x7f7fffffu);
-            else qv=num/sqrtf(fabsf(den));
+            divzero=(den==0.0f);
+            if(den==0.0f){
+                uint32_t sign=((u32(num)^u32(den))&0x80000000u);
+                qv=(num==0.0f)?f32(sign):f32(sign|0x7f7fffffu);
+            } else qv=num/sqrtf(fabsf(den));
             q_schedule(s,u32(qv),invalid,divzero,13);
         }
         return;
