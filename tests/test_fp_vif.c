@@ -216,8 +216,12 @@ int main(void) {
         memcpy(m,head,sizeof(head));
         memset(&ms,0,sizeof(ms)); memset(vu,0,sizeof(vu));
         assert(tsfp_vif_unpack_memory(m,sizeof(head),vu,sizeof(vu),&ms)==0);
-        assert(vu[0]==1u && vu[1]==2u && vu[2]==3u && vu[3]==4u);
-        assert(vu[4]==5u && vu[5]==6u && vu[6]==7u && vu[7]==8u);
+        {
+            uint32_t got[8];
+            memcpy(got,vu,sizeof(got));
+            assert(got[0]==1u && got[1]==2u && got[2]==3u && got[3]==4u);
+            assert(got[4]==5u && got[5]==6u && got[6]==7u && got[7]==8u);
+        }
     }
     {
         /* V4-5 is packed into one full 32-bit word even though it carries 20 bits.
