@@ -250,6 +250,22 @@ int main(void) {
         assert(scan.unpack_data_bytes==5u*4u);
     }
     {
+        /* STCYCL changes between UNPACKs must affect subsequent payload sizing. */
+        uint8_t m[160]={0};
+        uint32_t head[]={
+            v(0x01,0,0x0101), v(0x6c,4,0x0000),
+            1,1,1,1, 2,2,2,2, 3,3,3,3, 4,4,4,4,
+            v(0x01,0,0x0201), v(0x6c,4,0x0010),
+            5,5,5,5, 6,6,6,6
+        };
+        memcpy(m,head,sizeof(head));
+        TsFpVifSummary scan;
+        memset(&scan,0,sizeof(scan));
+        assert(tsfp_vif_scan(m,sizeof(head),&scan)==0);
+        assert(scan.unpack_count==2 && scan.unpack_qwords==8);
+        assert(scan.unpack_data_bytes==6u*16u);
+    }
+    {
         /* V4-5 is packed into one full 32-bit word even though it carries 20 bits.
            A truncated three-byte payload must be rejected before rd32 reads past it. */
         uint8_t m[32]={0};
