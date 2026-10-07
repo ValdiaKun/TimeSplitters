@@ -49,10 +49,10 @@ int tsfp_vif_probe(const uint8_t *data, size_t size, TsFpVifSummary *out) {
 int tsfp_vif_scan(const uint8_t *data, size_t size, TsFpVifSummary *out) {
     size_t pos = 0;
     if (!data || !out || size < 4) return -1;
-    if (tsfp_vif_probe(data, size, out) != 0) return -2;
+    memset(out, 0, sizeof(*out));
 
-    uint32_t scan_cl = out->cycle_length ? out->cycle_length : 256u;
-    uint32_t scan_wl = out->write_length ? out->write_length : 256u;
+    uint32_t scan_cl = 256u;
+    uint32_t scan_wl = 256u;
 
     while (pos + 4 <= size) {
         uint32_t w = rd32(data + pos);
@@ -64,6 +64,8 @@ int tsfp_vif_scan(const uint8_t *data, size_t size, TsFpVifSummary *out) {
 
         if (cmd == 0x00) continue;
         if (cmd == 0x01) {
+            if (out->cycle_length == 0 && out->write_length == 0)
+                out->stcycl = decode(w);
             scan_cl = (uint32_t)(imm & 0xffu);
             scan_wl = (uint32_t)(imm >> 8);
             if (!scan_cl) scan_cl = 256u;
@@ -85,11 +87,24 @@ int tsfp_vif_scan(const uint8_t *data, size_t size, TsFpVifSummary *out) {
         if (cmd == 0x20) { if (pos + 4 > size) return -3; pos += 4; continue; }
         if (cmd == 0x30 || cmd == 0x31) {
             if (pos + 16 > size) return -4;
+            if (out->strow.command == 0 && cmd == 0x30) {
+                out->strow = decode(w);
+                for (uint32_t i = 0; i < 4; ++i)
+                    out->row[i] = rd32(data + pos + i * 4u);
+            }
             pos += 16;
             continue;
         }
         if ((cmd & 0xE0u) == 0x60u) {
             uint32_t format = cmd & 0x0fu;
+            if (out->unpack.command == 0) {
+                out->unpack = decode(w);
+                out->payload_offset = (uint32_t)pos;
+                out->unpack_vectors = num ? num : 256u;
+                out->unpack_unsigned = (uint8_t)((imm >> 14) & 1u);
+                out->unpack_top_relative = (uint8_t)((imm >> 15) & 1u);
+                out->unpack_address = (uint32_t)(imm & 0x3ffu);
+            }
             uint32_t bits = (format == 0x0fu) ? 20u :
                 (32u >> (format & 3u)) * (((format >> 2) & 3u) + 1u);
             uint32_t words = (bits + 31u) / 32u;
@@ -113,6 +128,12 @@ int tsfp_vif_scan(const uint8_t *data, size_t size, TsFpVifSummary *out) {
             out->unpack_count++;
             out->unpack_qwords += vectors;
             out->unpack_data_bytes += source_vectors * ((bits + 7u) / 8u);
+            if (out->unpack.command == cmd && out->payload_bytes == 0) {
+                out->payload_bytes = source_vectors * words * 4u;
+                if (out->unpack.command == 0x6cu && source_vectors > 0 && pos + 16u <= size)
+                    for (unsigned i = 0; i < 4; ++i)
+                        out->vector[i] = rd32(data + pos + i * 4u);
+            }
             pos += consumed;
             (void)imm;
             continue;
