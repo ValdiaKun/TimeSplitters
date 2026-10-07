@@ -508,6 +508,19 @@ int main(void) {
         assert(f32(t.p)==49.0f && f32(t.vf[3][0])==49.0f);
     }
     {
+        /* OPMSUB updates ACC by subtracting the rotated cross product. */
+        uint8_t m[8]={0}; uint32_t x;
+        x=0; memcpy(m,&x,4);
+        x=upper(0x3e,11,1,2,0xf); memcpy(m+4,&x,4);
+        TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
+        t.vf[1][0]=u32(1.0f); t.vf[1][1]=u32(2.0f); t.vf[1][2]=u32(3.0f);
+        t.vf[2][0]=u32(5.0f); t.vf[2][1]=u32(6.0f); t.vf[2][2]=u32(7.0f);
+        t.acc[0]=u32(10.0f); t.acc[1]=u32(20.0f); t.acc[2]=u32(30.0f); t.acc[3]=u32(40.0f);
+        assert(tsfp_vu_execute(m,sizeof(m),0,&t,1)==-2);
+        assert(f32(t.acc[0])==-4.0f && f32(t.acc[1])==5.0f &&
+               f32(t.acc[2])==24.0f && f32(t.acc[3])==40.0f);
+    }
+    {
         /* Integer immediates use distinct signed/unsigned widths and VI
            arithmetic wraps in the 16-bit integer register. */
         uint8_t m[48]={0}; uint32_t x;
