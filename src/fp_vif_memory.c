@@ -57,6 +57,8 @@ int tsfp_vif_unpack_memory_ex(const uint8_t *data, size_t size,
     uint32_t addr=0, tops=0, base=0, offset=0, itops=0, dbf=0;
     uint32_t row[4]={0,0,0,0}, col[4]={0,0,0,0};
     uint32_t mask=0;
+    uint32_t cycle_last_q[4]={0,0,0,0};
+    int have_cycle_last=0;
     uint16_t cl=1, wl=1; uint8_t mode=0;
     uint32_t cycle_pos=0;
 
@@ -141,8 +143,8 @@ int tsfp_vif_unpack_memory_ex(const uint8_t *data, size_t size,
                                     ((n % cycle_len) < source_per_cycle ? (n % cycle_len) : source_per_cycle);
             (void)source_count;
 
-            uint32_t last_q[4]={0,0,0,0};
-            int have_last=0;
+            uint32_t *last_q=cycle_last_q;
+            int *have_last=&have_cycle_last;
             for(unsigned v=0;v<n;v++) {
                 unsigned slot=cycle_pos;
                 int consume=(wl>cl) ? (slot<cl) : (slot<wl);
@@ -154,9 +156,9 @@ int tsfp_vif_unpack_memory_ex(const uint8_t *data, size_t size,
                     consumed=unpack_one(data+p,f,(imm&0x4000u)!=0,q);
                     p+=consumed;
                     memcpy(last_q,q,sizeof(q));
-                    have_last=1;
+                    *have_last=1;
                 } else {
-                    if(!have_last)return -5;
+                    if(!*have_last)return -5;
                     memcpy(q,last_q,sizeof(q));
                 }
 
