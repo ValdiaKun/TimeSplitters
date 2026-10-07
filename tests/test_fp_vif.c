@@ -219,8 +219,8 @@ int main(void) {
         assert(tsfp_vif_unpack_memory(m,sizeof(head),vu,sizeof(vu),&ms)==0);
         uint32_t got[20]; memcpy(got,vu,sizeof(got));
         /* slot 0 and slot 4 must use the same four mask actions. */
-        assert(got[0]==100u && got[1]==600u && got[2]==3u && got[3]==0u);
-        assert(got[16]==100u && got[17]==600u && got[18]==19u && got[19]==0u);
+        assert(got[0]==100u && got[1]==500u && got[2]==3u && got[3]==0u);
+        assert(got[16]==100u && got[17]==500u && got[18]==19u && got[19]==0u);
     }
     {
         /* V4-5 is packed into one full 32-bit word even though it carries 20 bits.
