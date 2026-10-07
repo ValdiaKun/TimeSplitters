@@ -555,6 +555,15 @@ int main(void) {
                f32(t.acc[2])==6.0f && f32(t.acc[3])==40.0f);
     }
     {
+        /* FTOI must saturate instead of relying on undefined C float-to-int overflow. */
+        uint8_t m[8]={0}; uint32_t x;
+        x=0; memcpy(m,&x,4); x=upper(0x3c,5,1,2,0x8); memcpy(m+4,&x,4); /* FTOI0 VF2,VF1 */
+        TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
+        t.vf[1][0]=0x7f7fffffu;
+        assert(tsfp_vu_execute(m,sizeof(m),0,&t,1)==-2);
+        assert(t.vf[2][0]==0x7fffffffu);
+    }
+    {
         /* Accumulator broadcast variants must clamp FMAC overflow and update MAC flags. */
         uint8_t m[8]={0}; uint32_t x;
         x=0; memcpy(m,&x,4); x=upper(0x3c,0,1,2,0x8); memcpy(m+4,&x,4); /* ADDAx */
