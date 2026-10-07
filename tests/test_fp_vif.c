@@ -170,6 +170,13 @@ int main(void) {
         assert(got[0]==0x11111111u && got[4]==0x11111111u);
         assert(got[8]==0x22222222u && got[12]==0x22222222u);
         assert(ms.qwords_written==4);
+
+        /* Scanner and executor must agree on payload consumption when WL > CL. */
+        TsFpVifSummary scan;
+        memset(&scan,0,sizeof(scan));
+        assert(tsfp_vif_scan(m,sizeof(head),&scan)==0);
+        assert(scan.unpack_count==1 && scan.unpack_qwords==4);
+        assert(scan.unpack_data_bytes==2u*16u);
     }
     {
         /* MSCNT resumes through the VU continuation callback instead of being dropped. */
@@ -241,13 +248,6 @@ int main(void) {
         assert(got[0]==100u && got[1]==500u && got[2]==1u && got[3]==0u);
         assert(got[16]==5u && got[17]==5u && got[18]==5u && got[19]==5u);
         assert(ms.qwords_written==5);
-
-        /* Scanner and executor must agree on payload consumption when WL > CL. */
-        TsFpVifSummary scan;
-        memset(&scan,0,sizeof(scan));
-        assert(tsfp_vif_scan(m,sizeof(head),&scan)==0);
-        assert(scan.unpack_count==1 && scan.unpack_qwords==5);
-        assert(scan.unpack_data_bytes==3u*16u);
     }
     {
         /* STCYCL changes between UNPACKs must affect subsequent payload sizing. */
