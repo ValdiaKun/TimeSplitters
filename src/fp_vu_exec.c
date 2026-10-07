@@ -102,8 +102,18 @@ static void write_mask(TsFpVuState *s,unsigned fd,unsigned mask,const float r[4]
     if(!fd)return;
     for(unsigned i=0;i<4;i++)if(mask_has(mask,i))s->vf[fd][i]=u32(r[i]);
 }
-static float fpmax(float a,float b){return a>b?a:b;}
-static float fpmin(float a,float b){return a<b?a:b;}
+static float fpmax(float a,float b){
+    uint32_t x=u32(a),y=u32(b),r;
+    if((int32_t)x<0 && (int32_t)y<0) r=(int32_t)x<(int32_t)y?x:y;
+    else r=(int32_t)x>(int32_t)y?x:y;
+    return f32(r);
+}
+static float fpmin(float a,float b){
+    uint32_t x=u32(a),y=u32(b),r;
+    if((int32_t)x<0 && (int32_t)y<0) r=(int32_t)x>(int32_t)y?x:y;
+    else r=(int32_t)x<(int32_t)y?x:y;
+    return f32(r);
+}
 
 static float fmac_condition(float x){
     uint32_t raw=u32(x), exp=raw&0x7f800000u, frac=raw&0x007fffffu;
