@@ -205,20 +205,22 @@ int main(void) {
     }
     {
         /* The 32-bit VIF mask repeats every four vectors in a long cycle. */
-        uint8_t m[160]={0};
-        uint32_t head[]={v(0x01,0,0x0804),v(0x20,0,0),0x0000003fu,
-                         v(0x64,5,0x0000),
-                         0x00000011,0x00000022,0x00000033,0x00000044,
-                         0x00000055,0x00000066,0x00000077,0x00000088,
-                         0x00000099,0x000000aa,0x000000bb,0x000000cc,
-                         0x000000dd,0x000000ee,0x000000ff,0x11111111};
+        uint8_t m[192]={0};
+        uint32_t head[]={
+            v(0x01,0,0x0804),
+            v(0x30,0,0),100,200,300,400,
+            v(0x31,0,0),500,600,700,800,
+            v(0x20,0,0),0x000000c9u, /* x=row, y=col, z=data, w=protected */
+            v(0x60,5,0x0000),
+            1,2,3,4, 5,6,7,8, 9,10,11,12, 13,14,15,16, 17,18,19,20
+        };
         memcpy(m,head,sizeof(head));
         memset(&ms,0,sizeof(ms)); memset(vu,0,sizeof(vu));
         assert(tsfp_vif_unpack_memory(m,sizeof(head),vu,sizeof(vu),&ms)==0);
-        /* mask=3 for x/y in slots 0 and 1, then repeats at slots 4/5. */
         uint32_t got[20]; memcpy(got,vu,sizeof(got));
-        assert(got[0]==0u && got[1]==0u && got[2]==0u && got[3]==0u);
-        assert(got[16]==0u && got[17]==0u && got[18]==0u && got[19]==0u);
+        /* slot 0 and slot 4 must use the same four mask actions. */
+        assert(got[0]==100u && got[1]==600u && got[2]==3u && got[3]==0u);
+        assert(got[16]==100u && got[17]==600u && got[18]==19u && got[19]==0u);
     }
     {
         /* V4-5 is packed into one full 32-bit word even though it carries 20 bits.
