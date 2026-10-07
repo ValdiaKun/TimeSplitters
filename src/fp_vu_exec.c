@@ -245,12 +245,19 @@ static void special_upper(TsFpVuState *s,uint32_t up){
         return;
     }
     case 31: { /* CLIPw.xyz: append six clipping-result bits. */
-        float w=fabsf(f32(s->vf[ft][3]));
+        /*
+         * VU CLIP compares the floating-point bit representation after
+         * removing the sign from W; denormals use the largest denormal as
+         * the threshold.  This also gives the architectural NaN behavior.
+         */
+        uint32_t wr=u32(f32(s->vf[ft][3]));
+        int32_t w=(wr&0x7f800000u)?(int32_t)(wr&0x7fffffffu):0x007fffff;
         uint32_t flags=0;
-        float x=f32(s->vf[fs][0]),y=f32(s->vf[fs][1]),z=f32(s->vf[fs][2]);
-        if(x>w) flags|=1u; else if(x<-w) flags|=2u;
-        if(y>w) flags|=4u; else if(y<-w) flags|=8u;
-        if(z>w) flags|=16u; else if(z<-w) flags|=32u;
+        for(unsigned i=0;i<3;i++){
+            uint32_t v=s->vf[fs][i];
+            if((int32_t)v>w) flags|=1u<<(i*2u);
+            if((int32_t)(v^0x80000000u)>w) flags|=1u<<(i*2u+1u);
+        }
         s->clip_flag=((s->clip_flag<<6)&0x00ffffffu)|flags;
         return;
     }
