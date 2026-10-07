@@ -245,9 +245,9 @@ int main(void) {
         /* Scanner and executor must agree on payload consumption when WL > CL. */
         TsFpVifSummary scan;
         memset(&scan,0,sizeof(scan));
-        assert(tsfp_vif_scan(m,sizeof(head)+5u*4u,&scan)==0);
+        assert(tsfp_vif_scan(m,sizeof(head),&scan)==0);
         assert(scan.unpack_count==1 && scan.unpack_qwords==5);
-        assert(scan.unpack_data_bytes==5u*4u);
+        assert(scan.unpack_data_bytes==3u*16u);
     }
     {
         /* STCYCL changes between UNPACKs must affect subsequent payload sizing. */
