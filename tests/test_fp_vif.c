@@ -2,6 +2,7 @@
 #include <assert.h>
 #include <stdint.h>
 #include <string.h>
+#include <stdio.h>
 
 static uint32_t v(uint8_t cmd, uint8_t num, uint16_t imm) {
     return ((uint32_t)cmd << 24) | ((uint32_t)num << 16) | imm;
@@ -238,6 +239,7 @@ int main(void) {
         memset(&ms,0,sizeof(ms)); memset(vu,0,sizeof(vu));
         assert(tsfp_vif_unpack_memory(m,sizeof(head),vu,sizeof(vu),&ms)==0);
         uint32_t got[20]; memcpy(got,vu,sizeof(got));
+        fprintf(stderr,"LONGMASK: %u %u %u %u | %u %u %u %u\\n",got[0],got[1],got[2],got[3],got[4],got[5],got[6],got[7]);
         assert(got[0]==100u && got[1]==600u && got[2]==3u && got[3]==0u);
         assert(got[16]==1u && got[17]==2u && got[18]==3u && got[19]==4u);
         assert(ms.qwords_written==5);
