@@ -266,6 +266,42 @@ int main(void) {
         assert(scan.unpack_data_bytes==6u*16u);
     }
     {
+        /* STCYCL slot position carries across UNPACK commands.  With CL=4/WL=2,
+           the first three outputs consume slots 0,1 and skip 2; the next
+           command starts at slot 3, skips it, then consumes slot 0. */
+        uint8_t m[96]={0};
+        uint32_t head[]={
+            v(0x01,0,0x0204),
+            v(0x6c,3,0x0000),
+            1,1,1,1, 2,2,2,2,
+            v(0x6c,2,0x0010),
+            3,3,3,3
+        };
+        memcpy(m,head,sizeof(head));
+        TsFpVifSummary scan;
+        memset(&scan,0,sizeof(scan));
+        assert(tsfp_vif_scan(m,sizeof(head),&scan)==0);
+        assert(scan.unpack_count==2 && scan.unpack_qwords==5);
+        assert(scan.unpack_data_bytes==3u*16u);
+    }
+    {
+        /* The same persistent-slot rule applies when WL > CL. */
+        uint8_t m[96]={0};
+        uint32_t head[]={
+            v(0x01,0,0x0402),
+            v(0x6c,3,0x0000),
+            1,1,1,1, 2,2,2,2,
+            v(0x6c,2,0x0010),
+            3,3,3,3
+        };
+        memcpy(m,head,sizeof(head));
+        TsFpVifSummary scan;
+        memset(&scan,0,sizeof(scan));
+        assert(tsfp_vif_scan(m,sizeof(head),&scan)==0);
+        assert(scan.unpack_count==2 && scan.unpack_qwords==5);
+        assert(scan.unpack_data_bytes==3u*16u);
+    }
+    {
         /* V4-5 is packed into one full 32-bit word even though it carries 20 bits.
            A truncated three-byte payload must be rejected before rd32 reads past it. */
         uint8_t m[32]={0};
