@@ -257,14 +257,18 @@ static void special_upper(TsFpVuState *s,uint32_t up){
     case 42:mac3(s,0,fs,ft,mask,2,1);return;
     case 44:mac3(s,0,fs,ft,mask,1,1);return;
     case 45:mac3(s,0,fs,ft,mask,4,1);return;
-    case 46:
-        for(unsigned i=0;i<4;i++)if(mask_has(mask,i)){
-            float r[4]={f32(s->vf[fs][1])*f32(s->vf[ft][2]),
-                        f32(s->vf[fs][2])*f32(s->vf[ft][0]),
-                        f32(s->vf[fs][0])*f32(s->vf[ft][1]),0.0f};
-            s->acc[i]=u32(r[i]);
-        }
+    case 46: {
+        /* OPMSUB: ACC = ACC - (Fs x Ft). */
+        float r[4]={
+            f32(s->acc[0])-f32(s->vf[fs][1])*f32(s->vf[ft][2]),
+            f32(s->acc[1])-f32(s->vf[fs][2])*f32(s->vf[ft][0]),
+            f32(s->acc[2])-f32(s->vf[fs][0])*f32(s->vf[ft][1]),
+            f32(s->acc[3])
+        };
+        for(unsigned i=0;i<4;i++)if(mask_has(mask,i))s->acc[i]=u32(fmac_condition(r[i]));
+        update_mac_flags(s,r,mask);
         return;
+    }
     case 47:return;
     default:s->unsupported++;return;
     }
