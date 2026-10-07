@@ -195,9 +195,12 @@ int main(void) {
         assert(tsfp_vif_unpack_memory(m,sizeof(head),vu,sizeof(vu),&ms)==0);
         uint32_t got[16];
         memcpy(got,vu,sizeof(got));
-        assert(got[0]==0x11111111u && got[4]==0x11111111u);
+        assert(got[0]==0x11111111u && got[4]==0x22222222u);
         assert(got[8]==0x22222222u && got[12]==0x22222222u);
-        assert(got[16-4]==0x22222222u);
+        uint32_t repeated[4];
+        memcpy(repeated,vu+0x100,sizeof(repeated));
+        assert(repeated[0]==0x22222222u && repeated[1]==0x22222222u &&
+               repeated[2]==0x22222222u && repeated[3]==0x22222222u);
         assert(ms.qwords_written==4);
 
         TsFpVifSummary scan;
