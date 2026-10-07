@@ -207,7 +207,7 @@ int main(void) {
         /* The 32-bit VIF mask repeats every four vectors in a long cycle. */
         uint8_t m[192]={0};
         uint32_t head[]={
-            v(0x01,0,0x0804),
+            v(0x01,0,0x0808),
             v(0x30,0,0),100,200,300,400,
             v(0x31,0,0),500,600,700,800,
             v(0x20,0,0),0x000000c9u, /* x=row, y=col, z=data, w=protected */
