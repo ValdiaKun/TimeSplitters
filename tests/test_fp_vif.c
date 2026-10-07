@@ -179,6 +179,34 @@ int main(void) {
         assert(scan.unpack_data_bytes==2u*16u);
     }
     {
+        /* WL > CL fill state survives an UNPACK boundary.  The first command
+           leaves the cycle on its final fill slot; the next command must
+           repeat the previous source vector rather than requiring new data. */
+        uint8_t m[96]={0};
+        uint32_t head[]={
+            v(0x01,0,0x0402),
+            v(0x6c,3,0x0000),
+            0x11111111,0x11111111,0x11111111,0x11111111,
+            0x22222222,0x22222222,0x22222222,0x22222222,
+            v(0x6c,1,0x0010)
+        };
+        memcpy(m,head,sizeof(head));
+        memset(&ms,0,sizeof(ms)); memset(vu,0,sizeof(vu));
+        assert(tsfp_vif_unpack_memory(m,sizeof(head),vu,sizeof(vu),&ms)==0);
+        uint32_t got[16];
+        memcpy(got,vu,sizeof(got));
+        assert(got[0]==0x11111111u && got[4]==0x11111111u);
+        assert(got[8]==0x22222222u && got[12]==0x22222222u);
+        assert(got[16-4]==0x22222222u);
+        assert(ms.qwords_written==4);
+
+        TsFpVifSummary scan;
+        memset(&scan,0,sizeof(scan));
+        assert(tsfp_vif_scan(m,sizeof(head),&scan)==0);
+        assert(scan.unpack_count==2 && scan.unpack_qwords==4);
+        assert(scan.unpack_data_bytes==2u*16u);
+    }
+    {
         /* MSCNT resumes through the VU continuation callback instead of being dropped. */
         uint32_t words[]={v(0x14,0,0x0683),v(0x17,0,0)};
         unsigned count=0;
