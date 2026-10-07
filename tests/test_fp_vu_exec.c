@@ -555,6 +555,15 @@ int main(void) {
                f32(t.acc[2])==6.0f && f32(t.acc[3])==40.0f);
     }
     {
+        /* Accumulator broadcast variants must clamp FMAC overflow and update MAC flags. */
+        uint8_t m[8]={0}; uint32_t x;
+        x=0; memcpy(m,&x,4); x=upper(0x3c,0,1,2,0x8); memcpy(m+4,&x,4); /* ADDAx */
+        TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
+        t.acc[0]=u32(3.4e38f); t.vf[1][0]=u32(3.4e38f); t.vf[2][0]=u32(1.0f);
+        assert(tsfp_vu_execute(m,sizeof(m),0,&t,1)==-2);
+        assert(t.acc[0]==0x7f7fffffu && (t.mac_flag&(1u<<15)));
+    }
+    {
         /* Integer immediates use distinct signed/unsigned widths and VI
            arithmetic wraps in the 16-bit integer register. */
         uint8_t m[48]={0}; uint32_t x;
