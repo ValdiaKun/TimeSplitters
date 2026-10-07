@@ -83,11 +83,24 @@ int tsfp_vif_scan(const uint8_t *data, size_t size, TsFpVifSummary *out) {
             uint32_t words = (bits + 31u) / 32u;
             if (!bits || !words) return -5;
             uint32_t vectors = num ? num : 256;
-            uint32_t consumed = vectors * words * 4u;
+            /*
+             * NUM counts output vectors, but when WL > CL the VIF fills the
+             * remaining slots in each cycle from the last consumed vector.
+             * Only CL vectors per cycle therefore consume source payload.
+             */
+            uint32_t cl = out->cycle_length ? out->cycle_length : 256u;
+            uint32_t wl = out->write_length ? out->write_length : 256u;
+            uint32_t cycle_len = wl > cl ? wl : cl;
+            uint32_t source_per_cycle = wl > cl ? cl : wl;
+            uint32_t source_vectors = (vectors / cycle_len) * source_per_cycle +
+                                      ((vectors % cycle_len) < source_per_cycle
+                                           ? (vectors % cycle_len)
+                                           : source_per_cycle);
+            uint32_t consumed = source_vectors * words * 4u;
             if (consumed > size - pos) return -6;
             out->unpack_count++;
             out->unpack_qwords += vectors;
-            out->unpack_data_bytes += vectors * ((bits + 7u) / 8u);
+            out->unpack_data_bytes += source_vectors * ((bits + 7u) / 8u);
             pos += consumed;
             (void)imm;
             continue;
