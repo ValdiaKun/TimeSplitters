@@ -102,6 +102,13 @@ static void write_mask(TsFpVuState *s,unsigned fd,unsigned mask,const float r[4]
     if(!fd)return;
     for(unsigned i=0;i<4;i++)if(mask_has(mask,i))s->vf[fd][i]=u32(r[i]);
 }
+static uint32_t float_to_int_scaled(float x,unsigned shift){
+    float v=shift?x*(float)(1u<<shift):x;
+    uint32_t raw=u32(v);
+    if((raw&0x7f800000u)>=0x4f000000u)
+        return (raw&0x80000000u)?0x80000000u:0x7fffffffu;
+    return (uint32_t)(int32_t)v;
+}
 static float fpmax(float a,float b){
     uint32_t x=u32(a),y=u32(b),r;
     if((int32_t)x<0 && (int32_t)y<0) r=(int32_t)x<(int32_t)y?x:y;
@@ -213,7 +220,7 @@ static void special_upper(TsFpVuState *s,uint32_t up){
         if(ft==0)return;
         for(unsigned i=0;i<4;i++)if(mask_has(mask,i)){
             float x=f32(s->vf[fs][i]);
-            s->vf[ft][i]=toint?(uint32_t)(int32_t)(x*(float)(1u<<sh)):u32((float)(int32_t)s->vf[fs][i]/(float)(1u<<sh));
+            s->vf[ft][i]=toint?float_to_int_scaled(x,sh):u32((float)(int32_t)s->vf[fs][i]/(float)(1u<<sh));
         } return;}
     case 24:case 25:case 26:case 27: mac2(s,0,fs,mask,bc(s,ft,sop-24),2,1);return;
     case 28:mac2(s,0,fs,mask,qf(s),2,1);return;
