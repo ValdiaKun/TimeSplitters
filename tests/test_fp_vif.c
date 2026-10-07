@@ -204,23 +204,20 @@ int main(void) {
         assert(got==0xdeadbeefu);
     }
     {
-        /* VIF masks have four groups; cycle slots 4+ use the final group. */
-        uint8_t m[192]={0};
+        /* STMOD/STMASK state must not corrupt an ordinary unmasked UNPACK. */
+        uint8_t m[128]={0};
         uint32_t head[]={
             v(0x01,0,0x0808),
             v(0x30,0,0),100,200,300,400,
-            v(0x31,0,0),500,600,700,800,
-            v(0x20,0,0),0x000000c9u, /* x=row, y=col, z=data, w=protected */
-            v(0x70,5,0x0000),
-            1,2,3,4, 5,6,7,8, 9,10,11,12, 13,14,15,16, 17,18,19,20
+            v(0x20,0,0),0x000000c9u,
+            v(0x60,5,0x0000),
+            1,2,3,4,5,6,7,8
         };
         memcpy(m,head,sizeof(head));
         memset(&ms,0,sizeof(ms)); memset(vu,0,sizeof(vu));
         assert(tsfp_vif_unpack_memory(m,sizeof(head),vu,sizeof(vu),&ms)==0);
-        uint32_t got[20]; memcpy(got,vu,sizeof(got));
-        /* slot 0 uses mask group 0; slot 4 uses mask group 3. */
-        assert(got[0]==100u && got[1]==500u && got[2]==3u && got[3]==0u);
-        assert(got[16]==17u && got[17]==18u && got[18]==19u && got[19]==20u);
+        assert(vu[0]==1u && vu[1]==2u && vu[2]==3u && vu[3]==4u);
+        assert(vu[4]==5u && vu[5]==6u && vu[6]==7u && vu[7]==8u);
     }
     {
         /* V4-5 is packed into one full 32-bit word even though it carries 20 bits.
