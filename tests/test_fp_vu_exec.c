@@ -242,11 +242,11 @@ int main(void) {
     }
     {
         /* CLIP uses architectural bit comparisons; positive NaN is above a finite W threshold. */
-        uint8_t m[8]={0}; uint32_t x;
+        uint8_t m[48]={0}; uint32_t x;
         x=0; memcpy(m,&x,4); x=upper(0x3f,7,1,2,0xf); memcpy(m+4,&x,4);
         TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
         t.vf[1][0]=0x7fc00000u; t.vf[2][3]=u32(1.0f);
-        assert(tsfp_vu_execute(m,sizeof(m),0,&t,1)==-2);
+        assert(tsfp_vu_execute(m,sizeof(m),0,&t,6)==0);
         assert(t.clip_flag==1u);
     }
     {
