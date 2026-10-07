@@ -403,6 +403,25 @@ int main(void) {
     }
 
     {
+        /* RSQRT: zero/zero raises both invalid and divide-by-zero and returns signed zero. */
+        uint8_t m[16]={0}; uint32_t x=lower(0x7eu,14,1,2);
+        memcpy(m,&x,4);
+        TsFpVuState z; tsfp_vu_state_init(&z,mem,sizeof(mem),gif,sizeof(gif));
+        z.vf[1][0]=0.0f; z.vf[2][0]=0.0f;
+        assert(tsfp_vu_execute(m,sizeof(m),0,&z,1)==-2);
+        assert((z.q_pending_status&(1u<<4))!=0u);
+        assert((z.q_pending_status&(1u<<5))!=0u);
+        assert(z.q_pending_value==0u);
+
+        TsFpVuState d; tsfp_vu_state_init(&d,mem,sizeof(mem),gif,sizeof(gif));
+        d.vf[1][0]=1.0f; d.vf[2][0]=0.0f;
+        assert(tsfp_vu_execute(m,sizeof(m),0,&d,1)==-2);
+        assert((d.q_pending_status&(1u<<4))==0u);
+        assert((d.q_pending_status&(1u<<5))!=0u);
+        assert(d.q_pending_value==0x7f7fffffu);
+    }
+
+    {
         /* FMAC arithmetic conditions denormals to signed zero and overflow to max. */
         uint8_t m[32]={0}; uint32_t x;
         x=0; memcpy(m,&x,4); x=upper(0x28,3,1,2,0xf); memcpy(m+4,&x,4);
