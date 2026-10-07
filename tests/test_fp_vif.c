@@ -204,7 +204,7 @@ int main(void) {
         assert(got==0xdeadbeefu);
     }
     {
-        /* The 32-bit VIF mask repeats every four vectors in a long cycle. */
+        /* VIF masks have four groups; cycle slots 4+ use the final group. */
         uint8_t m[192]={0};
         uint32_t head[]={
             v(0x01,0,0x0808),
@@ -218,9 +218,9 @@ int main(void) {
         memset(&ms,0,sizeof(ms)); memset(vu,0,sizeof(vu));
         assert(tsfp_vif_unpack_memory(m,sizeof(head),vu,sizeof(vu),&ms)==0);
         uint32_t got[20]; memcpy(got,vu,sizeof(got));
-        /* slot 0 and slot 4 must use the same four mask actions. */
+        /* slot 0 uses mask group 0; slot 4 uses mask group 3. */
         assert(got[0]==100u && got[1]==500u && got[2]==3u && got[3]==0u);
-        assert(got[16]==100u && got[17]==500u && got[18]==19u && got[19]==0u);
+        assert(got[16]==17u && got[17]==18u && got[18]==19u && got[19]==20u);
     }
     {
         /* V4-5 is packed into one full 32-bit word even though it carries 20 bits.
