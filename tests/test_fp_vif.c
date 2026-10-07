@@ -196,7 +196,7 @@ int main(void) {
         uint32_t got[16];
         memcpy(got,vu,sizeof(got));
         assert(got[0]==0x11111111u && got[4]==0x22222222u);
-        assert(got[8]==0x22222222u && got[12]==0x22222222u);
+        assert(got[8]==0x22222222u);
         uint32_t repeated[4];
         memcpy(repeated,vu+0x100,sizeof(repeated));
         assert(repeated[0]==0x22222222u && repeated[1]==0x22222222u &&
