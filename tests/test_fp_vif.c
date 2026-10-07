@@ -1,7 +1,8 @@
 #include "fp_vif.h"
 #include <assert.h>
 #include <stdint.h>
-#include <string.h>\n#include <stdio.h>
+#include <string.h>
+#include <stdio.h>
 
 static uint32_t v(uint8_t cmd, uint8_t num, uint16_t imm) {
     return ((uint32_t)cmd << 24) | ((uint32_t)num << 16) | imm;
@@ -219,7 +220,8 @@ int main(void) {
         {
             uint32_t got[8];
             memcpy(got,vu,sizeof(got));
-            fprintf(stderr,"VIF diagnostic: %u %u %u %u | %u %u %u %u\\n",got[0],got[1],got[2],got[3],got[4],got[5],got[6],got[7]);\n            assert(got[0]==1u && got[1]==2u && got[2]==3u && got[3]==4u);
+            fprintf(stderr,"VIF diagnostic: %u %u %u %u | %u %u %u %u\n",got[0],got[1],got[2],got[3],got[4],got[5],got[6],got[7]);
+            assert(got[0]==1u && got[1]==2u && got[2]==3u && got[3]==4u);
             assert(got[4]==5u && got[5]==6u && got[6]==7u && got[7]==8u);
         }
     }
