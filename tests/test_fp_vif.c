@@ -241,6 +241,13 @@ int main(void) {
         assert(got[0]==100u && got[1]==500u && got[2]==1u && got[3]==0u);
         assert(got[16]==5u && got[17]==5u && got[18]==5u && got[19]==5u);
         assert(ms.qwords_written==5);
+
+        /* Scanner and executor must agree on payload consumption when WL > CL. */
+        TsFpVifSummary scan;
+        memset(&scan,0,sizeof(scan));
+        assert(tsfp_vif_scan(m,sizeof(head)+5u*4u,&scan)==0);
+        assert(scan.unpack_count==1 && scan.unpack_qwords==5);
+        assert(scan.unpack_data_bytes==5u*4u);
     }
     {
         /* V4-5 is packed into one full 32-bit word even though it carries 20 bits.
