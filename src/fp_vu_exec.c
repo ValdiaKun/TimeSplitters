@@ -265,8 +265,9 @@ static void special_upper(TsFpVuState *s,uint32_t up){
             f32(s->vf[fs][0])*f32(s->vf[ft][1]),
             f32(s->acc[3])
         };
-        for(unsigned i=0;i<3;i++)if(mask_has(mask,i))s->acc[i]=u32(fmac_condition(r[i]));
-        update_mac_flags(s,r,mask);
+        unsigned xyz_mask=mask&0xeu;
+        for(unsigned i=0;i<3;i++)if(mask_has(xyz_mask,i))s->acc[i]=u32(fmac_condition(r[i]));
+        update_mac_flags(s,r,xyz_mask);
         return;
     }
     case 47:return;
@@ -314,10 +315,15 @@ static void upper_exec(TsFpVuState *s,uint32_t up){
     case 0x2c:mac3(s,fd,fs,ft,mask,1,0);break;
     case 0x2d:mac3(s,fd,fs,ft,mask,4,0);break;
     case 0x2e:{
+        /* OPMSUB: VFd.xyz = ACC.xyz - (Fs x Ft). */
         float r[4]={f32(s->acc[0])-f32(s->vf[fs][1])*f32(s->vf[ft][2]),
                     f32(s->acc[1])-f32(s->vf[fs][2])*f32(s->vf[ft][0]),
                     f32(s->acc[2])-f32(s->vf[fs][0])*f32(s->vf[ft][1]),0.0f};
-        write_mask(s,fd,mask,r); break;
+        unsigned xyz_mask=mask&0xeu;
+        for(unsigned i=0;i<3;i++)if(mask_has(xyz_mask,i))r[i]=fmac_condition(r[i]);
+        write_mask(s,fd,xyz_mask,r);
+        update_mac_flags(s,r,xyz_mask);
+        break;
     }
     case 0x2f:{float r[4];for(unsigned i=0;i<4;i++)r[i]=fpmin(f32(s->vf[fs][i]),f32(s->vf[ft][i]));write_mask(s,fd,mask,r);break;}
     default:s->unsupported++;break;
