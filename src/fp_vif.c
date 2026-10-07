@@ -51,6 +51,9 @@ int tsfp_vif_scan(const uint8_t *data, size_t size, TsFpVifSummary *out) {
     if (!data || !out || size < 4) return -1;
     if (tsfp_vif_probe(data, size, out) != 0) return -2;
 
+    uint32_t scan_cl = out->cycle_length ? out->cycle_length : 256u;
+    uint32_t scan_wl = out->write_length ? out->write_length : 256u;
+
     while (pos + 4 <= size) {
         uint32_t w = rd32(data + pos);
         uint8_t cmd = (uint8_t)(w >> 24);
@@ -60,7 +63,16 @@ int tsfp_vif_scan(const uint8_t *data, size_t size, TsFpVifSummary *out) {
         pos += 4;
 
         if (cmd == 0x00) continue;
-        if (cmd == 0x01 || cmd == 0x02 || cmd == 0x03 || cmd == 0x04 ||
+        if (cmd == 0x01) {
+            scan_cl = (uint32_t)(imm & 0xffu);
+            scan_wl = (uint32_t)(imm >> 8);
+            if (!scan_cl) scan_cl = 256u;
+            if (!scan_wl) scan_wl = 256u;
+            out->cycle_length = (uint16_t)scan_cl;
+            out->write_length = (uint16_t)scan_wl;
+            continue;
+        }
+        if (cmd == 0x02 || cmd == 0x03 || cmd == 0x04 ||
             cmd == 0x05 || cmd == 0x06 || cmd == 0x07 ||
             cmd == 0x10 || cmd == 0x11 || cmd == 0x13 ||
             cmd == 0x14 || cmd == 0x15 || cmd == 0x17) {
@@ -88,8 +100,8 @@ int tsfp_vif_scan(const uint8_t *data, size_t size, TsFpVifSummary *out) {
              * remaining slots in each cycle from the last consumed vector.
              * Only CL vectors per cycle therefore consume source payload.
              */
-            uint32_t cl = out->cycle_length ? out->cycle_length : 256u;
-            uint32_t wl = out->write_length ? out->write_length : 256u;
+            uint32_t cl = scan_cl;
+            uint32_t wl = scan_wl;
             uint32_t cycle_len = wl > cl ? wl : cl;
             uint32_t source_per_cycle = wl > cl ? cl : wl;
             uint32_t source_vectors = (vectors / cycle_len) * source_per_cycle +
