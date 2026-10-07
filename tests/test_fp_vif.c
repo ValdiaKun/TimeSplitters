@@ -224,6 +224,24 @@ int main(void) {
         }
     }
     {
+        /* VIF masks use four 4-lane groups; cycle slots beyond group 3 use
+           the final group rather than wrapping back to group 0. */
+        uint8_t m[192]={0};
+        uint32_t head[]={
+            v(0x01,0,0x0808),
+            v(0x20,0,0),0x000000c9u,
+            v(0x7c,5,0x0000),
+            1,2,3,4, 5,6,7,8, 9,10,11,12, 13,14,15,16, 17,18,19,20
+        };
+        memcpy(m,head,sizeof(head));
+        memset(&ms,0,sizeof(ms)); memset(vu,0,sizeof(vu));
+        assert(tsfp_vif_unpack_memory(m,sizeof(head),vu,sizeof(vu),&ms)==0);
+        uint32_t got[20]; memcpy(got,vu,sizeof(got));
+        assert(got[0]==1u && got[1]==2u && got[2]==3u && got[3]==4u);
+        assert(got[16]==17u && got[17]==18u && got[18]==19u && got[19]==20u);
+        assert(ms.qwords_written==5);
+    }
+    {
         /* V4-5 is packed into one full 32-bit word even though it carries 20 bits.
            A truncated three-byte payload must be rejected before rd32 reads past it. */
         uint8_t m[32]={0};
