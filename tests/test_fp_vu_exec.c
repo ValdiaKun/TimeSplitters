@@ -230,6 +230,17 @@ int main(void) {
                f32(t.vf[3][2])==24.0f && f32(t.vf[3][3])==99.0f);
     }
     {
+        /* VMAX/VMINI use VU bit-level signed ordering, including NaN payloads. */
+        uint8_t m[32]={0}; uint32_t x;
+        x=0; memcpy(m,&x,4); x=upper(0x2b,3,1,2,0x8); memcpy(m+4,&x,4);
+        x=0; memcpy(m+8,&x,4); x=upper(0x2f,4,1,2,0x8); memcpy(m+12,&x,4);
+        x=0; memcpy(m+16,&x,4); x=0x40000000u | upper(0x3f,11,0,0,0xf); memcpy(m+20,&x,4);
+        TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
+        t.vf[1][0]=0x7fc00000u; t.vf[2][0]=u32(1.0f);
+        assert(tsfp_vu_execute(m,sizeof(m),0,&t,16)==0);
+        assert(t.vf[3][0]==0x7fc00000u && f32(t.vf[4][0])==1.0f);
+    }
+    {
         /* MR32 rotates source fields x<-y, y<-z, z<-w, w<-x for selected destinations. */
         uint8_t m[32]={0}; uint32_t x;
         x=0x80000000u | (15u<<21) | (6u<<16) | (5u<<11) | 0x33du; memcpy(m,&x,4);
