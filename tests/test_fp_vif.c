@@ -239,7 +239,7 @@ int main(void) {
         memset(&ms,0,sizeof(ms)); memset(vu,0,sizeof(vu));
         assert(tsfp_vif_unpack_memory(m,sizeof(head),vu,sizeof(vu),&ms)==0);
         uint32_t got[20]; memcpy(got,vu,sizeof(got));
-        assert(got[0]==1u && got[1]==2u && got[2]==3u && got[3]==4u);
+        assert(got[0]==100u && got[1]==600u && got[2]==3u && got[3]==0u);
         assert(got[16]==17u && got[17]==18u && got[18]==19u && got[19]==20u);
         assert(ms.qwords_written==5);
     }
