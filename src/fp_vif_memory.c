@@ -163,7 +163,7 @@ int tsfp_vif_unpack_memory_ex(const uint8_t *data, size_t size,
                 if(slot<wl) {
                     size_t target=(size_t)addr;
                     for(unsigned i=0;i<4;i++) {
-                        unsigned cycle_slot=slot<4u?slot:3u;
+                        unsigned cycle_slot=slot&3u;
                         unsigned mask_index=cycle_slot*4u+i;
                         unsigned m=((cmd&0x10u)!=0u)?((mask>>(mask_index*2u))&3u):0u;
                         if(m==0u) {
