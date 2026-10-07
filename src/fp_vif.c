@@ -53,6 +53,7 @@ int tsfp_vif_scan(const uint8_t *data, size_t size, TsFpVifSummary *out) {
 
     uint32_t scan_cl = 256u;
     uint32_t scan_wl = 256u;
+    uint32_t scan_cycle_pos = 0;
 
     while (pos + 4 <= size) {
         uint32_t w = rd32(data + pos);
@@ -72,6 +73,7 @@ int tsfp_vif_scan(const uint8_t *data, size_t size, TsFpVifSummary *out) {
             if (!scan_wl) scan_wl = 256u;
             out->cycle_length = (uint16_t)scan_cl;
             out->write_length = (uint16_t)scan_wl;
+            scan_cycle_pos = 0;
             continue;
         }
         if (cmd == 0x02 || cmd == 0x03 || cmd == 0x04 ||
@@ -118,12 +120,24 @@ int tsfp_vif_scan(const uint8_t *data, size_t size, TsFpVifSummary *out) {
             uint32_t cl = scan_cl;
             uint32_t wl = scan_wl;
             uint32_t cycle_len = wl > cl ? wl : cl;
-            uint32_t source_per_cycle = wl > cl ? cl : wl;
-            uint32_t source_vectors = (vectors / cycle_len) * source_per_cycle +
-                                      ((vectors % cycle_len) < source_per_cycle
-                                           ? (vectors % cycle_len)
-                                           : source_per_cycle);
-            uint32_t consumed = source_vectors * words * 4u;
+            uint32_t source_vectors = 0;
+            uint32_t consumed = 0;
+            /*
+             * STCYCL state spans UNPACK commands.  Advance the cycle position
+             * for every output vector, consuming source data only in the
+             * write-length portion of each cycle.  This mirrors the executor
+             * and correctly handles an UNPACK that begins mid-cycle.
+             */
+            for (uint32_t v = 0; v < vectors; ++v) {
+                if ((wl > cl && scan_cycle_pos < cl) ||
+                    (wl <= cl && scan_cycle_pos < wl)) {
+                    source_vectors++;
+                    consumed += words * 4u;
+                }
+                scan_cycle_pos++;
+                if (scan_cycle_pos >= cycle_len)
+                    scan_cycle_pos = 0;
+            }
             if (consumed > size - pos) return -6;
             out->unpack_count++;
             out->unpack_qwords += vectors;
