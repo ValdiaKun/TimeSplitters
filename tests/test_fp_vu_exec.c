@@ -213,7 +213,21 @@ int main(void) {
         memcpy(t.acc,a,16); memcpy(t.vf[1],(float[4]){1,2,3,0},16); memcpy(t.vf[2],b,16);
         assert(tsfp_vu_execute(m,sizeof(m),0,&t,8)==0);
         float got[4]; memcpy(got,t.vf[3],16);
-        assert(got[0]==2.0f && got[1]==14.0f && got[2]==27.0f);
+        assert(got[0]==2.0f && got[1]==14.0f && got[2]==27.0f && got[3]==0.0f);
+    }
+    {
+        /* OPMSUB writes only XYZ; W remains untouched even when the mask carries W. */
+        uint8_t m[16]={0}; uint32_t x;
+        x=0; memcpy(m,&x,4); x=upper(0x2e,3,1,2,0xf); memcpy(m+4,&x,4);
+        x=0; memcpy(m+8,&x,4); x=0x40000000u | upper(0x3f,11,0,0,0xf); memcpy(m+12,&x,4);
+        TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
+        t.acc[0]=u32(10.0f); t.acc[1]=u32(20.0f); t.acc[2]=u32(30.0f); t.acc[3]=u32(40.0f);
+        t.vf[1][0]=u32(1.0f); t.vf[1][1]=u32(2.0f); t.vf[1][2]=u32(3.0f);
+        t.vf[2][0]=u32(5.0f); t.vf[2][1]=u32(6.0f); t.vf[2][2]=u32(7.0f);
+        t.vf[3][3]=u32(99.0f);
+        assert(tsfp_vu_execute(m,sizeof(m),0,&t,8)==0);
+        assert(f32(t.vf[3][0])==-4.0f && f32(t.vf[3][1])==5.0f &&
+               f32(t.vf[3][2])==24.0f && f32(t.vf[3][3])==99.0f);
     }
     {
         /* MR32 rotates source fields x<-y, y<-z, z<-w, w<-x for selected destinations. */
