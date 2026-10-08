@@ -185,4 +185,23 @@ int main(void){uint8_t d[80]={0};uint64_t tag=1ull|(1ull<<15)|(0ull<<58)|(3ull<<
         assert(triangles[0].x==0.0f&&triangles[1].x==1.0f&&triangles[2].x==2.0f);
         assert(triangles[3].x==10.0f&&triangles[4].x==11.0f&&triangles[5].x==12.0f);
     }
+    {
+        /* GS PRIM state persists between separate XGKICK packet parses. */
+        TsFpGifState state={0,0,255,255,255,255,0,0};
+        uint8_t prim_packet[16]={0};
+        uint64_t prim_tag=(1ull<<15)|(1ull<<46)|(5ull<<47)|(1ull<<60);
+        w64(prim_packet,prim_tag);w64(prim_packet+8,5ull);
+        TsFpGifSummary first;
+        assert(tsfp_gif_parse_state(prim_packet,sizeof(prim_packet),&first,NULL,0,&state)==0);
+        assert(state.primitive_valid && state.primitive==5u);
+
+        uint8_t vertex_packet[32]={0};
+        uint64_t vertex_tag=1ull|(1ull<<15)|(1ull<<60);
+        w64(vertex_packet,vertex_tag);w64(vertex_packet+8,5ull);
+        w64(vertex_packet+16,((uint64_t)7u<<32)|((uint64_t)0x20u<<16)|0x10u);
+        w64(vertex_packet+24,0);
+        TsFpGifSummary second;TsFpGifVertex vertex;
+        assert(tsfp_gif_parse_state(vertex_packet,sizeof(vertex_packet),&second,&vertex,1,&state)==0);
+        assert(vertex.primitive==5u && second.primitive==5u);
+    }
     return 0;}
