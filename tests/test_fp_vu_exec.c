@@ -814,6 +814,14 @@ int main(void) {
         t.p_pending=0; t.vf[1][2]=u32(1.0f);
         assert(tsfp_vu_execute(m,sizeof(m),0,&t,1)==-2);
         assert(t.p_pending_value==0x3eed6339u);
+
+        /* Range reduction must preserve sign and handle |x| > 1. */
+        memset(m,0,sizeof(m));
+        x=0; memcpy(m,&x,4);
+        x=upper(0x3d,31,1,0,0x0); memcpy(m+4,&x,4);
+        t.p_pending=0; t.vf[1][0]=u32(-2.0f);
+        assert(tsfp_vu_execute(m,sizeof(m),0,&t,1)==-2);
+        assert(t.p_pending_value==0xbf8db70du);
     }
     return 0;
 }

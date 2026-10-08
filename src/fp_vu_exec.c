@@ -134,12 +134,21 @@ static float efu_atan_unit(float x){
         -0.139085337519646f,0.096420042216778f,-0.055909886956215f,
         0.021861229091883f,-0.004054057877511f
     };
-    float y=(x-1.0f)/(x+1.0f);
-    float y2=y*y;
-    float p=y;
-    float r=t[0]*p;
-    for(unsigned i=1;i<8;i++){p*=y2;r+=t[i]*p;}
-    return r+0.785398185253143f;
+    float ax=fabsf(x), r;
+    if(ax==0.0f)return x;
+    if(ax>1.0f){
+        float inv=1.0f/ax;
+        float y=(inv-1.0f)/(inv+1.0f);
+        float y2=y*y, p=y, a=t[0]*p;
+        for(unsigned i=1;i<8;i++){p*=y2;a+=t[i]*p;}
+        r=1.5707963705062866f-(a+0.785398185253143f);
+    }else{
+        float y=(ax-1.0f)/(ax+1.0f);
+        float y2=y*y, p=y, a=t[0]*p;
+        for(unsigned i=1;i<8;i++){p*=y2;a+=t[i]*p;}
+        r=a+0.785398185253143f;
+    }
+    return x<0.0f?-r:r;
 }
 
 static float fmac_condition(float x){
