@@ -13,7 +13,7 @@ int ts3_model_probe(const uint8_t *d, size_t n, Ts3ModelSummary *o) {
     if (!d || !o || n < 48) return -1;
     uint32_t mo=u32(d), io=u32(d+4), uo=u32(d+8);
     if (mo >= n || io >= n || (uo && uo >= n) || (mo & 3u) || (io & 3u)) return -2;
-    if (io + 36 > n) return -3;
+    if ((size_t)io>n || n-(size_t)io<36u) return -3;
     Ts3ModelInfo info;
     memset(&info,0,sizeof(info));
     info.num_submeshes=i32(d+io);
@@ -25,11 +25,11 @@ int ts3_model_probe(const uint8_t *d, size_t n, Ts3ModelSummary *o) {
     if (info.num_submeshes < 0 || info.num_submeshes > 128) return -4;
     if (!isfinite(info.scale) || fabsf(info.scale) < 0.000001f || fabsf(info.scale) > 100000.0f) return -5;
     uint32_t mats=0;
-    for (size_t p=mo; p+16<=n && mats<4096; p+=16) {
+    for (size_t p=mo; n-p>=16u && mats<4096; p+=16u) {
         if (u32(d+p)==0xFFFFFFFFu) break;
         mats++;
     }
-    if (mo + (mats+1)*16 > n) return -6;
+    if ((size_t)mo>n || (size_t)(mats+1u)>(n-(size_t)mo)/16u) return -6;
     o->mat_info_offset=mo; o->info_offset=io; o->unk_offset=uo; o->info=info; o->material_count=mats;
     return 0;
 }

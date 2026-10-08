@@ -14,5 +14,18 @@ int main(void) {
     assert(ts3_model_probe(d,sizeof(d),&s)==0);
     assert(s.info.num_submeshes==3);
     assert(s.material_count==1);
+
+    /* Truncated info and unterminated material tables must fail cleanly. */
+    uint8_t malformed[160]; memset(malformed,0,sizeof(malformed));
+    uint32_t bad_mo=48,bad_io=128;
+    memcpy(malformed,&bad_mo,4);memcpy(malformed+4,&bad_io,4);
+    assert(ts3_model_probe(malformed,sizeof(malformed),&s)==-3);
+
+    memset(malformed,0,sizeof(malformed));
+    bad_mo=144;bad_io=64;
+    memcpy(malformed,&bad_mo,4);memcpy(malformed+4,&bad_io,4);
+    memcpy(malformed+bad_io,&meshes,4);
+    memcpy(malformed+bad_io+12,&scale,4);
+    assert(ts3_model_probe(malformed,sizeof(malformed),&s)==-6);
     return 0;
 }
