@@ -672,7 +672,7 @@ static void lower_exec(TsFpVuState *s,uint32_t lo,uint32_t next_pc){
         return;
     }
     if(op==0x28u||op==0x29u){
-        int32_t a=(int16_t)((vi_branch?vi_branch[is]:s->vi[is])&0xffffu),b=(int16_t)((vi_branch?vi_branch[it]:s->vi[it])&0xffffu);
+        int32_t a=(int16_t)(s->vi[is]&0xffffu),b=(int16_t)(s->vi[it]&0xffffu);
         int take=(op==0x28u)?(a==b):(a!=b);
         if(take){
             s->branch_pending=1;
