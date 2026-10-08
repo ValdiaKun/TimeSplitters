@@ -815,6 +815,14 @@ int main(void) {
         assert(tsfp_vu_execute(m,sizeof(m),0,&t,1)==-2);
         assert(t.p_pending_value==0x3eed6339u);
 
+        /* Reserved EFU slots must not stall/retire the P pipeline. */
+        memset(m,0,sizeof(m));
+        x=0; memcpy(m,&x,4);
+        x=upper(0x3d,29,1,0,0x0); memcpy(m+4,&x,4); /* reserved EFU slot 119 */
+        t.p_pending=1u; t.p_pending_cycles=10u; t.p_pending_value=u32(7.0f);
+        assert(tsfp_vu_execute(m,sizeof(m),0,&t,1)==-2);
+        assert(t.p_pending==1u && t.p_pending_cycles==9u);
+
         /* Range reduction must preserve sign and handle |x| > 1. */
         memset(m,0,sizeof(m));
         x=0; memcpy(m,&x,4);

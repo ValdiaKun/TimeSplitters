@@ -83,7 +83,14 @@ static int is_waitp(uint32_t lo){
 }
 static int is_efu_upper(uint32_t up){
     unsigned op=up&63u, sop=(up&3u)|(((up>>6)&31u)<<2);
-    return op>=0x3cu && sop>=112u && sop<=126u;
+    if(op<0x3cu)return 0;
+    switch(sop){
+    case 112:case 113:case 114:case 115:case 116:case 117:case 118:
+    case 120:case 121:case 122:case 124:case 125:case 126:
+        return 1;
+    default:
+        return 0;
+    }
 }
 static void q_wait(TsFpVuState *s){
     while(s->q_pending && s->q_pending_cycles){
