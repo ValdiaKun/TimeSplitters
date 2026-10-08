@@ -391,8 +391,8 @@ static void upper_exec(TsFpVuState *s,uint32_t up){
 }
 
 static size_t mem_addr(const TsFpVuState *s,unsigned is,int32_t imm){
-    int32_t a=(int32_t)s->vi[is]+imm;
-    a&=0x3ff;
+    /* VU memory addresses wrap modulo 1024 quadwords; unsigned math avoids signed overflow. */
+    uint32_t a=(s->vi[is]+(uint32_t)imm)&0x3ffu;
     return (size_t)a*16u;
 }
 static size_t gif_packet_size(const uint8_t *mem,size_t size,size_t start){

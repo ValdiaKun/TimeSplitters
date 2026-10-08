@@ -831,5 +831,17 @@ int main(void) {
         assert(tsfp_vu_execute(m,sizeof(m),0,&t,1)==-2);
         assert(t.p_pending_value==0xbf8db70du);
     }
+    {
+        /* Address generation wraps modulo 1024 even when the I register is high. */
+        uint32_t raw[4]={u32(1.0f),u32(2.0f),u32(3.0f),u32(4.0f)};
+        memcpy(mem,raw,sizeof(raw));
+        uint8_t m[16]={0}; uint32_t x;
+        x=lower(0x00,2,21,0)|1u; memcpy(m,&x,4);
+        x=0x40000000u; memcpy(m+12,&x,4);
+        TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
+        t.vi[21]=0x7fffffffu;
+        assert(tsfp_vu_execute(m,sizeof(m),0,&t,4)==0);
+        assert(memcmp(t.vf[2],raw,sizeof(raw))==0);
+    }
     return 0;
 }
