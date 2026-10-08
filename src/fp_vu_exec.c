@@ -681,7 +681,7 @@ static void lower_exec(TsFpVuState *s,uint32_t lo,uint32_t next_pc){
         return;
     }
     if(op>=0x2cu&&op<=0x2fu){
-        int32_t a=(int16_t)((vi_branch?vi_branch[is]:s->vi[is])&0xffffu);
+        int32_t a=(int16_t)(s->vi[is]&0xffffu);
         int take=0;
         switch(op){
         case 0x2c:take=a<0;break;
