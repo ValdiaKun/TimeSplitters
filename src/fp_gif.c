@@ -52,7 +52,8 @@ int tsfp_gif_parse_state(const uint8_t *data,size_t size,TsFpGifSummary *out,
                     TsFpGifVertex *x=&vertices[out->vertices];
                     x->x=(float)(int16_t)(a&0xffffu)/16.0f;
                     x->y=(float)(int16_t)((a>>16)&0xffffu)/16.0f;
-                    x->z=(float)(uint32_t)((reg==4)?(b&0x00ffffffu):b);
+                    /* Packed XYZ data carries Z in the low 64-bit register value; b is padding/ADC. */
+                    x->z=(float)(uint32_t)((reg==4)?(a>>32)&0x00ffffffu:(a>>32));
                     x->s=state->s;x->t=state->t;x->r=state->r;x->g=state->g;x->b=state->b;x->a=state->a;
                 }
                 out->vertices++;
