@@ -60,6 +60,12 @@ jobs:
         run: |
           gcc -std=c11 -Wall -Wextra -Isrc tests/test_ts3_model.c src/ts3_model.c -lm -o /tmp/test_ts3_model
           /tmp/test_ts3_model
+      - name: Run malformed-input parser regressions under sanitizers
+        run: |
+          gcc -std=c11 -Wall -Wextra -Werror -fsanitize=address,undefined -fno-omit-frame-pointer -Isrc tests/test_fp_vu.c src/fp_vu.c -o /tmp/test_fp_vu_san
+          /tmp/test_fp_vu_san
+          gcc -std=c11 -Wall -Wextra -Werror -fsanitize=address,undefined -fno-omit-frame-pointer -Isrc tests/test_fp_model.c src/fp_model.c -lm -o /tmp/test_fp_model_san
+          /tmp/test_fp_model_san
       - name: Validate P5CK synthetic parser
         run: |
           python - <<'PY'
