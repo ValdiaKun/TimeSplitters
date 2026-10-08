@@ -60,7 +60,9 @@ int main(void) {
         memcpy(elf+46,&full_size,2);
 
         /* Malformed ELF offsets must be rejected without wrapping size_t. */
-        uint32_t bad=0xfffffff0u, good=0x40u;
+        uint32_t bad=0xfffffff0u, good=0x40u, overlapping=0u;
+        memcpy(elf+32,&overlapping,4);
+        assert(tsfp_vu_find_vutext(elf,sizeof(elf),&off,&len)==-5);
         memcpy(elf+32,&bad,4);
         assert(tsfp_vu_find_vutext(elf,sizeof(elf),&off,&len)==-5);
         memcpy(elf+32,&good,4);
