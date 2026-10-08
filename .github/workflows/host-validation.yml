@@ -56,6 +56,10 @@ jobs:
         run: |
           gcc -std=c11 -Wall -Wextra -Isrc tests/test_fp_scene.c src/fp_scene.c -lm -o /tmp/test_fp_scene
           /tmp/test_fp_scene
+      - name: Compile and test native GS-space viewport fit
+        run: |
+          gcc -std=c11 -Wall -Wextra -Werror -Isrc tests/test_fp_gs_view.c src/fp_gs_view.c -lm -o /tmp/test_fp_gs_view
+          /tmp/test_fp_gs_view
       - name: Compile and test native TS3 model parser
         run: |
           gcc -std=c11 -Wall -Wextra -Isrc tests/test_ts3_model.c src/ts3_model.c -lm -o /tmp/test_ts3_model

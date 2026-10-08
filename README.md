@@ -18,7 +18,7 @@ Verified from the demo image:
 - VIF memory unpacking now models masks, addition-decompression state, and packed UNPACK word alignment
 - The Vita runtime can inspect the PS2 ELF `.vutext` and locate the `MSCAL 0x683` VU1 program
 - A native VU1 interpreter core now covers the main arithmetic/conversion/integer/memory/control operations and captures complete `XGKICK` GIF packets
-- The Vita runtime traverses validated CHR submeshes, executes each VIF/VU1 display list, converts GIF triangle/strip/fan/sprite output into Vita triangles, and fits the already-transformed GS X/Y coordinates to the Vita viewport; triangles are sorted by GS depth rather than re-projecting screen-space vertices
+- The Vita runtime traverses validated CHR submeshes, executes each VIF/VU1 display list, converts GIF triangle/strip/fan/sprite output into Vita triangles, and fits the already-transformed GS X/Y coordinates to the Vita viewport; triangles are sorted by GS depth rather than re-projecting screen-space vertices. The GS-space viewport fitting is host-tested.
 - The VIF decoder now honors the UNPACK mask bit, cycle-slot column filling, and PS2 row-addition/difference semantics
 - The VU core now implements CLIP flag generation used by PS2 microprogram control flow
 - Android/Termux extraction requires no third-party Python package

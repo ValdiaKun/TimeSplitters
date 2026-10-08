@@ -2,8 +2,6 @@
 #include <string.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include <float.h>
-#include <math.h>
 #include <psp2/kernel/processmgr.h>
 #include <psp2/ctrl.h>
 #include <psp2/display.h>
@@ -15,6 +13,7 @@
 #include "fp_vif.h"
 #include "fp_vu.h"
 #include "fp_gif.h"
+#include "fp_gs_view.h"
 
 #define DATA_PATH "ux0:data/TimeSplitters/PAK/CHR.PAK"
 #define BOOT_PATH "ux0:data/TimeSplitters/SLED_530.66"
@@ -27,7 +26,7 @@ static vita2d_color_vertex transformed_preview[PREVIEW_CAPACITY];
 static size_t preview_count=0;
 static TsFpGifVertex gif_local[1024];
 static TsFpGifVertex scene_vertices[PREVIEW_CAPACITY];
-static float preview_center_x=0.0f,preview_center_y=0.0f,preview_base_scale=1.0f;
+static TsFpGsView preview_view;
 static float preview_zoom=1.0f,preview_pan_x=0.0f,preview_pan_y=0.0f;
 static int preview_ready=0;
 typedef struct { vita2d_color_vertex v[3]; float depth; } TsFpDrawTriangle;
@@ -50,17 +49,7 @@ static void update_preview_controls(const SceCtrlData *pad){
 }
 
 static int project_gs_vertex(const TsFpGifVertex *v,float *x,float *y){
-    if(!v||!x||!y||!isfinite(v->x)||!isfinite(v->y)||!isfinite(v->z)||
-       !isfinite(preview_base_scale)||!isfinite(preview_zoom)||
-       preview_base_scale<=0.0f||preview_zoom<=0.0f)return 0;
-    /*
-     * GIF XYZ registers contain GS-space coordinates after the PS2 VU1
-     * transform. Fit their X/Y directly to the Vita viewport; applying a
-     * second perspective camera here would transform already-projected data.
-     */
-    *x=480.0f+(v->x-preview_center_x)*preview_base_scale*preview_zoom+preview_pan_x;
-    *y=272.0f+(v->y-preview_center_y)*preview_base_scale*preview_zoom+preview_pan_y;
-    return isfinite(*x)&&isfinite(*y);
+    return tsfp_gs_view_project(&preview_view,v,preview_zoom,preview_pan_x,preview_pan_y,x,y);
 }
 
 static int load_file(const char *path,uint8_t **out,size_t *size_out){
@@ -216,26 +205,7 @@ static int build_model_preview(void){
         if(tri_count>PREVIEW_CAPACITY)tri_count=PREVIEW_CAPACITY;
         memcpy(scene_vertices,triangles,sizeof(*scene_vertices)*tri_count);
         preview_count=tri_count;
-        float minx=FLT_MAX,miny=FLT_MAX,maxx=-FLT_MAX,maxy=-FLT_MAX;
-        for(size_t i=0;i<tri_count;i++){
-            float x=scene_vertices[i].x,y=scene_vertices[i].y;
-            if(!isfinite(x)||!isfinite(y))continue;
-            if(x<minx)minx=x;
-            if(x>maxx)maxx=x;
-            if(y<miny)miny=y;
-            if(y>maxy)maxy=y;
-        }
-        if(minx==FLT_MAX||miny==FLT_MAX)goto done;
-        preview_center_x=minx+(maxx-minx)*0.5f;
-        preview_center_y=miny+(maxy-miny)*0.5f;
-        float range_x=maxx-minx,range_y=maxy-miny;
-        float scale_x=range_x>0.0f?768.0f/range_x:FLT_MAX;
-        float scale_y=range_y>0.0f?435.2f/range_y:FLT_MAX;
-        if(range_x<=0.0f&&range_y<=0.0f)preview_base_scale=1.0f;
-        else if(range_x<=0.0f)preview_base_scale=scale_y;
-        else if(range_y<=0.0f)preview_base_scale=scale_x;
-        else preview_base_scale=scale_x<scale_y?scale_x:scale_y;
-        if(!isfinite(preview_base_scale)||preview_base_scale<=0.0f)preview_base_scale=1.0f;
+        if(tsfp_gs_view_fit(&preview_view,scene_vertices,tri_count,960.0f,544.0f)!=0)goto done;
         preview_zoom=1.0f;preview_pan_x=preview_pan_y=0.0f;
         preview_ready=1;
         for(size_t i=0;i<tri_count;i++){
