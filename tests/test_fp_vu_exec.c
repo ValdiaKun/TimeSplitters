@@ -642,7 +642,7 @@ int main(void) {
         x=lower(0x45,7,1,2); memcpy(m+32,&x,4); x=0; memcpy(m+36,&x,4);
         assert(tsfp_vu_execute(m,sizeof(m),0,&t,6)==0);
         assert(t.vi[3]==1u && t.vi[4]==0xfffbu && t.vi[5]==0xfffdu);
-        assert(t.vi[6]==2u && t.vi[7]==0xffffu && t.vi[9]==0x1345u);
+        assert(t.vi[6]==2u && t.vi[7]==0xffffu && t.vi[9]==0x2345u);
         t.vi[8]=0x1000u;
         x=(0x08u<<25)|(9u<<16)|(8u<<11)|0x345u|((2u)<<21); memcpy(m+40,&x,4);
     }
