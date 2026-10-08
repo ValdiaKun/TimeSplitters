@@ -805,14 +805,12 @@ int tsfp_vu_execute(const uint8_t *micro,size_t size,uint32_t start,TsFpVuState 
          */
         if(is_waitq(lo) && state->q_pending) q_wait(state);
         if(is_waitp(lo) && state->p_pending) p_wait(state);
-        uint32_t vi_before[32];
         uint32_t vf_before[32][4];
         uint32_t vf_upper[32][4];
         uint16_t mac_before=(uint16_t)state->mac_flag;
         uint16_t mac_upper;
         uint32_t status_before=state->status_flag, status_upper;
         uint32_t clip_before=state->clip_flag, clip_upper;
-        memcpy(vi_before,state->vi,sizeof(vi_before));
         memcpy(vf_before,state->vf,sizeof(vf_before));
         upper_exec(state,up);
         mac_upper=(uint16_t)state->mac_flag;
