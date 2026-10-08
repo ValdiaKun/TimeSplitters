@@ -26,8 +26,16 @@ int main(void){
     invalid.z=NAN;
     assert(!tsfp_gs_view_project(&view,&invalid,1.0f,0.0f,0.0f,&x,&y));
     assert(!tsfp_gs_view_project(&view,&vertices[0],0.0f,0.0f,0.0f,&x,&y));
+    assert(!tsfp_gs_view_project(&view,&vertices[0],1.0f,NAN,0.0f,&x,&y));
     assert(!tsfp_gs_view_project(NULL,&vertices[0],1.0f,0.0f,0.0f,&x,&y));
     assert(tsfp_gs_view_fit(&view,vertices,3,0.0f,544.0f)==-1);
+
+    /* Non-finite vertices are ignored for fitting; all-invalid input fails. */
+    TsFpGifVertex mixed[4]={vertices[0],vertices[1],vertices[2],{.x=NAN,.y=0.0f,.z=1.0f}};
+    assert(tsfp_gs_view_fit(&view,mixed,4,960.0f,544.0f)==0);
+    assert(fabsf(view.center_x-50.0f)<0.001f && fabsf(view.scale-7.68f)<0.001f);
+    TsFpGifVertex invalid_set={.x=NAN,.y=NAN,.z=NAN};
+    assert(tsfp_gs_view_fit(&view,&invalid_set,1,960.0f,544.0f)==-2);
 
     /* A degenerate point cloud remains centered and projectable. */
     TsFpGifVertex point={.x=4.0f,.y=5.0f,.z=6.0f};

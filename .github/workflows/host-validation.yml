@@ -70,6 +70,8 @@ jobs:
           /tmp/test_fp_vu_san
           gcc -std=c11 -Wall -Wextra -Werror -fsanitize=address,undefined -fno-omit-frame-pointer -Isrc tests/test_fp_model.c src/fp_model.c -lm -o /tmp/test_fp_model_san
           /tmp/test_fp_model_san
+          gcc -std=c11 -Wall -Wextra -Werror -fsanitize=address,undefined -fno-omit-frame-pointer -Isrc tests/test_fp_gs_view.c src/fp_gs_view.c -lm -o /tmp/test_fp_gs_view_san
+          /tmp/test_fp_gs_view_san
       - name: Validate P5CK synthetic parser
         run: |
           python - <<'PY'
