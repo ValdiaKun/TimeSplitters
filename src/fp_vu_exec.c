@@ -415,7 +415,7 @@ static size_t gif_packet_size(const uint8_t *mem,size_t size,size_t start){
     return 0;
 }
 
-static void lower_exec(TsFpVuState *s,uint32_t lo,uint32_t next_pc,const uint32_t *vi_branch){
+static void lower_exec(TsFpVuState *s,uint32_t lo,uint32_t next_pc){
     unsigned op=(lo>>25)&0x7fu,it=(lo>>16)&31u,is=(lo>>11)&31u,id=(lo>>6)&31u;
     unsigned dest=(lo>>21)&15u;
     int32_t imm=sx11(lo);
