@@ -94,28 +94,6 @@ static int read_first_chr_entry(uint8_t **out,size_t *size_out){
     return read_first_model_entry(&info,&entry,out,size_out,&model);
 }
 
-static size_t append_triangles(TsFpGifVertex *dst,size_t cap,const TsFpGifVertex *src,size_t n,uint32_t prim){
-    size_t w=0;
-    if(prim==3u){
-        for(size_t i=0;i+2<n && w+3<=cap;i+=3){dst[w++]=src[i];dst[w++]=src[i+1];dst[w++]=src[i+2];}
-    } else if(prim==4u){
-        for(size_t i=2;i<n && w+3<=cap;i++){
-            if(i&1u){dst[w++]=src[i-1];dst[w++]=src[i-2];dst[w++]=src[i];}
-            else {dst[w++]=src[i-2];dst[w++]=src[i-1];dst[w++]=src[i];}
-        }
-    } else if(prim==5u){
-        for(size_t i=2;i<n && w+3<=cap;i++){dst[w++]=src[0];dst[w++]=src[i-1];dst[w++]=src[i];}
-    } else if(prim==6u){
-        for(size_t i=0;i+1<n && w+6<=cap;i+=2){
-            TsFpGifVertex a=src[i],b=src[i+1],c=a,d=b;
-            c.y=b.y; d.x=a.x;
-            dst[w++]=a;dst[w++]=b;dst[w++]=c;dst[w++]=c;dst[w++]=b;dst[w++]=d;
-        }
-    }
-    return w;
-}
-
-
 typedef struct {
     const uint8_t *micro;
     size_t micro_size;
@@ -149,8 +127,8 @@ static int render_mscal(uint16_t address,uint8_t *vu_memory,size_t vu_size,
         if(ctx->triangle_count && *ctx->triangle_count<ctx->triangle_capacity){
             size_t room=ctx->triangle_capacity-*ctx->triangle_count;
             size_t local_vertices=gif.vertices<1024u?gif.vertices:1024u;
-            size_t wrote=append_triangles(ctx->triangles+*ctx->triangle_count,room,
-                                          gif_local,local_vertices,gif.primitive&7u);
+            size_t wrote=tsfp_gif_triangulate(ctx->triangles+*ctx->triangle_count,room,
+                                               gif_local,local_vertices,gif.primitive&7u);
             *ctx->triangle_count+=wrote;
         }
     }

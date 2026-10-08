@@ -15,7 +15,7 @@ static void reg64(uint8_t reg,uint64_t v,TsFpGifState *s,TsFpGifSummary *o,TsFpG
         x->x=(float)(uint16_t)(v&0xffffu)/16.0f;
         x->y=(float)(uint16_t)((v>>16)&0xffffu)/16.0f;
         x->z=(float)(uint32_t)((reg==4)?(v>>32)&0x00ffffffu:(v>>32));
-        x->s=s->s;x->t=s->t;x->r=s->r;x->g=s->g;x->b=s->b;x->a=s->a;
+        x->s=s->s;x->t=s->t;x->r=s->r;x->g=s->g;x->b=s->b;x->a=s->a;x->skip=0;
     }
     o->vertices++;
  }
@@ -54,7 +54,7 @@ int tsfp_gif_parse_state(const uint8_t *data,size_t size,TsFpGifSummary *out,
                     x->y=(float)(uint16_t)((a>>16)&0xffffu)/16.0f;
                     /* Packed XYZ data carries Z in the low 64-bit register value; b is padding/ADC. */
                     x->z=(float)(uint32_t)((reg==4)?(a>>32)&0x00ffffffu:(a>>32));
-                    x->s=state->s;x->t=state->t;x->r=state->r;x->g=state->g;x->b=state->b;x->a=state->a;
+                    x->s=state->s;x->t=state->t;x->r=state->r;x->g=state->g;x->b=state->b;x->a=state->a;x->skip=(uint8_t)((b>>47)&1u);
                 }
                 out->vertices++;
             } else if(reg==0){
@@ -99,4 +99,49 @@ int tsfp_gif_parse_state(const uint8_t *data,size_t size,TsFpGifSummary *out,
 int tsfp_gif_parse(const uint8_t *data,size_t size,TsFpGifSummary *out,TsFpGifVertex *vertices,size_t vertex_capacity){
  TsFpGifState state={0,0,255,255,255,255,0};
  return tsfp_gif_parse_state(data,size,out,vertices,vertex_capacity,&state);
+}
+
+size_t tsfp_gif_triangulate(TsFpGifVertex *dst,size_t capacity,const TsFpGifVertex *src,size_t count,uint32_t primitive){
+    if(!dst||!src||!capacity)return 0;
+    size_t written=0;
+    if(primitive==3u){
+        size_t pending[3],used=0;
+        for(size_t i=0;i<count;i++){
+            if(src[i].skip){used=0;continue;}
+            pending[used++]=i;
+            if(used==3u){
+                if(capacity-written<3u)break;
+                dst[written++]=src[pending[0]];
+                dst[written++]=src[pending[1]];
+                dst[written++]=src[pending[2]];
+                used=0;
+            }
+        }
+    }else if(primitive==4u){
+        for(size_t i=2;i<count;i++){
+            if(src[i].skip)continue;
+            if(capacity-written<3u)break;
+            if(i&1u){dst[written++]=src[i-1];dst[written++]=src[i-2];dst[written++]=src[i];}
+            else {dst[written++]=src[i-2];dst[written++]=src[i-1];dst[written++]=src[i];}
+        }
+    }else if(primitive==5u){
+        for(size_t i=2;i<count;i++){
+            if(src[i].skip)continue;
+            if(capacity-written<3u)break;
+            dst[written++]=src[0];dst[written++]=src[i-1];dst[written++]=src[i];
+        }
+    }else if(primitive==6u){
+        size_t first=0;int have_first=0;
+        for(size_t i=0;i<count;i++){
+            if(src[i].skip){have_first=0;continue;}
+            if(!have_first){first=i;have_first=1;continue;}
+            if(capacity-written<6u)break;
+            TsFpGifVertex a=src[first],b=src[i],c=a,d=b;
+            c.y=b.y;d.x=a.x;
+            dst[written++]=a;dst[written++]=b;dst[written++]=c;
+            dst[written++]=c;dst[written++]=b;dst[written++]=d;
+            have_first=0;
+        }
+    }
+    return written;
 }

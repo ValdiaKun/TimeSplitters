@@ -107,4 +107,39 @@ int main(void){uint8_t d[80]={0};uint64_t tag=1ull|(1ull<<15)|(0ull<<58)|(3ull<<
         assert(rv[0].x==1792.0f && rv[1].x==2304.0f);
         assert(rv[0].y==2048.0f && rv[1].y==2048.0f);
     }
+    {
+        /* Packed ADC marks a vertex kick as skipped but keeps it in the stream. */
+        uint8_t packet[32]={0};
+        uint64_t tag=1ull|(1ull<<15)|(1ull<<60);
+        w64(packet,tag);w64(packet+8,5ull);
+        w64(packet+16,((uint64_t)7u<<32)|((uint64_t)0x20u<<16)|0x10u);
+        w64(packet+24,1ull<<47);
+        TsFpGifSummary summary;TsFpGifVertex parsed;
+        assert(tsfp_gif_parse(packet,sizeof(packet),&summary,&parsed,1)==0);
+        assert(summary.vertices==1 && parsed.skip==1u);
+
+        TsFpGifVertex strip[4]={0},out[12];
+        for(size_t i=0;i<4;i++){strip[i].x=(float)i;strip[i].y=(float)i;strip[i].z=1.0f;}
+        strip[2].skip=1;
+        size_t written=tsfp_gif_triangulate(out,12,strip,4,4u);
+        assert(written==3 && out[0].x==2.0f && out[1].x==1.0f && out[2].x==3.0f);
+
+        TsFpGifVertex list[6]={0};
+        for(size_t i=0;i<6;i++)list[i].x=(float)i;
+        list[1].skip=1;
+        written=tsfp_gif_triangulate(out,12,list,6,3u);
+        assert(written==3 && out[0].x==2.0f && out[1].x==3.0f && out[2].x==4.0f);
+
+        TsFpGifVertex fan[4]={0};
+        for(size_t i=0;i<4;i++)fan[i].x=(float)i;
+        fan[2].skip=1;
+        written=tsfp_gif_triangulate(out,12,fan,4,5u);
+        assert(written==3 && out[0].x==0.0f && out[1].x==2.0f && out[2].x==3.0f);
+
+        TsFpGifVertex sprites[4]={0};
+        sprites[0].x=0;sprites[0].y=0;sprites[1].x=10;sprites[1].y=10;sprites[1].skip=1;
+        sprites[2].x=20;sprites[2].y=30;sprites[3].x=40;sprites[3].y=50;
+        written=tsfp_gif_triangulate(out,12,sprites,4,6u);
+        assert(written==6 && out[0].x==20.0f && out[0].y==30.0f && out[2].x==20.0f && out[2].y==50.0f);
+    }
     return 0;}
