@@ -608,7 +608,7 @@ static void lower_exec(TsFpVuState *s,uint32_t lo,uint32_t next_pc){
      */
     if(op==0x40u){if(id)s->vi[id]=(s->vi[is]+s->vi[it])&0xffffu;return;} /* IADD */
     if(op==0x41u){if(id)s->vi[id]=(s->vi[is]-s->vi[it])&0xffffu;return;} /* ISUB */
-    if(op==0x42u){if(it){int32_t v=(int32_t)(int16_t)(s->vi[is]&0xffffu)+(int32_t)sx5(lo);s->vi[it]=(uint32_t)v&0xffffu;}return;} /* IADDI */
+    if(op==0x42u){if(it){int32_t v=(int32_t)(int16_t)(s->vi[is]&0xffffu)+(int32_t)(int8_t)(((lo>>6)&0x1fu)|(((lo>>10)&1u)?0xe0u:0u));s->vi[it]=(uint32_t)v&0xffffu;}return;} /* IADDI */
     if(op==0x44u){if(id)s->vi[id]=(s->vi[is]&s->vi[it])&0xffffu;return;} /* IAND */
     if(op==0x45u){if(id)s->vi[id]=(s->vi[is]|s->vi[it])&0xffffu;return;} /* IOR */
     #undef VI_WRITE_ARITH
