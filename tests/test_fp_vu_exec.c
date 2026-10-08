@@ -788,7 +788,7 @@ int main(void) {
         x=lower(0x08,0,0,7)|7u; memcpy(m+24,&x,4); x=0; memcpy(m+28,&x,4); /* skipped if taken */
         x=lower(0x08,0,0,7)|13u; memcpy(m+32,&x,4); x=0; memcpy(m+36,&x,4); /* target */
         TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
-        assert(tsfp_vu_execute(m,sizeof(m),0,&t,5)==0);
+        assert(tsfp_vu_execute(m,sizeof(m),0,&t,6)==0);
         assert(t.vi[6]==9u && t.vi[7]==13u);
     }
     {
