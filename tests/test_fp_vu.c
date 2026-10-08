@@ -52,6 +52,17 @@ int main(void) {
         size_t off=0,len=0;
         assert(tsfp_vu_find_vutext(elf,sizeof(elf),&off,&len)==0);
         assert(off==0x100 && len==16);
+
+        /* Malformed ELF offsets must be rejected without wrapping size_t. */
+        uint32_t bad=0xfffffff0u, good=0x40u;
+        memcpy(elf+32,&bad,4);
+        assert(tsfp_vu_find_vutext(elf,sizeof(elf),&off,&len)==-5);
+        memcpy(elf+32,&good,4);
+        memcpy(elf+0x40+40+16,&bad,4);
+        assert(tsfp_vu_find_vutext(elf,sizeof(elf),&off,&len)==-6);
+        memcpy(elf+0x40+40+16,&sh1_off,4);
+        memcpy(elf+0x40+80+16,&bad,4);
+        assert(tsfp_vu_find_vutext(elf,sizeof(elf),&off,&len)==-7);
     }
     return 0;
 }

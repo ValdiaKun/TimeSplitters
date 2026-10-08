@@ -24,5 +24,22 @@ int main(void){
     assert(h.mesh_count==41 && h.material_count==29 && h.lod_count==1);
     assert(h.mesh_table_offset==0x90 && h.lod_table_offset==0x400);
     assert(h.scale==scale);
+
+    /* The material-table subtraction must not underflow on short buffers. */
+    {
+        uint8_t small[128]={0};
+        uint32_t one=1, many=100;
+        float unit_scale=1.0f;
+        memcpy(small,&(uint32_t){0x50},4);
+        memcpy(small+4,&(uint32_t){0x40},4);
+        memcpy(small+8,&(uint32_t){0x70},4);
+        memcpy(small+0x40,&one,4);
+        memcpy(small+0x44,&many,4);
+        memcpy(small+0x48,&one,4);
+        memcpy(small+0x40+36,&unit_scale,4);
+        assert(tsfp_model_probe(small,sizeof(small),&h)==-6);
+        memcpy(small+4,&(uint32_t){0x60},4);
+        assert(tsfp_model_probe(small,sizeof(small),&h)==-4);
+    }
     return 0;
 }

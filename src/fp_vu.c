@@ -15,16 +15,17 @@ int tsfp_vu_find_vutext(const uint8_t *elf, size_t size, size_t *offset, size_t 
     uint16_t shnum = (uint16_t)elf[48] | ((uint16_t)elf[49] << 8);
     uint16_t shstr = (uint16_t)elf[50] | ((uint16_t)elf[51] << 8);
     if (!shentsz || shnum == 0 || shstr >= shnum) return -4;
-    if ((size_t)shoff + (size_t)shentsz * shnum > size) return -5;
-    const uint8_t *strsec = elf + shoff + (size_t)shstr * shentsz;
+    size_t table_size=(size_t)shentsz*(size_t)shnum;
+    if ((size_t)shoff>size || table_size>size-(size_t)shoff) return -5;
+    const uint8_t *strsec = elf + (size_t)shoff + (size_t)shstr * shentsz;
     uint32_t str_off = rd32(strsec + 16), str_len = rd32(strsec + 20);
-    if ((size_t)str_off + str_len > size) return -6;
+    if ((size_t)str_off>size || (size_t)str_len>size-(size_t)str_off) return -6;
     for (uint16_t i=0; i<shnum; ++i) {
-        const uint8_t *sec = elf + shoff + (size_t)i * shentsz;
+        const uint8_t *sec = elf + (size_t)shoff + (size_t)i * shentsz;
         uint32_t name = rd32(sec), off = rd32(sec + 16), len = rd32(sec + 20);
-        if (name >= str_len || (size_t)off + len > size) continue;
+        if (name >= str_len || (size_t)off>size || (size_t)len>size-(size_t)off) continue;
         if (str_len - name >= 8u &&
-            memcmp(elf + str_off + name, ".vutext", 8u) == 0) {
+            memcmp(elf + (size_t)str_off + name, ".vutext", 8u) == 0) {
             *offset = off;
             *length = len;
             return 0;
