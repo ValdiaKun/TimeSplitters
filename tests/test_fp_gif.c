@@ -74,7 +74,7 @@ int main(void){uint8_t d[80]={0};uint64_t tag=1ull|(1ull<<15)|(0ull<<58)|(3ull<<
         uint8_t f[32]={0};
         uint64_t ftag=1ull|(1ull<<15)|(0ull<<58)|(1ull<<60);
         w64(f,ftag); w64(f+8,4ull);
-        w64(f+16,((uint64_t)0xabcdef12u<<32)|((uint64_t)0x0020u<<16)|0x0010u);
+        w64(f+16,((uint64_t)0x12abcdefu<<32)|((uint64_t)0x0020u<<16)|0x0010u);
         w64(f+24,0);
         TsFpGifSummary fs; TsFpGifVertex fv;
         assert(tsfp_gif_parse(f,sizeof(f),&fs,&fv,1)==0);
