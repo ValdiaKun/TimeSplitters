@@ -12,10 +12,13 @@ void tsfp_scene_bounds_reset(TsFpSceneBounds *b){
 }
 
 void tsfp_scene_bounds_add(TsFpSceneBounds *b,float x,float y,float z){
-    if(!b)return;
-    if(x<b->min_x)b->min_x=x;if(x>b->max_x)b->max_x=x;
-    if(y<b->min_y)b->min_y=y;if(y>b->max_y)b->max_y=y;
-    if(z<b->min_z)b->min_z=z;if(z>b->max_z)b->max_z=z;
+    if(!b||!isfinite(x)||!isfinite(y)||!isfinite(z))return;
+    if(x<b->min_x)b->min_x=x;
+    if(x>b->max_x)b->max_x=x;
+    if(y<b->min_y)b->min_y=y;
+    if(y>b->max_y)b->max_y=y;
+    if(z<b->min_z)b->min_z=z;
+    if(z>b->max_z)b->max_z=z;
     b->center_x=(b->min_x+b->max_x)*0.5f;
     b->center_y=(b->min_y+b->max_y)*0.5f;
     b->center_z=(b->min_z+b->max_z)*0.5f;
@@ -27,6 +30,10 @@ void tsfp_scene_bounds_add(TsFpSceneBounds *b,float x,float y,float z){
 void tsfp_scene_camera_fit(TsFpSceneCamera *c,const TsFpSceneBounds *b,float width,float height){
     if(!c||!b)return;
     memset(c,0,sizeof(*c));
+    if(!isfinite(width)||!isfinite(height)||width<=0.0f||height<=0.0f){
+        c->distance=1.0f;
+        return;
+    }
     c->screen_width=width;c->screen_height=height;
     c->focal=0.5f*(width<height?width:height);
     c->distance=b->radius>0.001f?b->radius*2.5f:1.0f;
