@@ -602,6 +602,15 @@ static void lower_exec(TsFpVuState *s,uint32_t lo,uint32_t next_pc){
     }
     if(op==0x34u){if(id)VI_WRITE_ARITH(id,s->vi[it]&s->vi[is],is==21u||it==21u);return;}
     if(op==0x35u){if(id)VI_WRITE_ARITH(id,s->vi[it]|s->vi[is],is==21u||it==21u);return;}
+    /*
+     * Register-form integer ALU instructions are normal lower opcodes
+     * (0x40+), not special1 opcodes. VI00-VI15 are 16-bit registers.
+     */
+    if(op==0x40u){if(id)s->vi[id]=(s->vi[is]+s->vi[it])&0xffffu;return;} /* IADD */
+    if(op==0x41u){if(id)s->vi[id]=(s->vi[is]-s->vi[it])&0xffffu;return;} /* ISUB */
+    if(op==0x42u){if(it){int32_t v=(int32_t)(int16_t)(s->vi[is]&0xffffu)+(int32_t)sx5(lo);s->vi[it]=(uint32_t)v&0xffffu;}return;} /* IADDI */
+    if(op==0x44u){if(id)s->vi[id]=(s->vi[is]&s->vi[it])&0xffffu;return;} /* IAND */
+    if(op==0x45u){if(id)s->vi[id]=(s->vi[is]|s->vi[it])&0xffffu;return;} /* IOR */
     #undef VI_WRITE_ARITH
     #undef VI_WRITE16
     if(op>=0x10u&&op<=0x1cu){
