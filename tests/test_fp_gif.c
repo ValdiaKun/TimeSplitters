@@ -119,27 +119,45 @@ int main(void){uint8_t d[80]={0};uint64_t tag=1ull|(1ull<<15)|(0ull<<58)|(3ull<<
         assert(summary.vertices==1 && parsed.skip==1u);
 
         TsFpGifVertex strip[4]={0},out[12];
-        for(size_t i=0;i<4;i++){strip[i].x=(float)i;strip[i].y=(float)i;strip[i].z=1.0f;}
+        for(size_t i=0;i<4;i++){strip[i].x=(float)i;strip[i].y=(float)i;strip[i].z=1.0f;strip[i].primitive=0xffu;}
         strip[2].skip=1;
         size_t written=tsfp_gif_triangulate(out,12,strip,4,4u);
         assert(written==3 && out[0].x==2.0f && out[1].x==1.0f && out[2].x==3.0f);
 
         TsFpGifVertex list[6]={0};
-        for(size_t i=0;i<6;i++)list[i].x=(float)i;
+        for(size_t i=0;i<6;i++){list[i].x=(float)i;list[i].primitive=0xffu;}
         list[1].skip=1;
         written=tsfp_gif_triangulate(out,12,list,6,3u);
         assert(written==3 && out[0].x==2.0f && out[1].x==3.0f && out[2].x==4.0f);
 
         TsFpGifVertex fan[4]={0};
-        for(size_t i=0;i<4;i++)fan[i].x=(float)i;
+        for(size_t i=0;i<4;i++){fan[i].x=(float)i;fan[i].primitive=0xffu;}
         fan[2].skip=1;
         written=tsfp_gif_triangulate(out,12,fan,4,5u);
         assert(written==3 && out[0].x==0.0f && out[1].x==2.0f && out[2].x==3.0f);
 
         TsFpGifVertex sprites[4]={0};
-        sprites[0].x=0;sprites[0].y=0;sprites[1].x=10;sprites[1].y=10;sprites[1].skip=1;
-        sprites[2].x=20;sprites[2].y=30;sprites[3].x=40;sprites[3].y=50;
+        sprites[0].x=0;sprites[0].y=0;sprites[0].primitive=0xffu;sprites[1].x=10;sprites[1].y=10;sprites[1].primitive=0xffu;sprites[1].skip=1;
+        sprites[2].x=20;sprites[2].y=30;sprites[2].primitive=0xffu;sprites[3].x=40;sprites[3].y=50;sprites[3].primitive=0xffu;
         written=tsfp_gif_triangulate(out,12,sprites,4,6u);
         assert(written==6 && out[0].x==20.0f && out[0].y==30.0f && out[2].x==20.0f && out[2].y==50.0f);
+    }
+    {
+        /* PRE attaches a primitive mode to vertices, not just the final tag summary. */
+        uint8_t mode[32]={0};
+        uint64_t tag=1ull|(1ull<<15)|(1ull<<46)|(3ull<<47)|(1ull<<60);
+        w64(mode,tag);w64(mode+8,5ull);
+        w64(mode+16,((uint64_t)7u<<32)|((uint64_t)0x20u<<16)|0x10u);w64(mode+24,0);
+        TsFpGifSummary ms;TsFpGifVertex mv;
+        assert(tsfp_gif_parse(mode,sizeof(mode),&ms,&mv,1)==0);
+        assert(ms.primitive==3u && mv.primitive==3u);
+
+        /* Primitive changes inside one stream must be triangulated by run. */
+        TsFpGifVertex mixed[6]={0},tri[12];
+        for(size_t i=0;i<6;i++){mixed[i].x=(float)i;mixed[i].primitive=(uint8_t)(i<3?3u:4u);}
+        size_t written=tsfp_gif_triangulate(tri,12,mixed,6,5u);
+        assert(written==6);
+        assert(tri[0].x==0.0f&&tri[1].x==1.0f&&tri[2].x==2.0f);
+        assert(tri[3].x==3.0f&&tri[4].x==4.0f&&tri[5].x==5.0f);
     }
     return 0;}

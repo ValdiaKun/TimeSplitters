@@ -5,7 +5,7 @@ static uint64_t rd64(const uint8_t *p){uint64_t v=0;for(unsigned i=0;i<8;i++)v|=
 static float f32(uint32_t v){float f;memcpy(&f,&v,4);return f;}
 
 static void reg64(uint8_t reg,uint64_t v,TsFpGifState *s,TsFpGifSummary *o,TsFpGifVertex *vs,size_t cap){
- if(reg==0){s->primitive=(uint32_t)v&0x7ffu;o->primitive=s->primitive;}
+ if(reg==0){s->primitive=(uint32_t)v&0x7ffu;s->primitive_valid=1;o->primitive=s->primitive;}
  else if(reg==1){s->r=v;s->g=v>>8;s->b=v>>16;s->a=v>>24;}
  else if(reg==2){s->s=f32((uint32_t)v);s->t=f32((uint32_t)(v>>32));}
  else if(reg==3){s->s=(float)(v&0x3fffu)/16.0f;s->t=(float)((v>>16)&0x3fffu)/16.0f;}
@@ -15,7 +15,7 @@ static void reg64(uint8_t reg,uint64_t v,TsFpGifState *s,TsFpGifSummary *o,TsFpG
         x->x=(float)(uint16_t)(v&0xffffu)/16.0f;
         x->y=(float)(uint16_t)((v>>16)&0xffffu)/16.0f;
         x->z=(float)(uint32_t)((reg==4)?(v>>32)&0x00ffffffu:(v>>32));
-        x->s=s->s;x->t=s->t;x->r=s->r;x->g=s->g;x->b=s->b;x->a=s->a;x->skip=0;
+        x->s=s->s;x->t=s->t;x->r=s->r;x->g=s->g;x->b=s->b;x->a=s->a;x->skip=0;x->primitive=s->primitive_valid?(uint8_t)(s->primitive&7u):0xffu;
     }
     o->vertices++;
  }
@@ -33,7 +33,7 @@ int tsfp_gif_parse_state(const uint8_t *data,size_t size,TsFpGifSummary *out,
     uint8_t pre=(lo>>46)&1u;
     if(!nreg)nreg=16;
     out->tags++;
-    if(pre)state->primitive=(lo>>47)&0x7ffu;
+    if(pre){state->primitive=(lo>>47)&0x7ffu;state->primitive_valid=1;}
     out->primitive=state->primitive;
     out->format=flg;
     out->registers=nreg;
@@ -54,11 +54,12 @@ int tsfp_gif_parse_state(const uint8_t *data,size_t size,TsFpGifSummary *out,
                     x->y=(float)(uint16_t)((a>>16)&0xffffu)/16.0f;
                     /* Packed XYZ data carries Z in the low 64-bit register value; b is padding/ADC. */
                     x->z=(float)(uint32_t)((reg==4)?(a>>32)&0x00ffffffu:(a>>32));
-                    x->s=state->s;x->t=state->t;x->r=state->r;x->g=state->g;x->b=state->b;x->a=state->a;x->skip=(uint8_t)((b>>47)&1u);
+                    x->s=state->s;x->t=state->t;x->r=state->r;x->g=state->g;x->b=state->b;x->a=state->a;x->skip=(uint8_t)((b>>47)&1u);x->primitive=state->primitive_valid?(uint8_t)(state->primitive&7u):0xffu;
                 }
                 out->vertices++;
             } else if(reg==0){
                 state->primitive=(uint32_t)a&0x7ffu;
+                state->primitive_valid=1;
                 out->primitive=state->primitive;
             } else if(reg==1){
                 state->r=a;state->g=a>>8;state->b=a>>16;state->a=a>>24;
@@ -101,7 +102,7 @@ int tsfp_gif_parse(const uint8_t *data,size_t size,TsFpGifSummary *out,TsFpGifVe
  return tsfp_gif_parse_state(data,size,out,vertices,vertex_capacity,&state);
 }
 
-size_t tsfp_gif_triangulate(TsFpGifVertex *dst,size_t capacity,const TsFpGifVertex *src,size_t count,uint32_t primitive){
+static size_t triangulate_one(TsFpGifVertex *dst,size_t capacity,const TsFpGifVertex *src,size_t count,uint32_t primitive){
     if(!dst||!src||!capacity)return 0;
     size_t written=0;
     if(primitive==3u){
@@ -142,6 +143,26 @@ size_t tsfp_gif_triangulate(TsFpGifVertex *dst,size_t capacity,const TsFpGifVert
             dst[written++]=c;dst[written++]=b;dst[written++]=d;
             have_first=0;
         }
+    }
+    return written;
+}
+
+size_t tsfp_gif_triangulate(TsFpGifVertex *dst,size_t capacity,const TsFpGifVertex *src,size_t count,uint32_t fallback_primitive){
+    if(!dst||!src||!capacity)return 0;
+    int has_primitive=0;
+    for(size_t i=0;i<count;i++)if(src[i].primitive!=0xffu){has_primitive=1;break;}
+    if(!has_primitive)return triangulate_one(dst,capacity,src,count,fallback_primitive&7u);
+    size_t written=0,start=0;
+    while(start<count&&written<capacity){
+        uint32_t primitive=src[start].primitive==0xffu?(fallback_primitive&7u):(src[start].primitive&7u);
+        size_t end=start+1;
+        while(end<count){
+            uint32_t next=src[end].primitive==0xffu?(fallback_primitive&7u):(src[end].primitive&7u);
+            if(next!=primitive)break;
+            end++;
+        }
+        written+=triangulate_one(dst+written,capacity-written,src+start,end-start,primitive);
+        start=end;
     }
     return written;
 }
