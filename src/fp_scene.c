@@ -19,12 +19,15 @@ void tsfp_scene_bounds_add(TsFpSceneBounds *b,float x,float y,float z){
     if(y>b->max_y)b->max_y=y;
     if(z<b->min_z)b->min_z=z;
     if(z>b->max_z)b->max_z=z;
-    b->center_x=(b->min_x+b->max_x)*0.5f;
-    b->center_y=(b->min_y+b->max_y)*0.5f;
-    b->center_z=(b->min_z+b->max_z)*0.5f;
-    float dx=b->max_x-b->min_x,dy=b->max_y-b->min_y,dz=b->max_z-b->min_z;
-    float r=0.5f*sqrtf(dx*dx+dy*dy+dz*dz);
-    if(isfinite(r))b->radius=r;
+    /* Double intermediates prevent overflow when finite float bounds are added. */
+    b->center_x=(float)(((double)b->min_x+(double)b->max_x)*0.5);
+    b->center_y=(float)(((double)b->min_y+(double)b->max_y)*0.5);
+    b->center_z=(float)(((double)b->min_z+(double)b->max_z)*0.5);
+    double dx=(double)b->max_x-(double)b->min_x;
+    double dy=(double)b->max_y-(double)b->min_y;
+    double dz=(double)b->max_z-(double)b->min_z;
+    double r=0.5*sqrt(dx*dx+dy*dy+dz*dz);
+    b->radius=r>(double)FLT_MAX?FLT_MAX:(float)r;
 }
 
 void tsfp_scene_camera_fit(TsFpSceneCamera *c,const TsFpSceneBounds *b,float width,float height){
@@ -36,7 +39,8 @@ void tsfp_scene_camera_fit(TsFpSceneCamera *c,const TsFpSceneBounds *b,float wid
     }
     c->screen_width=width;c->screen_height=height;
     c->focal=0.5f*(width<height?width:height);
-    c->distance=isfinite(b->radius)&&b->radius>0.001f?b->radius*2.5f:1.0f;
+    double distance=isfinite(b->radius)&&b->radius>0.001f?(double)b->radius*2.5:1.0;
+    c->distance=distance>(double)FLT_MAX?FLT_MAX:(float)distance;
 }
 
 TsFpScenePoint tsfp_scene_project(const TsFpSceneCamera *c,const TsFpSceneBounds *b,float x,float y,float z){

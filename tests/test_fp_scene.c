@@ -1,6 +1,7 @@
 #include "fp_scene.h"
 #include <assert.h>
 #include <math.h>
+#include <float.h>
 
 int main(void){
     TsFpSceneBounds b; tsfp_scene_bounds_reset(&b);
@@ -47,5 +48,14 @@ int main(void){
     tsfp_scene_camera_fit(&c,&b,NAN,480.0f);
     p=tsfp_scene_project(&c,&b,b.center_x,b.center_y,b.center_z);
     assert(!p.visible);
+
+    /* Finite coordinates near FLT_MAX must not overflow the bounds center. */
+    TsFpSceneBounds extreme; tsfp_scene_bounds_reset(&extreme);
+    tsfp_scene_bounds_add(&extreme,FLT_MAX*0.75f,0.0f,0.0f);
+    tsfp_scene_bounds_add(&extreme,FLT_MAX*0.90f,0.0f,0.0f);
+    assert(isfinite(extreme.center_x) && extreme.center_x>0.0f);
+    assert(isfinite(extreme.radius) && extreme.radius>0.0f);
+    tsfp_scene_camera_fit(&c,&extreme,960.0f,544.0f);
+    assert(isfinite(c.distance) && c.distance>0.0f);
     return 0;
 }
