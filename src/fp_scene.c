@@ -48,7 +48,7 @@ TsFpScenePoint tsfp_scene_project(const TsFpSceneCamera *c,const TsFpSceneBounds
     if(!c||!b||!isfinite(x)||!isfinite(y)||!isfinite(z)||
        !isfinite(c->screen_width)||!isfinite(c->screen_height)||!isfinite(c->focal)||
        c->screen_width<=0.0f||c->screen_height<=0.0f||c->focal<=0.0f||
-       !isfinite(c->yaw)||!isfinite(c->pitch)||!isfinite(c->distance))return p;
+       !isfinite(c->yaw)||!isfinite(c->pitch)||!isfinite(c->distance)||c->distance<=0.001f)return p;
     float px=x-b->center_x,py=y-b->center_y,pz=z-b->center_z;
     float sy=sinf(c->yaw),cy=cosf(c->yaw);
     float x1=px*cy-pz*sy;
