@@ -122,6 +122,26 @@ static float fpmin(float a,float b){
     return f32(r);
 }
 
+/*
+ * VU EFU arctangent uses the fixed SCEI polynomial, not the host libm
+ * implementation.  The hardware microcode reduces the input to [0,1]
+ * before applying this approximation; keeping the polynomial here also
+ * preserves the documented single-precision constants.
+ */
+static float efu_atan_unit(float x){
+    static const float t[8]={
+        0.999999344348907f,-0.333298563957214f,0.199465364217758f,
+        -0.139085337519646f,0.096420042216778f,-0.055909886956215f,
+        0.021861229091883f,-0.004054057877511f
+    };
+    float y=(x-1.0f)/(x+1.0f);
+    float y2=y*y;
+    float p=y;
+    float r=t[0]*p;
+    for(unsigned i=1;i<8;i++){p*=y2;r+=t[i]*p;}
+    return r+0.785398185253143f;
+}
+
 static float fmac_condition(float x){
     uint32_t raw=u32(x), exp=raw&0x7f800000u, frac=raw&0x007fffffu;
     if(exp==0u){
@@ -237,14 +257,14 @@ static void special_upper(TsFpVuState *s,uint32_t up){
         case 113: { float q=x*x+y*y+z*z; v=q!=0.0f?1.0f/q:q; cycles=18u; break; } /* ERSADD */
         case 114: v=sqrtf(x*x+y*y+z*z); cycles=18u; break; /* ELENG */
         case 115: { float q=x*x+y*y+z*z; v=q>0.0f?1.0f/sqrtf(q):q; cycles=24u; break; } /* ERLENG */
-        case 116: v=x!=0.0f?atan2f(y,x):0.0f; cycles=54u; break; /* EATANxy */
-        case 117: v=x!=0.0f?atan2f(z,x):0.0f; cycles=54u; break; /* EATANxz */
+        case 116: v=x!=0.0f?efu_atan_unit(y/x):0.0f; cycles=53u; break; /* EATANxy */
+        case 117: v=x!=0.0f?efu_atan_unit(z/x):0.0f; cycles=53u; break; /* EATANxz */
         case 118: v=x+y+z+w; cycles=12u; break; /* ESUM */
         case 120: { unsigned sf=(up>>21)&3u; float a=f32(s->vf[fs][sf]); v=a>=0.0f?sqrtf(a):a; cycles=12u; break; } /* ESQRT */
         case 121: { unsigned sf=(up>>21)&3u; float a=f32(s->vf[fs][sf]); v=a>=0.0f?(1.0f/sqrtf(a)):a; cycles=18u; break; } /* ERSQRT */
         case 122: { unsigned sf=(up>>21)&3u; float a=f32(s->vf[fs][sf]); v=a!=0.0f?1.0f/a:a; cycles=12u; break; } /* ERCPR */
         case 124: { unsigned sf=(up>>21)&3u; float a=f32(s->vf[fs][sf]); v=a-(0.166666567325592f*a*a*a)+(0.008333025500178f*a*a*a*a*a)-(0.000198074136279f*a*a*a*a*a*a*a)+(0.000002601886990f*a*a*a*a*a*a*a*a*a); cycles=29u; break; } /* ESIN */
-        case 125: { unsigned sf=(up>>21)&3u; v=atanf(f32(s->vf[fs][sf])); cycles=54u; break; } /* EATAN */
+        case 125: { unsigned sf=(up>>21)&3u; v=efu_atan_unit(f32(s->vf[fs][sf])); cycles=53u; break; } /* EATAN */
         case 126: { unsigned sf=(up>>21)&3u; float a=f32(s->vf[fs][sf]); float q=1.0f+0.249998688697815f*a+0.031257584691048f*a*a+0.002591371303424f*a*a*a+0.000171562001924f*a*a*a*a+0.000005430199963f*a*a*a*a*a+0.000000690600018f*a*a*a*a*a*a; q=q*q*q*q; v=q!=0.0f?1.0f/q:q; cycles=44u; break; } /* EEXP */
         default: break;
         }
