@@ -28,7 +28,7 @@ int main(void){uint8_t d[80]={0};uint64_t tag=1ull|(1ull<<15)|(0ull<<58)|(3ull<<
         /* GIF PRIM and vertex color are GS state. A later tag with PRE=0
            must keep the state established by an earlier tag/XGKICK. */
         uint8_t sdata[64]={0};
-        TsFpGifState st={0,0,255,255,255,255,0};
+        TsFpGifState st={0,0,255,255,255,255,0,0};
         uint64_t first=1ull|(1ull<<15)|(1ull<<46)|(5ull<<47)|(1ull<<60);
         w64(sdata,first); w64(sdata+8,1ull);
         w64(sdata+16,0x04030201ull); w64(sdata+24,0);

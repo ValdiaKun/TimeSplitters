@@ -142,7 +142,7 @@ static int build_model_preview(void){
     size_t model_size=0,elf_size=0,submesh_count=0;
     TsFpModelHeader model; TsFpSubmesh submeshes[256];
     TsFpGifVertex *triangles=NULL;
-    TsFpGifState gif_state={0,0,255,255,255,255,0};
+    TsFpGifState gif_state={0,0,255,255,255,255,0,0};
     int result=-1;
 
     if(read_first_chr_entry(&model_data,&model_size)!=0) goto done;

@@ -98,7 +98,7 @@ int tsfp_gif_parse_state(const uint8_t *data,size_t size,TsFpGifSummary *out,
 }
 
 int tsfp_gif_parse(const uint8_t *data,size_t size,TsFpGifSummary *out,TsFpGifVertex *vertices,size_t vertex_capacity){
- TsFpGifState state={0,0,255,255,255,255,0};
+ TsFpGifState state={0,0,255,255,255,255,0,0};
  return tsfp_gif_parse_state(data,size,out,vertices,vertex_capacity,&state);
 }
 
