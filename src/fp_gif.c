@@ -12,8 +12,8 @@ static void reg64(uint8_t reg,uint64_t v,TsFpGifState *s,TsFpGifSummary *o,TsFpG
  else if(reg==4||reg==5){
     if(o->vertices<cap&&vs){
         TsFpGifVertex *x=&vs[o->vertices];
-        x->x=(float)(int16_t)(v&0xffffu)/16.0f;
-        x->y=(float)(int16_t)((v>>16)&0xffffu)/16.0f;
+        x->x=(float)(uint16_t)(v&0xffffu)/16.0f;
+        x->y=(float)(uint16_t)((v>>16)&0xffffu)/16.0f;
         x->z=(float)(uint32_t)((reg==4)?(v>>32)&0x00ffffffu:(v>>32));
         x->s=s->s;x->t=s->t;x->r=s->r;x->g=s->g;x->b=s->b;x->a=s->a;
     }
@@ -50,8 +50,8 @@ int tsfp_gif_parse_state(const uint8_t *data,size_t size,TsFpGifSummary *out,
             if(reg==4||reg==5){
                 if(out->vertices<vertex_capacity&&vertices){
                     TsFpGifVertex *x=&vertices[out->vertices];
-                    x->x=(float)(int16_t)(a&0xffffu)/16.0f;
-                    x->y=(float)(int16_t)((a>>16)&0xffffu)/16.0f;
+                    x->x=(float)(uint16_t)(a&0xffffu)/16.0f;
+                    x->y=(float)(uint16_t)((a>>16)&0xffffu)/16.0f;
                     /* Packed XYZ data carries Z in the low 64-bit register value; b is padding/ADC. */
                     x->z=(float)(uint32_t)((reg==4)?(a>>32)&0x00ffffffu:(a>>32));
                     x->s=state->s;x->t=state->t;x->r=state->r;x->g=state->g;x->b=state->b;x->a=state->a;

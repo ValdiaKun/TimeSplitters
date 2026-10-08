@@ -80,4 +80,31 @@ int main(void){uint8_t d[80]={0};uint64_t tag=1ull|(1ull<<15)|(0ull<<58)|(3ull<<
         assert(tsfp_gif_parse(f,sizeof(f),&fs,&fv,1)==0);
         assert(fs.vertices==1 && fv.x==1.0f && fv.y==2.0f && (uint32_t)fv.z==0xabcdefu);
     }
+    {
+        /* GS X/Y are unsigned 12.4 values; crossing 0x8000 must not wrap negative. */
+        uint8_t packed[48]={0};
+        uint64_t ptag=2ull|(1ull<<15)|(0ull<<58)|(1ull<<60);
+        w64(packed,ptag);w64(packed+8,5ull);
+        w64(packed+16,((uint64_t)1u<<32)|((uint64_t)0x8000u<<16)|0x7000u);
+        w64(packed+24,0);
+        w64(packed+32,((uint64_t)2u<<32)|((uint64_t)0x8000u<<16)|0x9000u);
+        w64(packed+40,0);
+        TsFpGifSummary ps;TsFpGifVertex pv[2];
+        assert(tsfp_gif_parse(packed,sizeof(packed),&ps,pv,2)==0);
+        assert(ps.vertices==2);
+        assert(pv[0].x==1792.0f && pv[1].x==2304.0f);
+        assert(pv[0].y==2048.0f && pv[1].y==2048.0f);
+
+        /* REGLIST XYZ2 must use the same unsigned coordinate interpretation. */
+        uint8_t reglist[32]={0};
+        uint64_t rtag=2ull|(1ull<<15)|(1ull<<58)|(1ull<<60);
+        w64(reglist,rtag);w64(reglist+8,5ull);
+        w64(reglist+16,((uint64_t)1u<<32)|((uint64_t)0x8000u<<16)|0x7000u);
+        w64(reglist+24,((uint64_t)2u<<32)|((uint64_t)0x8000u<<16)|0x9000u);
+        TsFpGifSummary rs;TsFpGifVertex rv[2];
+        assert(tsfp_gif_parse(reglist,sizeof(reglist),&rs,rv,2)==0);
+        assert(rs.vertices==2);
+        assert(rv[0].x==1792.0f && rv[1].x==2304.0f);
+        assert(rv[0].y==2048.0f && rv[1].y==2048.0f);
+    }
     return 0;}
