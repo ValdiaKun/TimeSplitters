@@ -14,6 +14,7 @@
 #include "fp_vif.h"
 #include "fp_vu.h"
 #include "fp_gif.h"
+#include "fp_scene.h"
 
 #define DATA_PATH "ux0:data/TimeSplitters/PAK/CHR.PAK"
 #define BOOT_PATH "ux0:data/TimeSplitters/SLED_530.66"
@@ -23,21 +24,30 @@
 
 static vita2d_color_vertex preview[PREVIEW_CAPACITY];
 static vita2d_color_vertex transformed_preview[PREVIEW_CAPACITY];
-static TsFpGifVertex scene_vertices[PREVIEW_CAPACITY];
 static size_t preview_count=0;
 static TsFpGifVertex gif_local[1024];
-static float camera_x=0.0f, camera_y=0.0f, camera_zoom=1.0f;
+static TsFpGifVertex scene_vertices[PREVIEW_CAPACITY];
+static TsFpSceneBounds scene_bounds;
+static TsFpSceneCamera scene_camera;
+static int scene_ready=0;
+typedef struct { vita2d_color_vertex v[3]; float depth; } TsFpDrawTriangle;
+static TsFpDrawTriangle draw_triangles[PREVIEW_CAPACITY/3u];
+static int compare_draw_triangles(const void *a,const void *b){
+    const TsFpDrawTriangle *x=(const TsFpDrawTriangle*)a,*y=(const TsFpDrawTriangle*)b;
+    return x->depth<y->depth?1:(x->depth>y->depth?-1:0);
+}
 
 static void update_camera(const SceCtrlData *pad){
-    const float pan=5.0f, zoom_step=0.03f;
-    if(pad->buttons&SCE_CTRL_LEFT)  camera_x+=pan;
-    if(pad->buttons&SCE_CTRL_RIGHT) camera_x-=pan;
-    if(pad->buttons&SCE_CTRL_UP)    camera_y+=pan;
-    if(pad->buttons&SCE_CTRL_DOWN)  camera_y-=pan;
-    if(pad->buttons&SCE_CTRL_LTRIGGER) camera_zoom+=zoom_step;
-    if(pad->buttons&SCE_CTRL_RTRIGGER) camera_zoom-=zoom_step;
-    if(camera_zoom<0.25f) camera_zoom=0.25f;
-    if(camera_zoom>4.0f) camera_zoom=4.0f;
+    const float orbit=0.035f, pitch_step=0.025f, zoom_step=0.05f;
+    if(pad->buttons&SCE_CTRL_LEFT) scene_camera.yaw-=orbit;
+    if(pad->buttons&SCE_CTRL_RIGHT) scene_camera.yaw+=orbit;
+    if(pad->buttons&SCE_CTRL_UP) scene_camera.pitch+=pitch_step;
+    if(pad->buttons&SCE_CTRL_DOWN) scene_camera.pitch-=pitch_step;
+    if(pad->buttons&SCE_CTRL_LTRIGGER) scene_camera.distance*=1.0f-zoom_step;
+    if(pad->buttons&SCE_CTRL_RTRIGGER) scene_camera.distance*=1.0f+zoom_step;
+    if(scene_camera.pitch>1.45f) scene_camera.pitch=1.45f;
+    if(scene_camera.pitch<-1.45f) scene_camera.pitch=-1.45f;
+    if(scene_camera.distance<0.01f) scene_camera.distance=0.01f;
 }
 
 
@@ -208,7 +218,6 @@ static int build_model_preview(void){
                              ((unsigned)scene_vertices[i].g<<8)|scene_vertices[i].r;
         }
         result=(int)tri_count;
-    }
 
 done:
     free(triangles); free(gif_mem); free(vu_mem); free(elf); free(model_data);
@@ -277,46 +286,12 @@ static void draw(int result,int preview_result,const TsP5ckInfo *info,const TsP5
     if(model->material_count){float w=(float)(model->material_count>100?800:(model->material_count*800u)/100u);vita2d_draw_rectangle(80,420,w,20,0xFF40C080);}
     if(geometry->submesh_count){float w=(float)(geometry->submesh_count>256?800:(geometry->submesh_count*800u)/256u);vita2d_draw_rectangle(80,450,w,18,0xFF60A0E0);}
     if(vif->payload_bytes){float w=(float)(vif->payload_bytes>64?800:(vif->payload_bytes*800u)/64u);vita2d_draw_rectangle(80,470,w,12,0xFF80C060);}
-    if(preview_count>=3){
-        size_t n=preview_count-(preview_count%3);
-        float cx=540.0f+camera_x, cy=320.0f+camera_y;
-        for(size_t i=0;i<n;i++){
-            float x=preview[i].x-540.0f, y=preview[i].y-320.0f;
-            transformed_preview[i]=preview[i];
-            transformed_preview[i].x=cx+x*camera_zoom;
-            transformed_preview[i].y=cy+y*camera_zoom;
-        }
-        vita2d_draw_array(SCE_GXM_PRIMITIVE_TRIANGLES,transformed_preview,n);
-    }
-    if(xgkick_pc!=UINT32_MAX)vita2d_draw_rectangle(80,500,800,10,0xFFC08040);
-}
-
-int main(void){
-    SceCtrlData pad; TsP5ckInfo info; TsP5ckEntry entry; TsFpResourceSummary resource;
-    TsFpModelHeader model; TsFpGeometrySummary geometry; TsFpVifSummary vif;
-    memset(&pad,0,sizeof(pad));memset(&info,0,sizeof(info));memset(&entry,0,sizeof(entry));
-    memset(&resource,0,sizeof(resource));memset(&model,0,sizeof(model));memset(&geometry,0,sizeof(geometry));memset(&vif,0,sizeof(vif));
-    int result=load_probe(&info,&entry,&resource,&model,&geometry,&vif);
-    int preview_result=-1;
-    uint32_t xgkick_pc=probe_boot_vu();
-    if(result==0)preview_result=build_model_preview();
-    vita2d_init();
-    for(;;){
-        sceCtrlPeekBufferPositive(0,&pad,1);if(pad.buttons&SCE_CTRL_START)break;
-        update_camera(&pad);
-        vita2d_start_drawing();draw(result,preview_result,&info,&entry,&resource,&model,&geometry,&vif,xgkick_pc);
-        vita2d_end_drawing();vita2d_swap_buffers();sceDisplayWaitVblankStart();
-    }
-    vita2d_fini();sceKernelExitProcess(0);return 0;
-}    if(preview_count>=3 && scene_ready){
+    if(preview_count>=3 && scene_ready){
         size_t n=preview_count-(preview_count%3),tc=0;
         for(size_t i=0;i<n && tc<PREVIEW_CAPACITY/3u;i+=3){
-            TsFpScenePoint p0=tsfp_scene_project(&scene_camera,&scene_bounds,
-                                                 scene_vertices[i].x,scene_vertices[i].y,scene_vertices[i].z);
-            TsFpScenePoint p1=tsfp_scene_project(&scene_camera,&scene_bounds,
-                                                 scene_vertices[i+1].x,scene_vertices[i+1].y,scene_vertices[i+1].z);
-            TsFpScenePoint p2=tsfp_scene_project(&scene_camera,&scene_bounds,
-                                                 scene_vertices[i+2].x,scene_vertices[i+2].y,scene_vertices[i+2].z);
+            TsFpScenePoint p0=tsfp_scene_project(&scene_camera,&scene_bounds,scene_vertices[i].x,scene_vertices[i].y,scene_vertices[i].z);
+            TsFpScenePoint p1=tsfp_scene_project(&scene_camera,&scene_bounds,scene_vertices[i+1].x,scene_vertices[i+1].y,scene_vertices[i+1].z);
+            TsFpScenePoint p2=tsfp_scene_project(&scene_camera,&scene_bounds,scene_vertices[i+2].x,scene_vertices[i+2].y,scene_vertices[i+2].z);
             if(!p0.visible||!p1.visible||!p2.visible)continue;
             TsFpDrawTriangle *t=&draw_triangles[tc++];
             t->v[0]=preview[i];t->v[1]=preview[i+1];t->v[2]=preview[i+2];
