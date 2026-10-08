@@ -763,5 +763,29 @@ int main(void) {
         e.vi[1]=0x00010001u; e.vi[2]=1u;
         assert(tsfp_vu_execute(m,sizeof(m),0,&e,5)==0 && e.vi[5]==13u);
     }
+    {
+        /* EFU arctangent uses the documented fixed polynomial constants. */
+        uint8_t m[8]={0}; uint32_t x;
+        x=0; memcpy(m,&x,4);
+        x=upper(0x3d,31,1,0,0xf); memcpy(m+4,&x,4); /* EATAN VF1x */
+        TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
+        t.vf[1][0]=u32(0.5f);
+        assert(tsfp_vu_execute(m,sizeof(m),0,&t,1)==-2);
+        assert(t.p_pending==1u && t.p_pending_value==0x3eed6339u);
+
+        memset(m,0,sizeof(m));
+        x=0; memcpy(m,&x,4);
+        x=upper(0x3c,29,1,0,0xf); memcpy(m+4,&x,4); /* EATANxy */
+        t.p_pending=0; t.vf[1][0]=u32(2.0f); t.vf[1][1]=u32(1.0f);
+        assert(tsfp_vu_execute(m,sizeof(m),0,&t,1)==-2);
+        assert(t.p_pending_value==0x3eed6339u);
+
+        memset(m,0,sizeof(m));
+        x=0; memcpy(m,&x,4);
+        x=upper(0x3d,29,1,0,0xf); memcpy(m+4,&x,4); /* EATANxz */
+        t.p_pending=0; t.vf[1][2]=u32(1.0f);
+        assert(tsfp_vu_execute(m,sizeof(m),0,&t,1)==-2);
+        assert(t.p_pending_value==0x3eed6339u);
+    }
     return 0;
 }
