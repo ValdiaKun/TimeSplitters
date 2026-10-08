@@ -14,7 +14,7 @@ int tsfp_vu_find_vutext(const uint8_t *elf, size_t size, size_t *offset, size_t 
     uint16_t shentsz = (uint16_t)elf[46] | ((uint16_t)elf[47] << 8);
     uint16_t shnum = (uint16_t)elf[48] | ((uint16_t)elf[49] << 8);
     uint16_t shstr = (uint16_t)elf[50] | ((uint16_t)elf[51] << 8);
-    if (!shentsz || shnum == 0 || shstr >= shnum) return -4;
+    if (shentsz < 40u || shnum == 0 || shstr >= shnum) return -4;
     size_t table_size=(size_t)shentsz*(size_t)shnum;
     if ((size_t)shoff>size || table_size>size-(size_t)shoff) return -5;
     const uint8_t *strsec = elf + (size_t)shoff + (size_t)shstr * shentsz;

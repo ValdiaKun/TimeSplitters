@@ -53,6 +53,12 @@ int main(void) {
         assert(tsfp_vu_find_vutext(elf,sizeof(elf),&off,&len)==0);
         assert(off==0x100 && len==16);
 
+        /* ELF32 section headers must be large enough for all fields read below. */
+        uint16_t short_size=4u, full_size=40u;
+        memcpy(elf+46,&short_size,2);
+        assert(tsfp_vu_find_vutext(elf,sizeof(elf),&off,&len)==-4);
+        memcpy(elf+46,&full_size,2);
+
         /* Malformed ELF offsets must be rejected without wrapping size_t. */
         uint32_t bad=0xfffffff0u, good=0x40u;
         memcpy(elf+32,&bad,4);
