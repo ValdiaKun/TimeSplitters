@@ -826,7 +826,7 @@ int tsfp_vu_execute(const uint8_t *micro,size_t size,uint32_t start,TsFpVuState 
             memcpy(state->vf,vf_upper,sizeof(vf_upper));
         } else {
             memcpy(state->vf,vf_before,sizeof(vf_before));
-            lower_exec(state,lo,state->pc,vi_before);
+            lower_exec(state,lo,state->pc);
             /* Register-level write priority: if the upper pipeline writes
                a VF register, the lower result for that whole register is
                discarded, even when the destination fields differ. */
