@@ -771,7 +771,7 @@ int main(void) {
         TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
         t.vf[1][0]=u32(0.5f);
         assert(tsfp_vu_execute(m,sizeof(m),0,&t,1)==-2);
-        assert(t.p_pending==1u && t.p_pending_value==0x3eed6339u);
+        assert(t.p_pending==1u && t.p_pending_cycles==54u && t.p_pending_value==0x3eed6339u);
 
         memset(m,0,sizeof(m));
         x=0; memcpy(m,&x,4);
