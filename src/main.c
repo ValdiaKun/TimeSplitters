@@ -309,22 +309,29 @@ int main(void){
     }
     vita2d_fini();sceKernelExitProcess(0);return 0;
 }    if(preview_count>=3 && scene_ready){
-        size_t n=preview_count-(preview_count%3);
-        for(size_t i=0;i<n;i++){
-            TsFpScenePoint p=tsfp_scene_project(&scene_camera,&scene_bounds,
-                                                scene_vertices[i].x,scene_vertices[i].y,scene_vertices[i].z);
-            if(p.visible){
-                transformed_preview[i]=preview[i];
-                transformed_preview[i].x=p.x;
-                transformed_preview[i].y=p.y;
-                transformed_preview[i].z=0.5f;
-            } else {
-                transformed_preview[i].x=-10000.0f;
-                transformed_preview[i].y=-10000.0f;
-                transformed_preview[i].z=0.5f;
-            }
+        size_t n=preview_count-(preview_count%3),tc=0;
+        for(size_t i=0;i<n && tc<PREVIEW_CAPACITY/3u;i+=3){
+            TsFpScenePoint p0=tsfp_scene_project(&scene_camera,&scene_bounds,
+                                                 scene_vertices[i].x,scene_vertices[i].y,scene_vertices[i].z);
+            TsFpScenePoint p1=tsfp_scene_project(&scene_camera,&scene_bounds,
+                                                 scene_vertices[i+1].x,scene_vertices[i+1].y,scene_vertices[i+1].z);
+            TsFpScenePoint p2=tsfp_scene_project(&scene_camera,&scene_bounds,
+                                                 scene_vertices[i+2].x,scene_vertices[i+2].y,scene_vertices[i+2].z);
+            if(!p0.visible||!p1.visible||!p2.visible)continue;
+            TsFpDrawTriangle *t=&draw_triangles[tc++];
+            t->v[0]=preview[i];t->v[1]=preview[i+1];t->v[2]=preview[i+2];
+            t->v[0].x=p0.x;t->v[0].y=p0.y;t->v[0].z=0.5f;
+            t->v[1].x=p1.x;t->v[1].y=p1.y;t->v[1].z=0.5f;
+            t->v[2].x=p2.x;t->v[2].y=p2.y;t->v[2].z=0.5f;
+            t->depth=(p0.depth+p1.depth+p2.depth)*(1.0f/3.0f);
         }
-        vita2d_draw_array(SCE_GXM_PRIMITIVE_TRIANGLES,transformed_preview,n);
+        qsort(draw_triangles,tc,sizeof(draw_triangles[0]),compare_draw_triangles);
+        for(size_t i=0;i<tc;i++){
+            transformed_preview[i*3u]=draw_triangles[i].v[0];
+            transformed_preview[i*3u+1u]=draw_triangles[i].v[1];
+            transformed_preview[i*3u+2u]=draw_triangles[i].v[2];
+        }
+        vita2d_draw_array(SCE_GXM_PRIMITIVE_TRIANGLES,transformed_preview,tc*3u);
     }
     if(xgkick_pc!=UINT32_MAX)vita2d_draw_rectangle(80,500,800,10,0xFFC08040);
 }
