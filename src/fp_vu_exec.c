@@ -257,14 +257,14 @@ static void special_upper(TsFpVuState *s,uint32_t up){
         case 113: { float q=x*x+y*y+z*z; v=q!=0.0f?1.0f/q:q; cycles=18u; break; } /* ERSADD */
         case 114: v=sqrtf(x*x+y*y+z*z); cycles=18u; break; /* ELENG */
         case 115: { float q=x*x+y*y+z*z; v=q>0.0f?1.0f/sqrtf(q):q; cycles=24u; break; } /* ERLENG */
-        case 116: v=x!=0.0f?efu_atan_unit(y/x):0.0f; cycles=53u; break; /* EATANxy */
-        case 117: v=x!=0.0f?efu_atan_unit(z/x):0.0f; cycles=53u; break; /* EATANxz */
+        case 116: v=x!=0.0f?efu_atan_unit(y/x):0.0f; cycles=54u; break; /* EATANxy */
+        case 117: v=x!=0.0f?efu_atan_unit(z/x):0.0f; cycles=54u; break; /* EATANxz */
         case 118: v=x+y+z+w; cycles=12u; break; /* ESUM */
         case 120: { unsigned sf=(up>>21)&3u; float a=f32(s->vf[fs][sf]); v=a>=0.0f?sqrtf(a):a; cycles=12u; break; } /* ESQRT */
         case 121: { unsigned sf=(up>>21)&3u; float a=f32(s->vf[fs][sf]); v=a>=0.0f?(1.0f/sqrtf(a)):a; cycles=18u; break; } /* ERSQRT */
         case 122: { unsigned sf=(up>>21)&3u; float a=f32(s->vf[fs][sf]); v=a!=0.0f?1.0f/a:a; cycles=12u; break; } /* ERCPR */
         case 124: { unsigned sf=(up>>21)&3u; float a=f32(s->vf[fs][sf]); v=a-(0.166666567325592f*a*a*a)+(0.008333025500178f*a*a*a*a*a)-(0.000198074136279f*a*a*a*a*a*a*a)+(0.000002601886990f*a*a*a*a*a*a*a*a*a); cycles=29u; break; } /* ESIN */
-        case 125: { unsigned sf=(up>>21)&3u; v=efu_atan_unit(f32(s->vf[fs][sf])); cycles=53u; break; } /* EATAN */
+        case 125: { unsigned sf=(up>>21)&3u; v=efu_atan_unit(f32(s->vf[fs][sf])); cycles=54u; break; } /* EATAN */
         case 126: { unsigned sf=(up>>21)&3u; float a=f32(s->vf[fs][sf]); float q=1.0f+0.249998688697815f*a+0.031257584691048f*a*a+0.002591371303424f*a*a*a+0.000171562001924f*a*a*a*a+0.000005430199963f*a*a*a*a*a+0.000000690600018f*a*a*a*a*a*a; q=q*q*q*q; v=q!=0.0f?1.0f/q:q; cycles=44u; break; } /* EEXP */
         default: break;
         }
