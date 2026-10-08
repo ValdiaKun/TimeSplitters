@@ -780,7 +780,7 @@ int main(void) {
         assert(tsfp_vu_execute(m,sizeof(m),0,&e,5)==0 && e.vi[5]==13u);
     }
     {
-        /* Conditional VI branches observe the previous-cycle VI value. */
+        /* Conditional VI branches observe the current VI state at execution. */
         uint8_t m[40]={0}; uint32_t x;
         x=(0x08u<<25)|(5u<<16)|1u; memcpy(m,&x,4); x=0; memcpy(m+4,&x,4); /* IADDIU VI05, VI00, 1 */
         x=branch(0x28u,5,0,4); memcpy(m+8,&x,4); x=0; memcpy(m+12,&x,4); /* IBEQ sees current VI05=1, so it is not taken */
@@ -788,7 +788,7 @@ int main(void) {
         x=lower(0x08,0,0,7)|7u; memcpy(m+24,&x,4); x=0; memcpy(m+28,&x,4); /* executes when branch is not taken */
         x=lower(0x08,0,0,7)|13u; memcpy(m+32,&x,4); x=0; memcpy(m+36,&x,4); /* skipped by step budget */
         TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
-        assert(tsfp_vu_execute(m,sizeof(m),0,&t,4)==0);
+        assert(tsfp_vu_execute(m,sizeof(m),0,&t,4)==-2);
         assert(t.vi[6]==9u && t.vi[7]==7u);
     }
     {
