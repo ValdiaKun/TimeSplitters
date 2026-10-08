@@ -54,6 +54,24 @@ int main(void){
     c.distance=-1.0f;
     p=tsfp_scene_project(&c,&b,b.center_x+1.0f,b.center_y,b.center_z);
     assert(!p.visible);
+    c.distance=1.0f;c.focal=0.0f;
+    p=tsfp_scene_project(&c,&b,b.center_x+1.0f,b.center_y,b.center_z);
+    assert(!p.visible);
+
+    /* Geometry behind the camera must be rejected by the near-plane check. */
+    tsfp_scene_camera_fit(&c,&b,800.0f,480.0f);
+    c.yaw=0.0f;c.pitch=0.0f;c.distance=1.0f;
+    p=tsfp_scene_project(&c,&b,b.center_x,b.center_y,b.center_z-2.0f);
+    assert(!p.visible);
+
+    /* A single-point scene is degenerate but still has a stable camera fit. */
+    TsFpSceneBounds point; tsfp_scene_bounds_reset(&point);
+    tsfp_scene_bounds_add(&point,4.0f,5.0f,6.0f);
+    assert(point.center_x==4.0f && point.center_y==5.0f && point.center_z==6.0f);
+    assert(point.radius==0.0f);
+    tsfp_scene_camera_fit(&c,&point,320.0f,240.0f);
+    p=tsfp_scene_project(&c,&point,4.0f,5.0f,6.0f);
+    assert(p.visible && fabsf(p.x-160.0f)<0.001f && fabsf(p.y-120.0f)<0.001f);
 
     /* Finite coordinates near FLT_MAX must not overflow the bounds center. */
     TsFpSceneBounds extreme; tsfp_scene_bounds_reset(&extreme);
