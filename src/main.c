@@ -23,6 +23,7 @@
 
 static vita2d_color_vertex preview[PREVIEW_CAPACITY];
 static vita2d_color_vertex transformed_preview[PREVIEW_CAPACITY];
+static TsFpGifVertex scene_vertices[PREVIEW_CAPACITY];
 static size_t preview_count=0;
 static TsFpGifVertex gif_local[1024];
 static float camera_x=0.0f, camera_y=0.0f, camera_zoom=1.0f;
@@ -191,23 +192,21 @@ static int build_model_preview(void){
     }
 
     if(tri_count>=3){
-        for(size_t i=0;i<tri_count;i++){
-            if(triangles[i].x<minx)minx=triangles[i].x;
-            if(triangles[i].x>maxx)maxx=triangles[i].x;
-            if(triangles[i].y<miny)miny=triangles[i].y;
-            if(triangles[i].y>maxy)maxy=triangles[i].y;
-        }
-        float sx=(maxx-minx)>0.00001f?760.0f/(maxx-minx):1.0f;
-        float sy=(maxy-miny)>0.00001f?400.0f/(maxy-miny):1.0f;
-        float scale=sx<sy?sx:sy;
-        for(size_t i=0;i<tri_count;i++){
-            preview[i].x=100.0f+(triangles[i].x-minx)*scale;
-            preview[i].y=120.0f+(triangles[i].y-miny)*scale;
-            preview[i].z=0.5f;
-            preview[i].color=((unsigned)triangles[i].a<<24)|((unsigned)triangles[i].b<<16)|
-                             ((unsigned)triangles[i].g<<8)|triangles[i].r;
-        }
+        if(tri_count>PREVIEW_CAPACITY)tri_count=PREVIEW_CAPACITY;
+        memcpy(scene_vertices,triangles,sizeof(*scene_vertices)*tri_count);
         preview_count=tri_count;
+        tsfp_scene_bounds_reset(&scene_bounds);
+        for(size_t i=0;i<tri_count;i++)
+            tsfp_scene_bounds_add(&scene_bounds,scene_vertices[i].x,scene_vertices[i].y,scene_vertices[i].z);
+        tsfp_scene_camera_fit(&scene_camera,&scene_bounds,960.0f,544.0f);
+        scene_ready=1;
+        for(size_t i=0;i<tri_count;i++){
+            preview[i].x=scene_vertices[i].x;
+            preview[i].y=scene_vertices[i].y;
+            preview[i].z=scene_vertices[i].z;
+            preview[i].color=((unsigned)scene_vertices[i].a<<24)|((unsigned)scene_vertices[i].b<<16)|
+                             ((unsigned)scene_vertices[i].g<<8)|scene_vertices[i].r;
+        }
         result=(int)tri_count;
     }
 
@@ -286,6 +285,44 @@ static void draw(int result,int preview_result,const TsP5ckInfo *info,const TsP5
             transformed_preview[i]=preview[i];
             transformed_preview[i].x=cx+x*camera_zoom;
             transformed_preview[i].y=cy+y*camera_zoom;
+        }
+        vita2d_draw_array(SCE_GXM_PRIMITIVE_TRIANGLES,transformed_preview,n);
+    }
+    if(xgkick_pc!=UINT32_MAX)vita2d_draw_rectangle(80,500,800,10,0xFFC08040);
+}
+
+int main(void){
+    SceCtrlData pad; TsP5ckInfo info; TsP5ckEntry entry; TsFpResourceSummary resource;
+    TsFpModelHeader model; TsFpGeometrySummary geometry; TsFpVifSummary vif;
+    memset(&pad,0,sizeof(pad));memset(&info,0,sizeof(info));memset(&entry,0,sizeof(entry));
+    memset(&resource,0,sizeof(resource));memset(&model,0,sizeof(model));memset(&geometry,0,sizeof(geometry));memset(&vif,0,sizeof(vif));
+    int result=load_probe(&info,&entry,&resource,&model,&geometry,&vif);
+    int preview_result=-1;
+    uint32_t xgkick_pc=probe_boot_vu();
+    if(result==0)preview_result=build_model_preview();
+    vita2d_init();
+    for(;;){
+        sceCtrlPeekBufferPositive(0,&pad,1);if(pad.buttons&SCE_CTRL_START)break;
+        update_camera(&pad);
+        vita2d_start_drawing();draw(result,preview_result,&info,&entry,&resource,&model,&geometry,&vif,xgkick_pc);
+        vita2d_end_drawing();vita2d_swap_buffers();sceDisplayWaitVblankStart();
+    }
+    vita2d_fini();sceKernelExitProcess(0);return 0;
+}    if(preview_count>=3 && scene_ready){
+        size_t n=preview_count-(preview_count%3);
+        for(size_t i=0;i<n;i++){
+            TsFpScenePoint p=tsfp_scene_project(&scene_camera,&scene_bounds,
+                                                scene_vertices[i].x,scene_vertices[i].y,scene_vertices[i].z);
+            if(p.visible){
+                transformed_preview[i]=preview[i];
+                transformed_preview[i].x=p.x;
+                transformed_preview[i].y=p.y;
+                transformed_preview[i].z=0.5f;
+            } else {
+                transformed_preview[i].x=-10000.0f;
+                transformed_preview[i].y=-10000.0f;
+                transformed_preview[i].z=0.5f;
+            }
         }
         vita2d_draw_array(SCE_GXM_PRIMITIVE_TRIANGLES,transformed_preview,n);
     }
