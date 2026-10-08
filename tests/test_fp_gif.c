@@ -160,4 +160,29 @@ int main(void){uint8_t d[80]={0};uint64_t tag=1ull|(1ull<<15)|(0ull<<58)|(3ull<<
         assert(tri[0].x==0.0f&&tri[1].x==1.0f&&tri[2].x==2.0f);
         assert(tri[3].x==3.0f&&tri[4].x==4.0f&&tri[5].x==5.0f);
     }
+    {
+        /* A stream may change PRIM between GIF tags; retain each vertex's mode. */
+        uint8_t stream[128]={0};
+        uint64_t first_tag=3ull|(1ull<<46)|(3ull<<47)|(1ull<<60);
+        uint64_t second_tag=3ull|(1ull<<15)|(1ull<<46)|(4ull<<47)|(1ull<<60);
+        w64(stream,first_tag);w64(stream+8,5ull);
+        for(size_t i=0;i<3;i++){
+            uint64_t x=(uint64_t)(i*16u),y=(uint64_t)(i*16u),z=(uint64_t)(i+1u);
+            w64(stream+16+i*16,(z<<32)|(y<<16)|x);w64(stream+24+i*16,0);
+        }
+        w64(stream+64,second_tag);w64(stream+72,5ull);
+        for(size_t i=0;i<3;i++){
+            uint64_t x=(uint64_t)((10u+i)*16u),y=(uint64_t)((20u+i)*16u),z=(uint64_t)(10u+i);
+            w64(stream+80+i*16,(z<<32)|(y<<16)|x);w64(stream+88+i*16,0);
+        }
+        TsFpGifSummary summary;TsFpGifVertex vertices[6],triangles[12];
+        assert(tsfp_gif_parse(stream,sizeof(stream),&summary,vertices,6)==0);
+        assert(summary.vertices==6 && summary.primitive==4u);
+        for(size_t i=0;i<3;i++)assert(vertices[i].primitive==3u);
+        for(size_t i=3;i<6;i++)assert(vertices[i].primitive==4u);
+        size_t written=tsfp_gif_triangulate(triangles,12,vertices,6,0u);
+        assert(written==6);
+        assert(triangles[0].x==0.0f&&triangles[1].x==1.0f&&triangles[2].x==2.0f);
+        assert(triangles[3].x==10.0f&&triangles[4].x==11.0f&&triangles[5].x==12.0f);
+    }
     return 0;}
