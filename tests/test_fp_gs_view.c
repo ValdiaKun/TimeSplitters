@@ -19,8 +19,8 @@ int main(void){
     assert(fabsf(x-96.0f)<0.01f && fabsf(y-80.0f)<0.01f);
     assert(tsfp_gs_view_project(&view,&vertices[1],1.0f,0.0f,0.0f,&x,&y));
     assert(fabsf(x-864.0f)<0.01f && fabsf(y-464.0f)<0.01f);
-    assert(tsfp_gs_view_project(&view,&vertices[0],2.0f,10.0f,-5.0f,&x,&y));
-    assert(fabsf(x-202.0f)<0.02f && fabsf(y-83.0f)<0.02f);
+    assert(tsfp_gs_view_project(&view,&vertices[2],2.0f,10.0f,-5.0f,&x,&y));
+    assert(fabsf(x-490.0f)<0.02f && fabsf(y-267.0f)<0.02f);
 
     TsFpGifVertex invalid=vertices[0];
     invalid.z=NAN;
