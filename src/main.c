@@ -218,6 +218,7 @@ static int build_model_preview(void){
                              ((unsigned)scene_vertices[i].g<<8)|scene_vertices[i].r;
         }
         result=(int)tri_count;
+    }
 
 done:
     free(triangles); free(gif_mem); free(vu_mem); free(elf); free(model_data);
