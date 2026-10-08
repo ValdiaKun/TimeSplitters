@@ -399,7 +399,7 @@ static size_t gif_packet_size(const uint8_t *mem,size_t size,size_t start){
     return 0;
 }
 
-static void lower_exec(TsFpVuState *s,uint32_t lo,uint32_t next_pc){
+static void lower_exec(TsFpVuState *s,uint32_t lo,uint32_t next_pc,const uint32_t *vi_branch){
     unsigned op=(lo>>25)&0x7fu,it=(lo>>16)&31u,is=(lo>>11)&31u,id=(lo>>6)&31u;
     unsigned dest=(lo>>21)&15u;
     int32_t imm=sx11(lo);
@@ -656,7 +656,7 @@ static void lower_exec(TsFpVuState *s,uint32_t lo,uint32_t next_pc){
         return;
     }
     if(op==0x28u||op==0x29u){
-        int32_t a=(int16_t)(s->vi[is]&0xffffu),b=(int16_t)(s->vi[it]&0xffffu);
+        int32_t a=(int16_t)((vi_branch?vi_branch[is]:s->vi[is])&0xffffu),b=(int16_t)((vi_branch?vi_branch[it]:s->vi[it])&0xffffu);
         int take=(op==0x28u)?(a==b):(a!=b);
         if(take){
             s->branch_pending=1;
@@ -665,7 +665,7 @@ static void lower_exec(TsFpVuState *s,uint32_t lo,uint32_t next_pc){
         return;
     }
     if(op>=0x2cu&&op<=0x2fu){
-        int32_t a=(int16_t)(s->vi[is]&0xffffu);
+        int32_t a=(int16_t)((vi_branch?vi_branch[is]:s->vi[is])&0xffffu);
         int take=0;
         switch(op){
         case 0x2c:take=a<0;break;
@@ -789,12 +789,14 @@ int tsfp_vu_execute(const uint8_t *micro,size_t size,uint32_t start,TsFpVuState 
          */
         if(is_waitq(lo) && state->q_pending) q_wait(state);
         if(is_waitp(lo) && state->p_pending) p_wait(state);
+        uint32_t vi_before[32];
         uint32_t vf_before[32][4];
         uint32_t vf_upper[32][4];
         uint16_t mac_before=(uint16_t)state->mac_flag;
         uint16_t mac_upper;
         uint32_t status_before=state->status_flag, status_upper;
         uint32_t clip_before=state->clip_flag, clip_upper;
+        memcpy(vi_before,state->vi,sizeof(vi_before));
         memcpy(vf_before,state->vf,sizeof(vf_before));
         upper_exec(state,up);
         mac_upper=(uint16_t)state->mac_flag;
@@ -810,7 +812,7 @@ int tsfp_vu_execute(const uint8_t *micro,size_t size,uint32_t start,TsFpVuState 
             memcpy(state->vf,vf_upper,sizeof(vf_upper));
         } else {
             memcpy(state->vf,vf_before,sizeof(vf_before));
-            lower_exec(state,lo,state->pc);
+            lower_exec(state,lo,state->pc,vi_before);
             /* Register-level write priority: if the upper pipeline writes
                a VF register, the lower result for that whole register is
                discarded, even when the destination fields differ. */
