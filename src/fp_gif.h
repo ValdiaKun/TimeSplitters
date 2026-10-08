@@ -2,6 +2,7 @@
 #define FP_GIF_H
 #include <stddef.h>
 #include <stdint.h>
+/* XYZ fields are GS-space screen coordinates/depth emitted by VU1, not object-space floats. */
 typedef struct { float x,y,z,s,t; uint8_t r,g,b,a; } TsFpGifVertex;
 typedef struct { uint32_t tags,loops,vertices; uint32_t primitive; uint8_t format,registers; size_t bytes_consumed; } TsFpGifSummary;
 typedef struct {

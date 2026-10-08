@@ -25,7 +25,7 @@ static vita2d_color_vertex preview[PREVIEW_CAPACITY];
 static vita2d_color_vertex transformed_preview[PREVIEW_CAPACITY];
 static size_t preview_count=0;
 static TsFpGifVertex gif_local[1024];
-static TsFpGifVertex scene_vertices[PREVIEW_CAPACITY];
+static TsFpGifVertex gs_vertices[PREVIEW_CAPACITY];
 static TsFpGsView preview_view;
 static float preview_zoom=1.0f,preview_pan_x=0.0f,preview_pan_y=0.0f;
 static int preview_ready=0;
@@ -203,17 +203,17 @@ static int build_model_preview(void){
 
     if(tri_count>=3){
         if(tri_count>PREVIEW_CAPACITY)tri_count=PREVIEW_CAPACITY;
-        memcpy(scene_vertices,triangles,sizeof(*scene_vertices)*tri_count);
+        memcpy(gs_vertices,triangles,sizeof(*gs_vertices)*tri_count);
         preview_count=tri_count;
-        if(tsfp_gs_view_fit(&preview_view,scene_vertices,tri_count,960.0f,544.0f)!=0)goto done;
+        if(tsfp_gs_view_fit(&preview_view,gs_vertices,tri_count,960.0f,544.0f)!=0)goto done;
         preview_zoom=1.0f;preview_pan_x=preview_pan_y=0.0f;
         preview_ready=1;
         for(size_t i=0;i<tri_count;i++){
-            preview[i].x=scene_vertices[i].x;
-            preview[i].y=scene_vertices[i].y;
+            preview[i].x=gs_vertices[i].x;
+            preview[i].y=gs_vertices[i].y;
             preview[i].z=0.5f;
-            preview[i].color=((unsigned)scene_vertices[i].a<<24)|((unsigned)scene_vertices[i].b<<16)|
-                             ((unsigned)scene_vertices[i].g<<8)|scene_vertices[i].r;
+            preview[i].color=((unsigned)gs_vertices[i].a<<24)|((unsigned)gs_vertices[i].b<<16)|
+                             ((unsigned)gs_vertices[i].g<<8)|gs_vertices[i].r;
         }
         result=(int)tri_count;
     }
@@ -289,15 +289,15 @@ static void draw(int result,int preview_result,const TsP5ckInfo *info,const TsP5
         size_t n=preview_count-(preview_count%3),tc=0;
         for(size_t i=0;i<n && tc<PREVIEW_CAPACITY/3u;i+=3){
             float x0,y0,x1,y1,x2,y2;
-            if(!project_gs_vertex(&scene_vertices[i],&x0,&y0)||
-               !project_gs_vertex(&scene_vertices[i+1],&x1,&y1)||
-               !project_gs_vertex(&scene_vertices[i+2],&x2,&y2))continue;
+            if(!project_gs_vertex(&gs_vertices[i],&x0,&y0)||
+               !project_gs_vertex(&gs_vertices[i+1],&x1,&y1)||
+               !project_gs_vertex(&gs_vertices[i+2],&x2,&y2))continue;
             TsFpDrawTriangle *t=&draw_triangles[tc++];
             t->v[0]=preview[i];t->v[1]=preview[i+1];t->v[2]=preview[i+2];
             t->v[0].x=x0;t->v[0].y=y0;
             t->v[1].x=x1;t->v[1].y=y1;
             t->v[2].x=x2;t->v[2].y=y2;
-            t->depth=(scene_vertices[i].z+scene_vertices[i+1].z+scene_vertices[i+2].z)*(1.0f/3.0f);
+            t->depth=(gs_vertices[i].z+gs_vertices[i+1].z+gs_vertices[i+2].z)*(1.0f/3.0f);
         }
         qsort(draw_triangles,tc,sizeof(draw_triangles[0]),compare_draw_triangles);
         for(size_t i=0;i<tc;i++){
@@ -305,7 +305,7 @@ static void draw(int result,int preview_result,const TsP5ckInfo *info,const TsP5
             transformed_preview[i*3u+1u]=draw_triangles[i].v[1];
             transformed_preview[i*3u+2u]=draw_triangles[i].v[2];
         }
-        vita2d_draw_array(SCE_GXM_PRIMITIVE_TRIANGLES,transformed_preview,tc*3u);
+        if(tc>0)vita2d_draw_array(SCE_GXM_PRIMITIVE_TRIANGLES,transformed_preview,tc*3u);
     }
     if(xgkick_pc!=UINT32_MAX)vita2d_draw_rectangle(80,500,800,10,0xFFC08040);
 }
