@@ -18,7 +18,7 @@ Verified from the demo image:
 - VIF memory unpacking now models masks, addition-decompression state, and packed UNPACK word alignment
 - The Vita runtime can inspect the PS2 ELF `.vutext` and locate the `MSCAL 0x683` VU1 program
 - A native VU1 interpreter core now covers the main arithmetic/conversion/integer/memory/control operations and captures complete `XGKICK` GIF packets
-- The Vita runtime now traverses all validated CHR submeshes, executes each VIF/VU1 display list, converts GIF triangle/strip/fan/sprite output into Vita triangles, and renders the assembled model preview
+- The Vita runtime traverses validated CHR submeshes, executes each VIF/VU1 display list, converts GIF triangle/strip/fan/sprite output into Vita triangles, and fits the already-transformed GS X/Y coordinates to the Vita viewport; triangles are sorted by GS depth rather than re-projecting screen-space vertices
 - The VIF decoder now honors the UNPACK mask bit, cycle-slot column filling, and PS2 row-addition/difference semantics
 - The VU core now implements CLIP flag generation used by PS2 microprogram control flow
 - Android/Termux extraction requires no third-party Python package
@@ -48,8 +48,7 @@ Build with VitaSDK:
     cmake --build build -j
 
 The resulting VPK contains a native test program that opens `CHR.PAK`, validates
-the `P5CK` header and directory table, and renders a visual status screen.
-Press START to exit.
+the `P5CK` header and directory table, and renders a visual status screen plus a GS-space model preview when valid data is available. Use the D-pad to pan, L/R triggers to zoom, and START to exit.
 
 ## Architecture
 
@@ -76,7 +75,7 @@ Press START to exit.
 2. Native P5CK reader — **working**
 3. Vita-side data probe — **working**
 4. Future Perfect VIF/VU1 ingestion — **working for the validated CHR model path**
-5. Bring up a first 3D scene from the native VU/GIF path — **working model viewer**
+5. Display the VU1/GIF model output — **GS-space preview with pan/zoom; world-space camera and gameplay are not implemented**
 6. Implement camera, player/input, collision and level logic
 7. Add audio/video systems
 8. Reach a playable demo slice
