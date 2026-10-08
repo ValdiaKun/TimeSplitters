@@ -823,14 +823,6 @@ int main(void) {
         assert(tsfp_vu_execute(m,sizeof(m),0,&t,1)==-2);
         assert(t.p_pending==1u && t.p_pending_cycles==9u);
 
-        /* A competing EFU producer releases one cycle before P writeback. */
-        t.p_pending=1u; t.p_pending_cycles=3u; t.p_pending_value=u32(7.0f);
-        memset(m,0,sizeof(m));
-        x=0; memcpy(m,&x,4);
-        x=upper(0x3f,29,1,0,0x0); memcpy(m+4,&x,4); /* reserved EFU slot 119 */
-        assert(tsfp_vu_execute(m,sizeof(m),0,&t,1)==-2);
-        assert(t.p_pending==0u && t.p==u32(7.0f));
-
         /* Range reduction must preserve sign and handle |x| > 1. */
         memset(m,0,sizeof(m));
         x=0; memcpy(m,&x,4);

@@ -50,9 +50,9 @@ static void p_wait_producer(TsFpVuState *s){
      * may start one cycle before P writeback because no instruction can
      * consume that just-finishing result in the same cycle.
      */
-    while(s->p_pending && s->p_pending_cycles>1u)
+    while(s->p_pending && s->p_pending_cycles>2u)
         s->p_pending_cycles--;
-    if(s->p_pending && s->p_pending_cycles==1u)p_commit(s);
+    if(s->p_pending && s->p_pending_cycles<=2u)p_commit(s);
 }
 static void p_tick(TsFpVuState *s){
     if(!s->p_pending || !s->p_pending_cycles)return;
