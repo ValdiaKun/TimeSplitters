@@ -631,6 +631,20 @@ int main(void) {
                f32(rd32(out+8))==3.0f && f32(rd32(out+12))==0.0f);
     }
     {
+        /* Register-form integer ALU: IADD/ISUB/IADDI/IAND/IOR. */
+        uint8_t m[40]={0}; uint32_t x;
+        TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
+        t.vi[1]=0xfffeu; t.vi[2]=3u;
+        x=lower(0x40,3,1,2); memcpy(m,&x,4); x=0; memcpy(m+4,&x,4);
+        x=lower(0x41,4,1,2); memcpy(m+8,&x,4); x=0; memcpy(m+12,&x,4);
+        x=lower(0x42,5,1,0)|(0x1fu<<6); memcpy(m+16,&x,4); x=0; memcpy(m+20,&x,4);
+        x=lower(0x44,6,1,2); memcpy(m+24,&x,4); x=0; memcpy(m+28,&x,4);
+        x=lower(0x45,7,1,2); memcpy(m+32,&x,4); x=0; memcpy(m+36,&x,4);
+        assert(tsfp_vu_execute(m,sizeof(m),0,&t,5)==0);
+        assert(t.vi[3]==1u && t.vi[4]==0xfffbu && t.vi[5]==0xfffdu);
+        assert(t.vi[6]==2u && t.vi[7]==0xffffu);
+    }
+    {
         /* VU random-unit opcodes: RNEXT=0x40, RGET=0x41, RINIT=0x42, RXOR=0x43. */
         uint8_t m[40]={0}; uint32_t x;
         x=0x8000043eu|(1u<<11); memcpy(m,&x,4); x=0; memcpy(m+4,&x,4); /* RINIT.x */
