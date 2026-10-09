@@ -25,7 +25,7 @@ typedef struct {
     uint32_t vector[4];
     uint32_t command_count;
     uint32_t unpack_count;
-    uint32_t unpack_qwords;
+    uint32_t unpack_qwords; /* Destination qwords actually written after STCYCL skips. */
     uint32_t unpack_data_bytes;
     uint32_t mscal_count;
     uint32_t mscal_address;
