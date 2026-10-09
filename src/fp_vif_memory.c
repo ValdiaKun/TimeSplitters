@@ -183,7 +183,6 @@ int tsfp_vif_unpack_memory_ex(const uint8_t *data, size_t size,
                         }
                         if(m!=3u) wr32(vu_memory+target+i*4u,q[i]);
                     }
-                    if(target+16u>vu_size)return -6;
                     addr=(addr+16u)&0x3ff0u;
                     out->qwords_written++;
                 }
