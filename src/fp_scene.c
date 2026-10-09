@@ -46,21 +46,29 @@ void tsfp_scene_camera_fit(TsFpSceneCamera *c,const TsFpSceneBounds *b,float wid
 TsFpScenePoint tsfp_scene_project(const TsFpSceneCamera *c,const TsFpSceneBounds *b,float x,float y,float z){
     TsFpScenePoint p={0,0,0,0};
     if(!c||!b||!isfinite(x)||!isfinite(y)||!isfinite(z)||
+       !isfinite(b->center_x)||!isfinite(b->center_y)||!isfinite(b->center_z)||
        !isfinite(c->screen_width)||!isfinite(c->screen_height)||!isfinite(c->focal)||
        c->screen_width<=0.0f||c->screen_height<=0.0f||c->focal<=0.0f||
        !isfinite(c->yaw)||!isfinite(c->pitch)||!isfinite(c->distance)||c->distance<=0.001f)return p;
-    float px=x-b->center_x,py=y-b->center_y,pz=z-b->center_z;
-    float sy=sinf(c->yaw),cy=cosf(c->yaw);
-    float x1=px*cy-pz*sy;
-    float z1=px*sy+pz*cy;
-    float sp=sinf(c->pitch),cp=cosf(c->pitch);
-    float y1=py*cp-z1*sp;
-    float z2=py*sp+z1*cp+c->distance;
-    p.depth=z2;
-    if(!isfinite(z2)||z2<=0.001f)return p;
-    float scale=c->focal/z2;
-    p.x=c->screen_width*0.5f+x1*scale;
-    p.y=c->screen_height*0.5f-y1*scale;
-    p.visible=isfinite(p.x)&&isfinite(p.y);
+    double px=(double)x-(double)b->center_x;
+    double py=(double)y-(double)b->center_y;
+    double pz=(double)z-(double)b->center_z;
+    double sy=sin((double)c->yaw),cy=cos((double)c->yaw);
+    double x1=px*cy-pz*sy;
+    double z1=px*sy+pz*cy;
+    double sp=sin((double)c->pitch),cp=cos((double)c->pitch);
+    double y1=py*cp-z1*sp;
+    double z2=py*sp+z1*cp+(double)c->distance;
+    if(!isfinite(z2)||z2<=0.001||z2>(double)FLT_MAX)return p;
+    p.depth=(float)z2;
+    double scale=(double)c->focal/z2;
+    double screen_x=(double)c->screen_width*0.5+x1*scale;
+    double screen_y=(double)c->screen_height*0.5-y1*scale;
+    if(!isfinite(screen_x)||!isfinite(screen_y)||
+       screen_x<-(double)FLT_MAX||screen_x>(double)FLT_MAX||
+       screen_y<-(double)FLT_MAX||screen_y>(double)FLT_MAX)return p;
+    p.x=(float)screen_x;
+    p.y=(float)screen_y;
+    p.visible=1;
     return p;
 }

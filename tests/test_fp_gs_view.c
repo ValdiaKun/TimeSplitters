@@ -1,5 +1,6 @@
 #include "fp_gs_view.h"
 #include <assert.h>
+#include <float.h>
 #include <math.h>
 
 int main(void){
@@ -37,11 +38,38 @@ int main(void){
     TsFpGifVertex invalid_set={.x=NAN,.y=NAN,.z=NAN};
     assert(tsfp_gs_view_fit(&view,&invalid_set,1,960.0f,544.0f)==-2);
 
+    /* A valid double scale can underflow to zero when converted to float. */
+    TsFpGifVertex extreme_range[2]={
+        {.x=0.0f,.y=-FLT_MAX*0.5f,.z=0.0f},
+        {.x=1.0f,.y=FLT_MAX*0.5f,.z=0.0f}
+    };
+    TsFpGsView unchanged={1.0f,2.0f,3.0f,4.0f,5.0f};
+    assert(tsfp_gs_view_fit(&unchanged,extreme_range,2,100.0f,FLT_MIN)==-3);
+    assert(unchanged.center_x==1.0f && unchanged.center_y==2.0f && unchanged.scale==3.0f &&
+           unchanged.screen_width==4.0f && unchanged.screen_height==5.0f);
+
     /* A degenerate point cloud remains centered and projectable. */
     TsFpGifVertex point={.x=4.0f,.y=5.0f,.z=6.0f};
     assert(tsfp_gs_view_fit(&view,&point,1,320.0f,240.0f)==0);
     assert(view.scale==1.0f);
     assert(tsfp_gs_view_project(&view,&point,1.0f,0.0f,0.0f,&x,&y));
     assert(fabsf(x-160.0f)<0.001f && fabsf(y-120.0f)<0.001f);
+
+    /* Averaging finite triangle depths in float can overflow before the
+       positive and negative values cancel. */
+    TsFpGifVertex depth_vertices[3]={
+        {.z=FLT_MAX}, {.z=FLT_MAX}, {.z=-FLT_MAX}
+    };
+    float old_depth=(depth_vertices[0].z+depth_vertices[1].z+depth_vertices[2].z)*(1.0f/3.0f);
+    assert(!isfinite(old_depth));
+    double depth=0.0;
+    assert(tsfp_gs_triangle_depth(&depth_vertices[0],&depth_vertices[1],
+                                  &depth_vertices[2],&depth));
+    assert(isfinite(depth) && depth>=(double)FLT_MAX*0.3 && depth<=(double)FLT_MAX*0.4);
+    depth_vertices[1].z=NAN;
+    double previous_depth=depth;
+    assert(!tsfp_gs_triangle_depth(&depth_vertices[0],&depth_vertices[1],
+                                   &depth_vertices[2],&depth));
+    assert(depth==previous_depth);
     return 0;
 }
