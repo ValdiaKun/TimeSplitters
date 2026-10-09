@@ -874,5 +874,15 @@ int main(void) {
         TsFpVuState t;tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
         assert(tsfp_vu_execute(fallthrough,sizeof(fallthrough),0,&t,8)==-3);
     }
+    {
+        /* Reject a nonzero VU memory extent without backing storage before XGKICK reads it. */
+        uint8_t no_memory[24]={0};uint32_t x;
+        x=lower(0x6c,0,1,0);memcpy(no_memory,&x,4);
+        x=0x40000000u;memcpy(no_memory+12,&x,4);
+        TsFpVuState t;tsfp_vu_state_init(&t,NULL,16384,gif,sizeof(gif));
+        assert(tsfp_vu_execute(no_memory,sizeof(no_memory),0,&t,8)==-1);
+        tsfp_vu_state_init(&t,NULL,0,gif,sizeof(gif));
+        assert(tsfp_vu_execute(no_memory,sizeof(no_memory),0,&t,8)==0);
+    }
     return 0;
 }
