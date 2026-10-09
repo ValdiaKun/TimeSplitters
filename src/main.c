@@ -119,7 +119,10 @@ static int render_mscal(uint16_t address,uint8_t *vu_memory,size_t vu_size,
     ctx->vu->itop=itop;
     ctx->vu->branch_pending=0;
     before=ctx->vu->gif_used;
+    uint32_t unsupported_before=ctx->vu->unsupported;
     if(tsfp_vu_execute(ctx->micro,ctx->micro_size,start,ctx->vu,8192)!=0)return -2;
+    /* Never turn unsupported VU opcodes into plausible-looking but incorrect geometry. */
+    if(ctx->vu->unsupported!=unsupported_before)return -4;
     if(ctx->vu->gif_used>before){
         if(before>ctx->vu->gif_used||ctx->vu->gif_used>ctx->vu->gif_size)return -3;
         size_t packet_offset=before;
@@ -186,9 +189,16 @@ static int build_model_preview(void){
         ctx.triangles=triangles; ctx.triangle_capacity=PREVIEW_CAPACITY;
         ctx.triangle_count=&tri_count;
         ctx.gif_state=&gif_state;
+        TsFpGifState saved_gif_state=gif_state;
+        size_t saved_triangle_count=tri_count;
         TsFpVifMemorySummary vm;
         if(tsfp_vif_unpack_memory_ex(model_data+off,vif_size,vu_mem,VU_MEMORY_SIZE,
-                                     &vm,render_mscal,&ctx)!=0) continue;
+                                     &vm,render_mscal,&ctx)!=0){
+            /* A failed display list must not leave partial geometry or GS state behind. */
+            tri_count=saved_triangle_count;
+            gif_state=saved_gif_state;
+            continue;
+        }
     }
 
     if(tri_count>=3){

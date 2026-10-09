@@ -853,5 +853,16 @@ int main(void) {
         TsFpVuState t;tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
         assert(tsfp_vu_execute(bad_branch,sizeof(bad_branch),0,&t,8)==-3);
     }
+    {
+        /* Unsupported upper opcodes are counted for the Vita renderer to reject safely. */
+        uint8_t unsupported_micro[16]={0};uint32_t x;
+        x=0;memcpy(unsupported_micro,&x,4);
+        x=upper(0x30,1,0,0,0xf);memcpy(unsupported_micro+4,&x,4);
+        x=0;memcpy(unsupported_micro+8,&x,4);
+        x=0x40000000u;memcpy(unsupported_micro+12,&x,4);
+        TsFpVuState t;tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
+        assert(tsfp_vu_execute(unsupported_micro,sizeof(unsupported_micro),0,&t,8)==0);
+        assert(t.unsupported==1u);
+    }
     return 0;
 }
