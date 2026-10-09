@@ -14,7 +14,7 @@ jobs:
       image: vitasdk/vitasdk:2026.08
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
       - name: Configure
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
       - name: Build VPK
@@ -44,13 +44,13 @@ jobs:
           print("VPK package validation passed")
           PY
       - name: Upload VPK
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: TimeSplitters-PSVITA-VPK
           path: build/TimeSplitters.vpk
           if-no-files-found: error
       - name: Upload ELF
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: TimeSplitters-PSVITA-ELF
           path: build/TimeSplitters
