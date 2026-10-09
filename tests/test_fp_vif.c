@@ -95,6 +95,23 @@ int main(void) {
     assert(ms.unpack_commands == 5 && ms.mscal_address == 0x683);
     assert(ms.qwords_written == 8);
     {
+        /* WL < CL leaves destination holes; only WL slots write qwords. */
+        uint8_t m[64]={0};
+        uint32_t stream[]={
+            v(0x01,0,0x0102), v(0x6c,4,0),
+            1,2,3,4,5,6,7,8
+        };
+        memcpy(m,stream,sizeof(stream));
+        TsFpVifSummary scan;
+        TsFpVifMemorySummary memory_summary;
+        memset(&scan,0,sizeof(scan));
+        memset(&memory_summary,0,sizeof(memory_summary));
+        assert(tsfp_vif_scan(m,sizeof(stream),&scan)==0);
+        assert(scan.unpack_qwords==2 && scan.unpack_data_bytes==32);
+        assert(tsfp_vif_unpack_memory(m,sizeof(stream),vu,sizeof(vu),&memory_summary)==0);
+        assert(memory_summary.unpack_commands==1 && memory_summary.qwords_written==2);
+    }
+    {
         unsigned callbacks=0;
         memset(&ms,0,sizeof(ms));
         memset(vu,0,sizeof(vu));
@@ -312,7 +329,7 @@ int main(void) {
         TsFpVifSummary scan;
         memset(&scan,0,sizeof(scan));
         assert(tsfp_vif_scan(m,sizeof(head),&scan)==0);
-        assert(scan.unpack_count==2 && scan.unpack_qwords==5);
+        assert(scan.unpack_count==2 && scan.unpack_qwords==3);
         assert(scan.unpack_data_bytes==3u*16u);
     }
     {

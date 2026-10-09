@@ -121,6 +121,7 @@ int tsfp_vif_scan(const uint8_t *data, size_t size, TsFpVifSummary *out) {
             uint32_t wl = scan_wl;
             uint32_t cycle_len = wl > cl ? wl : cl;
             uint32_t source_vectors = 0;
+            uint32_t destination_qwords = 0;
             uint32_t consumed = 0;
             /*
              * STCYCL state spans UNPACK commands.  Advance the cycle position
@@ -129,6 +130,7 @@ int tsfp_vif_scan(const uint8_t *data, size_t size, TsFpVifSummary *out) {
              * and correctly handles an UNPACK that begins mid-cycle.
              */
             for (uint32_t v = 0; v < vectors; ++v) {
+                if (scan_cycle_pos < wl) destination_qwords++;
                 if ((wl > cl && scan_cycle_pos < cl) ||
                     (wl <= cl && scan_cycle_pos < wl)) {
                     source_vectors++;
@@ -140,7 +142,7 @@ int tsfp_vif_scan(const uint8_t *data, size_t size, TsFpVifSummary *out) {
             }
             if (consumed > size - pos) return -6;
             out->unpack_count++;
-            out->unpack_qwords += vectors;
+            out->unpack_qwords += destination_qwords;
             out->unpack_data_bytes += source_vectors * ((bits + 7u) / 8u);
             if (out->unpack.command == cmd && out->payload_bytes == 0) {
                 out->payload_bytes = source_vectors * words * 4u;
