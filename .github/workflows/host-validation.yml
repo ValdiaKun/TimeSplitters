@@ -78,6 +78,14 @@ jobs:
           /tmp/test_fp_vu_exec_san
           gcc -std=c11 -Wall -Wextra -Werror -fsanitize=address,undefined -fno-omit-frame-pointer -Isrc tests/test_fp_gif.c src/fp_gif.c -lm -o /tmp/test_fp_gif_san
           /tmp/test_fp_gif_san
+          gcc -std=c11 -Wall -Wextra -Werror -fsanitize=address,undefined -fno-omit-frame-pointer -Isrc tests/test_p5ck.c src/p5ck.c -lz -o /tmp/test_p5ck_san
+          /tmp/test_p5ck_san
+          gcc -std=c11 -Wall -Wextra -Werror -fsanitize=address,undefined -fno-omit-frame-pointer -Isrc tests/test_fp_resource.c src/fp_resource.c -o /tmp/test_fp_resource_san
+          /tmp/test_fp_resource_san
+          gcc -std=c11 -Wall -Wextra -Werror -fsanitize=address,undefined -fno-omit-frame-pointer -Isrc tests/test_fp_geometry.c src/fp_geometry.c -o /tmp/test_fp_geometry_san
+          /tmp/test_fp_geometry_san
+          gcc -std=c11 -Wall -Wextra -Werror -fsanitize=address,undefined -fno-omit-frame-pointer -Isrc tests/test_fp_vif.c src/fp_vif.c src/fp_vif_memory.c -o /tmp/test_fp_vif_san
+          /tmp/test_fp_vif_san
       - name: Validate P5CK synthetic parser
         run: |
           python - <<'PY'
