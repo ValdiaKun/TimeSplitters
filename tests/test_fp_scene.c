@@ -81,5 +81,23 @@ int main(void){
     assert(isfinite(extreme.radius) && extreme.radius>0.0f);
     tsfp_scene_camera_fit(&c,&extreme,960.0f,544.0f);
     assert(isfinite(c.distance) && c.distance>0.0f);
+
+    /* Large finite horizontal offsets can overflow float rotation even when
+       the final perspective-divided screen coordinate is representable. */
+    TsFpSceneBounds origin; tsfp_scene_bounds_reset(&origin);
+    tsfp_scene_bounds_add(&origin,0.0f,0.0f,0.0f);
+    c.yaw=0.78539816339f;c.pitch=0.0f;c.distance=FLT_MAX*0.99f;
+    c.focal=240.0f;c.screen_width=800.0f;c.screen_height=480.0f;
+    p=tsfp_scene_project(&c,&origin,FLT_MAX,0.0f,-FLT_MAX);
+    assert(p.visible && isfinite(p.x) && isfinite(p.y) && isfinite(p.depth));
+
+    /* Reject a perspective result that cannot be represented by the API's
+       float screen coordinates, and reject corrupt scene centers up front. */
+    c.yaw=0.0f;c.distance=0.01f;c.focal=FLT_MAX;
+    p=tsfp_scene_project(&c,&origin,1.0f,0.0f,0.0f);
+    assert(!p.visible && isfinite(p.depth) && p.depth>0.0f);
+    origin.center_x=NAN;
+    p=tsfp_scene_project(&c,&origin,0.0f,0.0f,0.0f);
+    assert(!p.visible);
     return 0;
 }
