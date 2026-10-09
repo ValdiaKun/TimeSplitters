@@ -32,6 +32,17 @@ int main(void) {
     out=NULL; size=0;
     assert(ts_p5ck_read_payload(fp, &e, &out, &size) != 0);
     assert(out==NULL && size==0);
+    {
+        /* Reject a directory table that overlaps the P5CK header itself. */
+        uint8_t bad_header[24]={'P','5','C','K',8,0,0,0,16,0,0,0};
+        FILE *bad=tmpfile();
+        TsP5ckInfo info;
+        assert(bad);
+        assert(fwrite(bad_header,1,sizeof(bad_header),bad)==sizeof(bad_header));
+        fflush(bad);
+        assert(ts_p5ck_read_info(bad,&info)==-4);
+        fclose(bad);
+    }
     fclose(fp);
     return 0;
 }

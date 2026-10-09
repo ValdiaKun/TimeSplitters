@@ -19,6 +19,8 @@ int ts_p5ck_read_info(FILE *fp, TsP5ckInfo *info) {
     if (memcmp(magic,"P5CK",4)!=0) return -2;
     if (u32(fp,&info->index_offset)<0 || u32(fp,&info->index_length)<0) return -1;
     if (info->index_length & 15u) return -3;
+    /* The index cannot overlap the 12-byte P5CK header. */
+    if (info->index_offset < 12u) return -4;
     if (fseek(fp,0,SEEK_END)!=0) return -1;
     end=ftell(fp);
     if (end < 0 || (uint64_t)info->index_offset + info->index_length > (uint64_t)end) return -4;
