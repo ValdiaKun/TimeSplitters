@@ -112,17 +112,13 @@ static size_t triangulate_one(TsFpGifVertex *dst,size_t capacity,const TsFpGifVe
     if(!dst||!src||!capacity)return 0;
     size_t written=0;
     if(primitive==3u){
-        size_t pending[3],used=0;
-        for(size_t i=0;i<count;i++){
-            if(src[i].skip){used=0;continue;}
-            pending[used++]=i;
-            if(used==3u){
-                if(capacity-written<3u)break;
-                dst[written++]=src[pending[0]];
-                dst[written++]=src[pending[1]];
-                dst[written++]=src[pending[2]];
-                used=0;
-            }
+        /* The third kick closes each triangle-list primitive; ADC suppresses only that kick. */
+        for(size_t i=0;i+2u<count;i+=3u){
+            if(src[i+2u].skip)continue;
+            if(capacity-written<3u)break;
+            dst[written++]=src[i];
+            dst[written++]=src[i+1u];
+            dst[written++]=src[i+2u];
         }
     }else if(primitive==4u){
         for(size_t i=2;i<count;i++){
@@ -138,16 +134,15 @@ static size_t triangulate_one(TsFpGifVertex *dst,size_t capacity,const TsFpGifVe
             dst[written++]=src[0];dst[written++]=src[i-1];dst[written++]=src[i];
         }
     }else if(primitive==6u){
-        size_t first=0;int have_first=0;
-        for(size_t i=0;i<count;i++){
-            if(src[i].skip){have_first=0;continue;}
-            if(!have_first){first=i;have_first=1;continue;}
+        /* Sprites are paired kicks; ADC is tested on the second (primitive-closing) kick. */
+        for(size_t i=0;i+1u<count;i+=2u){
+            if(src[i+1u].skip)continue;
             if(capacity-written<6u)break;
-            TsFpGifVertex a=src[first],b=src[i],c=a,d=b;
-            c.y=b.y;d.x=a.x;
-            dst[written++]=a;dst[written++]=b;dst[written++]=c;
-            dst[written++]=c;dst[written++]=b;dst[written++]=d;
-            have_first=0;
+            TsFpGifVertex a=src[i],b=src[i+1u],c=a,d=b;
+            c.y=b.y;c.t=b.t;
+            d.y=a.y;d.t=a.t;
+            dst[written++]=a;dst[written++]=d;dst[written++]=c;
+            dst[written++]=c;dst[written++]=d;dst[written++]=b;
         }
     }
     return written;

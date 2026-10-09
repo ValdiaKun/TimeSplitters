@@ -128,7 +128,11 @@ int main(void){uint8_t d[80]={0};uint64_t tag=1ull|(1ull<<15)|(0ull<<58)|(3ull<<
         for(size_t i=0;i<6;i++){list[i].x=(float)i;list[i].primitive=0xffu;}
         list[1].skip=1;
         written=tsfp_gif_triangulate(out,12,list,6,3u);
-        assert(written==3 && out[0].x==2.0f && out[1].x==3.0f && out[2].x==4.0f);
+        assert(written==6 && out[0].x==0.0f && out[1].x==1.0f && out[2].x==2.0f);
+        assert(out[3].x==3.0f && out[4].x==4.0f && out[5].x==5.0f);
+        list[1].skip=0;list[2].skip=1;
+        written=tsfp_gif_triangulate(out,12,list,6,3u);
+        assert(written==3 && out[0].x==3.0f && out[1].x==4.0f && out[2].x==5.0f);
 
         TsFpGifVertex fan[4]={0};
         for(size_t i=0;i<4;i++){fan[i].x=(float)i;fan[i].primitive=0xffu;}
@@ -140,7 +144,16 @@ int main(void){uint8_t d[80]={0};uint64_t tag=1ull|(1ull<<15)|(0ull<<58)|(3ull<<
         sprites[0].x=0;sprites[0].y=0;sprites[0].primitive=0xffu;sprites[1].x=10;sprites[1].y=10;sprites[1].primitive=0xffu;sprites[1].skip=1;
         sprites[2].x=20;sprites[2].y=30;sprites[2].primitive=0xffu;sprites[3].x=40;sprites[3].y=50;sprites[3].primitive=0xffu;
         written=tsfp_gif_triangulate(out,12,sprites,4,6u);
-        assert(written==6 && out[0].x==20.0f && out[0].y==30.0f && out[2].x==20.0f && out[2].y==50.0f);
+        assert(written==6);
+        assert(out[0].x==20.0f && out[0].y==30.0f);
+        assert(out[1].x==40.0f && out[1].y==30.0f);
+        assert(out[2].x==20.0f && out[2].y==50.0f);
+        assert(out[3].x==20.0f && out[3].y==50.0f);
+        assert(out[4].x==40.0f && out[4].y==30.0f);
+        assert(out[5].x==40.0f && out[5].y==50.0f);
+        sprites[0].skip=1;sprites[1].skip=0;
+        written=tsfp_gif_triangulate(out,12,sprites,4,6u);
+        assert(written==12 && out[0].x==0.0f && out[1].x==10.0f && out[1].y==0.0f && out[2].x==0.0f && out[2].y==10.0f);
     }
     {
         /* PRE attaches a primitive mode to vertices, not just the final tag summary. */
