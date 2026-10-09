@@ -29,7 +29,7 @@ static TsFpGifVertex gs_vertices[PREVIEW_CAPACITY];
 static TsFpGsView preview_view;
 static float preview_zoom=1.0f,preview_pan_x=0.0f,preview_pan_y=0.0f;
 static int preview_ready=0;
-typedef struct { vita2d_color_vertex v[3]; float depth; } TsFpDrawTriangle;
+typedef struct { vita2d_color_vertex v[3]; double depth; } TsFpDrawTriangle;
 static TsFpDrawTriangle draw_triangles[PREVIEW_CAPACITY/3u];
 static int compare_draw_triangles(const void *a,const void *b){
     const TsFpDrawTriangle *x=(const TsFpDrawTriangle*)a,*y=(const TsFpDrawTriangle*)b;
@@ -292,12 +292,15 @@ static void draw(int result,int preview_result,const TsP5ckInfo *info,const TsP5
             if(!project_gs_vertex(&gs_vertices[i],&x0,&y0)||
                !project_gs_vertex(&gs_vertices[i+1],&x1,&y1)||
                !project_gs_vertex(&gs_vertices[i+2],&x2,&y2))continue;
+            double depth;
+            if(!tsfp_gs_triangle_depth(&gs_vertices[i],&gs_vertices[i+1],
+                                       &gs_vertices[i+2],&depth))continue;
             TsFpDrawTriangle *t=&draw_triangles[tc++];
             t->v[0]=preview[i];t->v[1]=preview[i+1];t->v[2]=preview[i+2];
             t->v[0].x=x0;t->v[0].y=y0;
             t->v[1].x=x1;t->v[1].y=y1;
             t->v[2].x=x2;t->v[2].y=y2;
-            t->depth=(gs_vertices[i].z+gs_vertices[i+1].z+gs_vertices[i+2].z)*(1.0f/3.0f);
+            t->depth=depth;
         }
         qsort(draw_triangles,tc,sizeof(draw_triangles[0]),compare_draw_triangles);
         for(size_t i=0;i<tc;i++){

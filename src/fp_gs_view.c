@@ -48,3 +48,12 @@ int tsfp_gs_view_project(const TsFpGsView *view,const TsFpGifVertex *vertex,
     *x=(float)sx;*y=(float)sy;
     return isfinite(*x)&&isfinite(*y);
 }
+
+int tsfp_gs_triangle_depth(const TsFpGifVertex *a,const TsFpGifVertex *b,
+                           const TsFpGifVertex *c,double *depth){
+    if(!a||!b||!c||!depth||!isfinite(a->z)||!isfinite(b->z)||!isfinite(c->z))return 0;
+    double average=((double)a->z+(double)b->z+(double)c->z)/3.0;
+    if(!isfinite(average))return 0;
+    *depth=average;
+    return 1;
+}

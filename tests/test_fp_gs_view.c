@@ -1,5 +1,6 @@
 #include "fp_gs_view.h"
 #include <assert.h>
+#include <float.h>
 #include <math.h>
 
 int main(void){
@@ -43,5 +44,22 @@ int main(void){
     assert(view.scale==1.0f);
     assert(tsfp_gs_view_project(&view,&point,1.0f,0.0f,0.0f,&x,&y));
     assert(fabsf(x-160.0f)<0.001f && fabsf(y-120.0f)<0.001f);
+
+    /* Averaging finite triangle depths in float can overflow before the
+       positive and negative values cancel. */
+    TsFpGifVertex depth_vertices[3]={
+        {.z=FLT_MAX}, {.z=FLT_MAX}, {.z=-FLT_MAX}
+    };
+    float old_depth=(depth_vertices[0].z+depth_vertices[1].z+depth_vertices[2].z)*(1.0f/3.0f);
+    assert(!isfinite(old_depth));
+    double depth=0.0;
+    assert(tsfp_gs_triangle_depth(&depth_vertices[0],&depth_vertices[1],
+                                  &depth_vertices[2],&depth));
+    assert(isfinite(depth) && depth>=(double)FLT_MAX*0.3 && depth<=(double)FLT_MAX*0.4);
+    depth_vertices[1].z=NAN;
+    double previous_depth=depth;
+    assert(!tsfp_gs_triangle_depth(&depth_vertices[0],&depth_vertices[1],
+                                   &depth_vertices[2],&depth));
+    assert(depth==previous_depth);
     return 0;
 }
