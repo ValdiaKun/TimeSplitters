@@ -355,5 +355,19 @@ int main(void) {
                got[2]==0x12345678u && got[3]==0x12345678u);
         assert(ms.qwords_written==1u);
     }
+    {
+        /* Sequential UNPACK writes wrap after the final VU1 quadword. */
+        uint8_t m[32]={0};uint8_t large_vu[16384]={0};
+        uint32_t head[]={v(0x60,2,0x03ff),0x11111111u,0x22222222u};
+        memcpy(m,head,sizeof(head));memset(&ms,0,sizeof(ms));
+        assert(tsfp_vif_unpack_memory(m,sizeof(head),large_vu,sizeof(large_vu),&ms)==0);
+        uint32_t last[4],first[4];
+        memcpy(last,large_vu+0x3ff0,sizeof(last));memcpy(first,large_vu,sizeof(first));
+        assert(last[0]==0x11111111u && last[1]==0x11111111u &&
+               last[2]==0x11111111u && last[3]==0x11111111u);
+        assert(first[0]==0x22222222u && first[1]==0x22222222u &&
+               first[2]==0x22222222u && first[3]==0x22222222u);
+        assert(ms.qwords_written==2u);
+    }
     return 0;
 }

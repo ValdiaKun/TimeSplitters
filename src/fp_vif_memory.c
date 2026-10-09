@@ -185,14 +185,14 @@ int tsfp_vif_unpack_memory_ex(const uint8_t *data, size_t size,
                         }
                     }
                     if(target+16u>vu_size)return -6;
-                    addr+=16u;
+                    addr=(addr+16u)&0x3ff0u;
                     out->qwords_written++;
                 }
 
                 cycle_pos++;
                 if(cycle_pos>=cycle_len) {
                     cycle_pos=0;
-                    if(wl<cl) addr+=(size_t)(cl-wl)*16u;
+                    if(wl<cl) addr=(addr+(size_t)(cl-wl)*16u)&0x3ff0u;
                 }
             }
             if(p>size)return -5;
