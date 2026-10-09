@@ -217,7 +217,7 @@ int main(void) {
     }
     {
         /* OPMSUB writes only XYZ; W remains untouched even when the mask carries W. */
-        uint8_t m[16]={0}; uint32_t x;
+        uint8_t m[24]={0}; uint32_t x;
         x=0; memcpy(m,&x,4); x=upper(0x2e,3,1,2,0xf); memcpy(m+4,&x,4);
         x=0; memcpy(m+8,&x,4); x=0x40000000u | upper(0x3f,11,0,0,0xf); memcpy(m+12,&x,4);
         TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
