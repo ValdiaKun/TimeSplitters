@@ -858,7 +858,11 @@ int tsfp_vu_execute(const uint8_t *micro,size_t size,uint32_t start,TsFpVuState 
             state->flag_pipe_valid[slot]=valid;
             state->flag_pipe_pos=(slot+1u)&3u;
         }
-        if(delayed && !state->branch_pending) state->pc=delayed_target;
+        if(delayed && !state->branch_pending){
+            /* Branch targets are instruction indices and must stay inside VU micro memory. */
+            if(delayed_target>=size/8u)return -3;
+            state->pc=delayed_target;
+        }
         /* E terminates after one delay-slot instruction. The E-bit
            instruction itself completes before the slot executes. */
         if(state->end_pending){
