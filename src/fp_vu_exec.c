@@ -759,7 +759,8 @@ static void flush_flag_pipeline(TsFpVuState *s){
     }
 }
 int tsfp_vu_execute(const uint8_t *micro,size_t size,uint32_t start,TsFpVuState *state,uint32_t max_steps){
-    if(!micro||!state||(size&7u)||start>=size/8u)return -1;
+    if(!micro||!state||(size&7u)||start>=size/8u||
+       (state->memory_size&&!state->memory))return -1;
     state->pc=start;
     for(state->steps=0;state->steps<max_steps&&state->pc<size/8u;state->steps++){
         uint32_t pc=state->pc,lo=rd32(micro+pc*8u),up=rd32(micro+pc*8u+4u);
