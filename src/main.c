@@ -24,7 +24,7 @@
 static vita2d_color_vertex preview[PREVIEW_CAPACITY];
 static vita2d_color_vertex transformed_preview[PREVIEW_CAPACITY];
 static size_t preview_count=0;
-static TsFpGifVertex gif_local[1024];
+static TsFpGifVertex gif_local[PREVIEW_CAPACITY];
 static TsFpGifVertex gs_vertices[PREVIEW_CAPACITY];
 static TsFpGsView preview_view;
 static float preview_zoom=1.0f,preview_pan_x=0.0f,preview_pan_y=0.0f;
@@ -108,9 +108,9 @@ typedef struct {
 static int render_mscal(uint16_t address,uint8_t *vu_memory,size_t vu_size,
                         uint32_t top,uint32_t itop,void *user){
     TsFpVifRenderContext *ctx=(TsFpVifRenderContext*)user;
-    TsFpGifSummary gif;
     size_t before;
-    if(!ctx||!ctx->vu||!ctx->micro)return -1;
+    if(!ctx||!ctx->vu||!ctx->micro||!ctx->gif_memory||!ctx->gif_state||
+       !ctx->triangles||!ctx->triangle_count)return -1;
     uint32_t start=(address==0xffffu)?ctx->vu->pc:address;
     if(((size_t)start*8u)>=ctx->micro_size)return -1;
     ctx->vu->memory=vu_memory;
@@ -121,16 +121,28 @@ static int render_mscal(uint16_t address,uint8_t *vu_memory,size_t vu_size,
     before=ctx->vu->gif_used;
     if(tsfp_vu_execute(ctx->micro,ctx->micro_size,start,ctx->vu,8192)!=0)return -2;
     if(ctx->vu->gif_used>before){
-        memset(gif_local,0,sizeof(gif_local));
-        if(tsfp_gif_parse_state(ctx->gif_memory+before,ctx->vu->gif_used-before,
-                                &gif,gif_local,1024,ctx->gif_state)!=0)return -3;
-        if(ctx->triangle_count && *ctx->triangle_count<ctx->triangle_capacity){
-            size_t room=ctx->triangle_capacity-*ctx->triangle_count;
-            size_t local_vertices=gif.vertices<1024u?gif.vertices:1024u;
-            size_t wrote=tsfp_gif_triangulate(ctx->triangles+*ctx->triangle_count,room,
-                                               gif_local,local_vertices,gif.primitive&7u);
-            *ctx->triangle_count+=wrote;
+        if(before>ctx->vu->gif_used||ctx->vu->gif_used>ctx->vu->gif_size)return -3;
+        size_t packet_offset=before;
+        size_t next_count=*ctx->triangle_count;
+        TsFpGifState next_state=*ctx->gif_state;
+        while(packet_offset<ctx->vu->gif_used){
+            TsFpGifSummary gif;
+            size_t available=ctx->vu->gif_used-packet_offset;
+            memset(gif_local,0,sizeof(gif_local));
+            if(tsfp_gif_parse_state(ctx->gif_memory+packet_offset,available,
+                                    &gif,gif_local,PREVIEW_CAPACITY,&next_state)!=0)return -3;
+            if(!gif.bytes_consumed||gif.bytes_consumed>available)return -3;
+            if(next_count<ctx->triangle_capacity){
+                size_t room=ctx->triangle_capacity-next_count;
+                size_t local_vertices=gif.vertices<PREVIEW_CAPACITY?gif.vertices:PREVIEW_CAPACITY;
+                size_t wrote=tsfp_gif_triangulate(ctx->triangles+next_count,room,
+                                                   gif_local,local_vertices,gif.primitive&7u);
+                next_count+=wrote;
+            }
+            packet_offset+=gif.bytes_consumed;
         }
+        *ctx->gif_state=next_state;
+        *ctx->triangle_count=next_count;
     }
     /* The captured GIF packet has been consumed by the host renderer. */
     ctx->vu->gif_used=0;

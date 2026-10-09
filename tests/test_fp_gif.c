@@ -243,4 +243,25 @@ int main(void){uint8_t d[80]={0};uint64_t tag=1ull|(1ull<<15)|(0ull<<58)|(3ull<<
         assert(state.s==0.25f && state.t==0.5f);
         assert(tsfp_gif_parse_state(trailing,15u,&summary,NULL,0,&state)==-5);
     }
+    {
+        /* render_mscal can capture multiple EOP-delimited XGKICK packets in one run. */
+        uint8_t packets[64]={0};
+        for(size_t i=0;i<2;i++){
+            uint64_t tag=1ull|(1ull<<15)|(1ull<<60);
+            w64(packets+i*32,tag);w64(packets+i*32+8,4ull);
+            w64(packets+i*32+16,((uint64_t)(i+1u)<<32)|((uint64_t)0x20u<<16)|((uint64_t)(i+1u)*16u));
+            w64(packets+i*32+24,0);
+        }
+        TsFpGifState state={0,0,255,255,255,255,0,0};
+        size_t offset=0,total_vertices=0;
+        while(offset<sizeof(packets)){
+            TsFpGifSummary summary;TsFpGifVertex vertex;
+            assert(tsfp_gif_parse_state(packets+offset,sizeof(packets)-offset,&summary,&vertex,1,&state)==0);
+            assert(summary.bytes_consumed==32u && summary.vertices==1u);
+            assert(vertex.x==(float)(offset/32u+1u));
+            total_vertices+=summary.vertices;
+            offset+=summary.bytes_consumed;
+        }
+        assert(offset==sizeof(packets) && total_vertices==2u);
+    }
     return 0;}
