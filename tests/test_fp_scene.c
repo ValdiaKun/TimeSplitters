@@ -48,6 +48,12 @@ int main(void){
     tsfp_scene_camera_fit(&c,&b,NAN,480.0f);
     p=tsfp_scene_project(&c,&b,b.center_x,b.center_y,b.center_z);
     assert(!p.visible);
+    tsfp_scene_camera_fit(&c,&b,-1.0f,480.0f);
+    p=tsfp_scene_project(&c,&b,b.center_x,b.center_y,b.center_z);
+    assert(!p.visible);
+    tsfp_scene_camera_fit(&c,&b,800.0f,INFINITY);
+    p=tsfp_scene_project(&c,&b,b.center_x,b.center_y,b.center_z);
+    assert(!p.visible);
     c.screen_width=800.0f;c.screen_height=480.0f;c.focal=240.0f;c.distance=0.0f;
     p=tsfp_scene_project(&c,&b,b.center_x+1.0f,b.center_y,b.center_z);
     assert(!p.visible);
