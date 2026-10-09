@@ -28,15 +28,20 @@ int ts_p5ck_read_info(FILE *fp, TsP5ckInfo *info) {
 }
 
 int ts_p5ck_read_entry(FILE *fp,const TsP5ckInfo *info,uint32_t index,TsP5ckEntry *e) {
-    long off,file_end; uint64_t payload_end; uint32_t stored;
+    long file_end; uint64_t index_end,off,payload_end; uint32_t stored;
     if (!fp || !info || !e || index>=info->entry_count) return -1;
-    off=(long)info->index_offset+(long)index*16L;
-    if (fseek(fp,off,SEEK_SET)!=0)return -1;
-    if (u32(fp,&e->crc)<0 || u32(fp,&e->offset)<0 || u32(fp,&e->length)<0 || u32(fp,&e->compressed_length)<0)return -1;
-    stored=e->compressed_length?e->compressed_length:e->length;
+    memset(e,0,sizeof(*e));
+    if (info->index_offset<12u || (info->index_length&15u) ||
+        info->entry_count!=info->index_length/16u) return -1;
     if (fseek(fp,0,SEEK_END)!=0)return -1;
     file_end=ftell(fp);
     if (file_end<0)return -1;
+    off=(uint64_t)info->index_offset+(uint64_t)index*16u;
+    index_end=off+16u;
+    if (index_end>(uint64_t)file_end || off>(uint64_t)LONG_MAX)return -1;
+    if (fseek(fp,(long)off,SEEK_SET)!=0)return -1;
+    if (u32(fp,&e->crc)<0 || u32(fp,&e->offset)<0 || u32(fp,&e->length)<0 || u32(fp,&e->compressed_length)<0)return -1;
+    stored=e->compressed_length?e->compressed_length:e->length;
     payload_end=(uint64_t)e->offset+stored;
     return payload_end<=(uint64_t)file_end?0:-2;
 }

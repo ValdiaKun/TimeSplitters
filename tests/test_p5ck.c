@@ -43,6 +43,36 @@ int main(void) {
         assert(ts_p5ck_read_info(bad,&info)==-4);
         fclose(bad);
     }
+    {
+        /* A validated one-entry table still resolves its directory record. */
+        uint8_t valid_header[32]={
+            'P','5','C','K', 12,0,0,0, 16,0,0,0,
+            0x78,0x56,0x34,0x12, 28,0,0,0, 4,0,0,0, 0,0,0,0,
+            0xde,0xad,0xbe,0xef
+        };
+        FILE *table=tmpfile();
+        TsP5ckInfo info;
+        TsP5ckEntry entry;
+        assert(table);
+        assert(fwrite(valid_header,1,sizeof(valid_header),table)==sizeof(valid_header));
+        fflush(table);
+        assert(ts_p5ck_read_info(table,&info)==0 && info.entry_count==1u);
+        assert(ts_p5ck_read_entry(table,&info,0,&entry)==0);
+        assert(entry.crc==0x12345678u && entry.offset==28u && entry.length==4u &&
+               entry.compressed_length==0u);
+        fclose(table);
+    }
+    {
+        /* Revalidate caller-supplied table metadata before computing file offsets. */
+        FILE *table=tmpfile();
+        TsP5ckInfo info={12u,0xfffffff0u,0x0fffffffu};
+        TsP5ckEntry entry;
+        assert(table);
+        assert(ts_p5ck_read_entry(table,&info,0x08000000u,&entry)==-1);
+        assert(entry.crc==0u && entry.offset==0u && entry.length==0u &&
+               entry.compressed_length==0u);
+        fclose(table);
+    }
     fclose(fp);
     return 0;
 }
