@@ -25,9 +25,14 @@ int tsfp_gs_view_fit(TsFpGsView *view,const TsFpGifVertex *vertices,size_t count
     else if(range_y<=0.0)scale=scale_x;
     else scale=scale_x<scale_y?scale_x:scale_y;
     if(!isfinite(scale)||scale<=0.0)return -3;
-    view->center_x=(float)(min_x+range_x*0.5);
-    view->center_y=(float)(min_y+range_y*0.5);
-    view->scale=scale>(double)FLT_MAX?FLT_MAX:(float)scale;
+    float center_x=(float)(min_x+range_x*0.5);
+    float center_y=(float)(min_y+range_y*0.5);
+    float fitted_scale=scale>(double)FLT_MAX?FLT_MAX:(float)scale;
+    /* A positive double can underflow to zero when stored in the public float view. */
+    if(!isfinite(center_x)||!isfinite(center_y)||!isfinite(fitted_scale)||fitted_scale<=0.0f)return -3;
+    view->center_x=center_x;
+    view->center_y=center_y;
+    view->scale=fitted_scale;
     view->screen_width=screen_width;
     view->screen_height=screen_height;
     return 0;

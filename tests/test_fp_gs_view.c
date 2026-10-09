@@ -38,6 +38,16 @@ int main(void){
     TsFpGifVertex invalid_set={.x=NAN,.y=NAN,.z=NAN};
     assert(tsfp_gs_view_fit(&view,&invalid_set,1,960.0f,544.0f)==-2);
 
+    /* A valid double scale can underflow to zero when converted to float. */
+    TsFpGifVertex extreme_range[2]={
+        {.x=0.0f,.y=-FLT_MAX*0.5f,.z=0.0f},
+        {.x=1.0f,.y=FLT_MAX*0.5f,.z=0.0f}
+    };
+    TsFpGsView unchanged={1.0f,2.0f,3.0f,4.0f,5.0f};
+    assert(tsfp_gs_view_fit(&unchanged,extreme_range,2,100.0f,FLT_MIN)==-3);
+    assert(unchanged.center_x==1.0f && unchanged.center_y==2.0f && unchanged.scale==3.0f &&
+           unchanged.screen_width==4.0f && unchanged.screen_height==5.0f);
+
     /* A degenerate point cloud remains centered and projectable. */
     TsFpGifVertex point={.x=4.0f,.y=5.0f,.z=6.0f};
     assert(tsfp_gs_view_fit(&view,&point,1,320.0f,240.0f)==0);
