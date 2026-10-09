@@ -60,6 +60,14 @@ int main(void) {
         assert(ts_p5ck_read_entry(table,&info,0,&entry)==0);
         assert(entry.crc==0x12345678u && entry.offset==28u && entry.length==4u &&
                entry.compressed_length==0u);
+        {
+            const uint8_t wrapped_offset[4]={0xfc,0xff,0xff,0xff};
+            assert(fseek(table,16,SEEK_SET)==0);
+            assert(fwrite(wrapped_offset,1,sizeof(wrapped_offset),table)==sizeof(wrapped_offset));
+            fflush(table);
+            assert(ts_p5ck_read_entry(table,&info,0,&entry)==-2);
+            assert(entry.offset==0xfffffffcu && entry.length==4u);
+        }
         fclose(table);
     }
     {
