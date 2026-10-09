@@ -21,7 +21,7 @@ int tsfp_resource_probe(const uint8_t *data, size_t size, TsFpResourceSummary *o
     while (p < total) {
         size_t start = p;
         while (p < total && data[p] != 0) p++;
-        if (p == total) break;
+        if (p == total) return -4;
         if (p > start) count++;
         p++;
         strings_end = p;

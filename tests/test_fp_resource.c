@@ -14,5 +14,11 @@ int main(void) {
     assert(s.total_size==32);
     assert(s.string_count>=2);
     assert(s.metadata_offset>8);
+    {
+        /* An unterminated final resource string must not look like valid metadata. */
+        uint8_t bad[12]={0xc4,0x6e,0x8e,0x40,12,0,0,0,'A','B','C','D'};
+        TsFpResourceSummary invalid;
+        assert(tsfp_resource_probe(bad,sizeof(bad),&invalid)==-4);
+    }
     return 0;
 }
