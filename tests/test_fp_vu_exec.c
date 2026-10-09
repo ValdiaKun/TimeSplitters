@@ -587,6 +587,7 @@ int main(void) {
         /* Accumulator broadcast variants must clamp FMAC overflow and update MAC flags. */
         uint8_t m[48]={0}; uint32_t x;
         x=0; memcpy(m,&x,4); x=upper(0x3c,0,1,2,0x8); memcpy(m+4,&x,4); /* ADDAx */
+        x=0;memcpy(m+8,&x,4);x=0x40000000u;memcpy(m+12,&x,4);
         TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
         t.acc[0]=0x7f7fffffu; t.vf[1][0]=0x7f7fffffu; t.vf[2][0]=0x7f7fffffu;
         assert(tsfp_vu_execute(m,sizeof(m),0,&t,7)==0);
@@ -633,7 +634,7 @@ int main(void) {
     }
     {
         /* Register-form integer ALU: IADD/ISUB/IADDI/IAND/IOR. */
-        uint8_t m[48]={0}; uint32_t x;
+        uint8_t m[56]={0}; uint32_t x;
         TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
         t.vi[1]=0xfffeu; t.vi[2]=3u;
         x=lower(0x40,3,1,2); memcpy(m,&x,4); x=0; memcpy(m+4,&x,4);
@@ -642,7 +643,7 @@ int main(void) {
         x=lower(0x44,6,1,2); memcpy(m+24,&x,4); x=0; memcpy(m+28,&x,4);
         x=lower(0x45,7,1,2); memcpy(m+32,&x,4); x=0; memcpy(m+36,&x,4);
         t.vi[8]=0x1000u;
-        x=(0x08u<<25)|(9u<<16)|(8u<<11)|0x345u|((2u)<<21); memcpy(m+40,&x,4); x=0; memcpy(m+44,&x,4);
+        x=(0x08u<<25)|(9u<<16)|(8u<<11)|0x345u|((2u)<<21); memcpy(m+40,&x,4); x=0x40000000u; memcpy(m+44,&x,4);
         assert(tsfp_vu_execute(m,sizeof(m),0,&t,7)==0);
         assert(t.vi[3]==1u && t.vi[4]==0xfffbu && t.vi[5]==0xfffdu);
         assert(t.vi[6]==2u && t.vi[7]==0xffffu && t.vi[9]==0x2345u);
