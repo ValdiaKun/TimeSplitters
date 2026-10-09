@@ -864,5 +864,11 @@ int main(void) {
         assert(tsfp_vu_execute(unsupported_micro,sizeof(unsupported_micro),0,&t,8)==0);
         assert(t.unsupported==1u);
     }
+    {
+        /* Falling off the end of a VU text without E-bit is not successful completion. */
+        uint8_t fallthrough[8]={0};
+        TsFpVuState t;tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
+        assert(tsfp_vu_execute(fallthrough,sizeof(fallthrough),0,&t,8)==-3);
+    }
     return 0;
 }

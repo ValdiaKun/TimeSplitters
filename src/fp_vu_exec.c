@@ -873,5 +873,8 @@ int tsfp_vu_execute(const uint8_t *micro,size_t size,uint32_t start,TsFpVuState 
         }
         if(up&0x40000000u) state->end_pending=1;
     }
-    return state->steps>=max_steps?-2:0;
+    if(state->steps>=max_steps)return -2;
+    /* Reaching the end of loaded micro memory without an E-bit is not a completed program. */
+    if(state->pc>=size/8u)return -3;
+    return 0;
 }
