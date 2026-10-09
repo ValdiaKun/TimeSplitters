@@ -73,7 +73,7 @@ int main(void){uint8_t d[80]={0};uint64_t tag=1ull|(1ull<<15)|(0ull<<58)|(3ull<<
         /* PACKED XYZF2 takes its 24-bit Z from the same low 64-bit value as X/Y. */
         uint8_t f[32]={0};
         uint64_t ftag=1ull|(1ull<<15)|(0ull<<58)|(1ull<<60);
-        w64(f,ftag); w64(f+8,4ull);
+        w64(f,ftag); w64(f+8,5ull);
         w64(f+16,((uint64_t)0x12abcdefu<<32)|((uint64_t)0x0020u<<16)|0x0010u);
         w64(f+24,0);
         TsFpGifSummary fs; TsFpGifVertex fv;
