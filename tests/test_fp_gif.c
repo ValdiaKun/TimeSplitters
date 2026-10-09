@@ -204,4 +204,16 @@ int main(void){uint8_t d[80]={0};uint64_t tag=1ull|(1ull<<15)|(0ull<<58)|(3ull<<
         assert(tsfp_gif_parse_state(vertex_packet,sizeof(vertex_packet),&second,&vertex,1,&state)==0);
         assert(vertex.primitive==5u && second.primitive==5u);
     }
+    {
+        /* A malformed packet with PRE must not leak partially parsed state. */
+        TsFpGifState state={0.25f,0.5f,11,22,33,44,5,1};
+        uint8_t truncated[16]={0};
+        uint64_t tag=1ull|(1ull<<46)|(3ull<<47)|(1ull<<60);
+        w64(truncated,tag);w64(truncated+8,5ull);
+        TsFpGifSummary summary;
+        assert(tsfp_gif_parse_state(truncated,sizeof(truncated),&summary,NULL,0,&state)==-2);
+        assert(state.primitive==5u && state.primitive_valid==1u);
+        assert(state.r==11u && state.g==22u && state.b==33u && state.a==44u);
+        assert(state.s==0.25f && state.t==0.5f);
+    }
     return 0;}

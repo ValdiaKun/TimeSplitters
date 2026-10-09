@@ -25,6 +25,9 @@ int tsfp_gif_parse_state(const uint8_t *data,size_t size,TsFpGifSummary *out,
                          TsFpGifVertex *vertices,size_t vertex_capacity,TsFpGifState *state){
  size_t p=0;
  if(!data||!out||!state)return -1;
+ TsFpGifState *output_state=state;
+ TsFpGifState working_state=*state;
+ state=&working_state;
  memset(out,0,sizeof(*out));
  while(p+16<=size){
     uint64_t lo=rd64(data+p),hi=rd64(data+p+8);
@@ -94,6 +97,7 @@ int tsfp_gif_parse_state(const uint8_t *data,size_t size,TsFpGifSummary *out,
  }
  out->primitive=state->primitive;
  out->bytes_consumed=p;
+ *output_state=working_state;
  return 0;
 }
 
