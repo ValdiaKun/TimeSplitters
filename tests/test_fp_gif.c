@@ -58,11 +58,11 @@ int main(void){uint8_t d[80]={0};uint64_t tag=1ull|(1ull<<15)|(0ull<<58)|(3ull<<
         assert(av.x==1.0f && av.y==2.0f && av.z==128.0f);
     }
     {
-        /* XYZF2 (GIF register 0x04) is a vertex-kick register like XYZ2,
+        /* XYZF2 (GIF register 0x05) is a vertex-kick register like XYZ2,
            with a 24-bit Z and an 8-bit fog field. */
         uint8_t f[32]={0};
         uint64_t ftag=1ull|(1ull<<15)|(0ull<<58)|(1ull<<60);
-        w64(f,ftag); w64(f+8,4ull);
+        w64(f,ftag); w64(f+8,5ull);
         w64(f+16,((uint64_t)0x12abcdefu<<32)|((uint64_t)0x0020u<<16)|0x0010u);
         w64(f+24,0);
         TsFpGifSummary fs; TsFpGifVertex fv;
@@ -99,13 +99,14 @@ int main(void){uint8_t d[80]={0};uint64_t tag=1ull|(1ull<<15)|(0ull<<58)|(3ull<<
         uint8_t reglist[32]={0};
         uint64_t rtag=2ull|(1ull<<15)|(1ull<<58)|(1ull<<60);
         w64(reglist,rtag);w64(reglist+8,5ull);
-        w64(reglist+16,((uint64_t)1u<<32)|((uint64_t)0x8000u<<16)|0x7000u);
-        w64(reglist+24,((uint64_t)2u<<32)|((uint64_t)0x8000u<<16)|0x9000u);
+        w64(reglist+16,((uint64_t)0x12abcdefu<<32)|((uint64_t)0x8000u<<16)|0x7000u);
+        w64(reglist+24,((uint64_t)0x34fedcbau<<32)|((uint64_t)0x8000u<<16)|0x9000u);
         TsFpGifSummary rs;TsFpGifVertex rv[2];
         assert(tsfp_gif_parse(reglist,sizeof(reglist),&rs,rv,2)==0);
         assert(rs.vertices==2);
         assert(rv[0].x==1792.0f && rv[1].x==2304.0f);
         assert(rv[0].y==2048.0f && rv[1].y==2048.0f);
+        assert((uint32_t)rv[0].z==0xabcdefu && (uint32_t)rv[1].z==0xfedcbau);
     }
     {
         /* Packed ADC marks a vertex kick as skipped but keeps it in the stream. */
