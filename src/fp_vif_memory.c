@@ -165,6 +165,8 @@ int tsfp_vif_unpack_memory_ex(const uint8_t *data, size_t size,
 
                 if(slot<wl) {
                     size_t target=(size_t)addr;
+                    /* Validate the whole qword before writing any lane. */
+                    if(target+16u>vu_size)return -6;
                     for(unsigned i=0;i<4;i++) {
                         unsigned cycle_slot=slot<4u?slot:3u;
                         unsigned mask_index=cycle_slot*4u+i;
@@ -179,10 +181,7 @@ int tsfp_vif_unpack_memory_ex(const uint8_t *data, size_t size,
                         } else if(m==2u) {
                             q[i]=col[cycle_slot];
                         }
-                        if(m!=3u) {
-                            if(target+4u>vu_size)return -6;
-                            wr32(vu_memory+target+i*4u,q[i]);
-                        }
+                        if(m!=3u) wr32(vu_memory+target+i*4u,q[i]);
                     }
                     if(target+16u>vu_size)return -6;
                     addr=(addr+16u)&0x3ff0u;

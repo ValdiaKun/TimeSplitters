@@ -369,5 +369,12 @@ int main(void) {
                first[2]==0x22222222u && first[3]==0x22222222u);
         assert(ms.qwords_written==2u);
     }
+    {
+        /* Reject a partial final qword before writing any lane past the supplied buffer. */
+        uint8_t m[8]={0};uint8_t small_vu[4092]={0};
+        uint32_t head[]={v(0x60,1,0x00ff),0xabcdef01u};
+        memcpy(m,head,sizeof(head));memset(&ms,0,sizeof(ms));
+        assert(tsfp_vif_unpack_memory(m,sizeof(head),small_vu,sizeof(small_vu),&ms)==-6);
+    }
     return 0;
 }
