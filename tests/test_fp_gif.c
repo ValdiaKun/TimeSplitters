@@ -216,4 +216,17 @@ int main(void){uint8_t d[80]={0};uint64_t tag=1ull|(1ull<<15)|(0ull<<58)|(3ull<<
         assert(state.r==11u && state.g==22u && state.b==33u && state.a==44u);
         assert(state.s==0.25f && state.t==0.5f);
     }
+    {
+        /* Partial trailing qwords are malformed, not silently successful. */
+        TsFpGifState state={0.25f,0.5f,11,22,33,44,5,1};
+        uint8_t trailing[17]={0};
+        uint64_t tag=0ull|(1ull<<60);
+        w64(trailing,tag);w64(trailing+8,5ull);trailing[16]=0xaa;
+        TsFpGifSummary summary;
+        assert(tsfp_gif_parse_state(trailing,sizeof(trailing),&summary,NULL,0,&state)==-5);
+        assert(state.primitive==5u && state.primitive_valid==1u);
+        assert(state.r==11u && state.g==22u && state.b==33u && state.a==44u);
+        assert(state.s==0.25f && state.t==0.5f);
+        assert(tsfp_gif_parse_state(trailing,15u,&summary,NULL,0,&state)==-5);
+    }
     return 0;}
