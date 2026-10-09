@@ -835,7 +835,7 @@ int main(void) {
         /* Address generation wraps modulo 1024 even when the I register is high. */
         uint32_t raw[4]={u32(1.0f),u32(2.0f),u32(3.0f),u32(4.0f)};
         memcpy(mem,raw,sizeof(raw));
-        uint8_t m[16]={0}; uint32_t x;
+        uint8_t m[24]={0}; uint32_t x;
         x=lower(0x00,0,21,2)|(0x0fu<<21)|1u; memcpy(m,&x,4);
         x=0x40000000u; memcpy(m+12,&x,4);
         TsFpVuState t; tsfp_vu_state_init(&t,mem,sizeof(mem),gif,sizeof(gif));
@@ -855,7 +855,7 @@ int main(void) {
     }
     {
         /* Unsupported upper opcodes are counted for the Vita renderer to reject safely. */
-        uint8_t unsupported_micro[16]={0};uint32_t x;
+        uint8_t unsupported_micro[24]={0};uint32_t x;
         x=0;memcpy(unsupported_micro,&x,4);
         x=upper(0x30,1,0,0,0xf);memcpy(unsupported_micro+4,&x,4);
         x=0;memcpy(unsupported_micro+8,&x,4);
