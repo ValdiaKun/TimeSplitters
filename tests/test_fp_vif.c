@@ -342,5 +342,18 @@ int main(void) {
         memset(&ms,0,sizeof(ms));
         assert(tsfp_vif_unpack_memory(m,11,vu,sizeof(vu),&ms)==-5);
     }
+    {
+        /* TOPS + ADDR wraps at the 1024-qword VU1 address boundary. */
+        uint8_t m[32]={0};
+        uint32_t head[]={v(0x02,0,0x03ff),v(0x14,0,0x0683),
+                         v(0x60,1,0x8001),0x12345678u};
+        memcpy(m,head,sizeof(head));
+        memset(&ms,0,sizeof(ms));memset(vu,0,sizeof(vu));
+        assert(tsfp_vif_unpack_memory(m,sizeof(head),vu,sizeof(vu),&ms)==0);
+        uint32_t got[4];memcpy(got,vu,sizeof(got));
+        assert(got[0]==0x12345678u && got[1]==0x12345678u &&
+               got[2]==0x12345678u && got[3]==0x12345678u);
+        assert(ms.qwords_written==1u);
+    }
     return 0;
 }

@@ -122,8 +122,9 @@ int tsfp_vif_unpack_memory_ex(const uint8_t *data, size_t size,
         }
         if ((cmd&0xe0u)==0x60u) {
             uint8_t f=cmd&0x0fu;
-            addr=(size_t)(imm&0x03ffu)*16u;
-            if(imm&0x8000u) addr+=(size_t)(tops&0x3ffu)*16u;
+            uint32_t unpack_addr=(uint32_t)(imm&0x03ffu);
+            if(imm&0x8000u) unpack_addr=(unpack_addr+(tops&0x3ffu))&0x3ffu;
+            addr=(size_t)unpack_addr*16u;
             unsigned n=num ? num : 256;
             unsigned bits=(f==0xfu)?20u:(32u>>vl(f))*vn(f);
             unsigned bytes=(bits+7u)/8u;
